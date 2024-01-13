@@ -1,7 +1,7 @@
 package discord;
 
+import utils.Configurator;
 import discord.enums.Statuses;
-import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.presence.ClientActivity;
@@ -16,7 +16,7 @@ public final class Connector {
     public static GatewayDiscordClient client;
     private final static String status = "Hello giga mates";
     private final static Logger logINFO = LoggerFactory.getLogger(Connector.class);
-    private final static String key = "MTE5NDc0MDIyNDI3MDU0NDkyNw.GaV4AJ.-HFE_lYNQp7oPjGfJ6nWw7_ThddHqDtnRlsD2Y";
+    private final static String key = Configurator.config.get("BOT_KEY");
 
     public static void connect() {
         try {
@@ -53,7 +53,6 @@ public final class Connector {
     }
 
     public static Id getId() {
-        if(client == null) return null;
         return Id.of(client.getSelfId().asString());
     }
 }

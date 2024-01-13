@@ -1,29 +1,25 @@
 package discord.messages;
 
-import discord4j.common.util.Snowflake;
-import discord4j.core.object.entity.channel.Channel;
-import discord4j.discordjson.json.MessageData;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.GuildMessageChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import java.util.List;
 
 public class DeleteMessages {
-    private final static Logger logINFO = LoggerFactory.getLogger(DeleteMessages.class);
+    private final Logger logINFO = LoggerFactory.getLogger(DeleteMessages.class);
     private final GetMessages getMessages;
 
     public DeleteMessages() {
         getMessages = new GetMessages();
     }
 
-    public void deleteMessages(Channel channel) {
-        List<MessageData> messages = getMessages.getChannelMessages(channel);
-        Flux<Snowflake> snowflakes = Flux.fromStream(messages.stream().map(x -> Snowflake.of(x.id())));
-
+    public void deleteMessages(GuildMessageChannel channel) {
         try {
-            channel.getRestChannel().bulkDelete(snowflakes);
-            logINFO.info("Deleted " + messages.size() + " messages");
-        }catch (Exception ignore) {
+            Flux<Message> messages = getMessages.getChannelMessages(channel);
+            channel.bulkDeleteMessages(messages).subscribe();
+            logINFO.info("Deleted " + messages.count().block() + " messages");
+        } catch (Exception ignore) {
             logINFO.info("Could not delete messages");
         }
     }

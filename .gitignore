@@ -15,6 +15,7 @@ target/
 !pom.xml
 *.jar
 *.MF
+*.env
 
 ### Eclipse ###
 .apt_generated

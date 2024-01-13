@@ -5,18 +5,17 @@ import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEven
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.Channel;
+import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
 import events.interfaces.Channelable;
 import events.interfaces.EventListener;
+import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
 import services.tibiaCoins.models.PriceModel;
 import services.tibiaCoins.models.Prices;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,8 +43,21 @@ public class TibiaCoinsEvent extends EventsMethods implements EventListener, Cha
     }
 
     @Override
+    @SneakyThrows
+    @SuppressWarnings("InfiniteLoopStatement")
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
+        while(true) {
+            try {
+                logINFO.info("Executing thread Tibia coins");
+            } catch (Exception e) {
+                logINFO.info(e.getMessage());
+            } finally {
+                synchronized (this) {
+                    wait(3600000);
+                }
+            }
+        }
     }
 
     @Override
@@ -53,7 +65,7 @@ public class TibiaCoinsEvent extends EventsMethods implements EventListener, Cha
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
         if(id == null) return event.createFollowup("Could not find channel");
 
-        Channel channel = event.getClient().getChannelById(id).block();
+        GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
         saveSetChannel((ChatInputInteractionEvent) event);
 
         deleteMessages.deleteMessages(channel);

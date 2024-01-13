@@ -2,15 +2,14 @@ import builders.Commands.CommandsBuilder;
 import discord.Connector;
 import events.*;
 
+import static discord.Connector.client;
+
 
 public class Main {
 
     public static void main(String[] args) {
         initializeBot();
-
-        while (true) {
-
-        }
+        client.onDisconnect().block();
     }
 
     private static void initializeBot() {

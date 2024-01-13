@@ -39,7 +39,7 @@ public class SendMessages {
             if(maxIndex > fields.size()) maxIndex = fields.size();
 
             List<EmbedCreateFields.Field> fieldsSplitted = fields.subList(minIndex, maxIndex);
-            EmbedCreateSpec builder = generateEmbed(embedData, isFirstMessage);
+            EmbedCreateSpec builder = generateEmbed(embedData, i, iterations);
             if(isFirstMessage) isFirstMessage = false;
 
             listOfMessages.add(builder.withFields(fieldsSplitted).asRequest());
@@ -48,17 +48,17 @@ public class SendMessages {
         return listOfMessages;
     }
 
-    private EmbedCreateSpec generateEmbed(EmbedCreateSpec embedData, boolean isFirstMessage) {
+    private EmbedCreateSpec generateEmbed(EmbedCreateSpec embedData, int currentIndex, int lastIndex) {
         EmbedCreateSpec.Builder copy = EmbedCreateSpec.builder()
                 .title(embedData.title().get())
                 .description(embedData.description().get())
                 .image(embedData.image().get())
-                .footer("Last updated", "")
-                .timestamp(Instant.now())
                 .thumbnail(embedData.thumbnail().get())
                 .color(embedData.color().get());
 
-        if(!isFirstMessage) copy.title("").description("").image("").thumbnail("");
+        if(currentIndex != 0) copy.title("").description("").image("").thumbnail("");
+        if(currentIndex == lastIndex - 1) copy.footer("Last updated", "").timestamp(Instant.now());
+
         return copy.build();
     }
 
