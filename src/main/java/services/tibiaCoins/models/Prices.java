@@ -13,6 +13,10 @@ public class Prices {
     private String buy_average_price;
     @Getter
     private String sell_average_price;
+    @Getter
+    private String buy_highest_price;
+    @Getter
+    private String sell_lowest_price;
     private String created_at;
 
     public String getCreated_at() {

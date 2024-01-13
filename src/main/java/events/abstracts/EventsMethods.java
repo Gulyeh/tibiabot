@@ -1,18 +1,17 @@
-package events;
+package events.abstracts;
 
 import discord.messages.DeleteMessages;
 import discord.messages.SendMessages;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.spec.EmbedCreateFields;
+import events.interfaces.EventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Optional;
 
-public abstract class EventsMethods {
+public abstract class EventsMethods implements EventListener {
     protected final static Logger logINFO = LoggerFactory.getLogger(EventsMethods.class);
     protected final SendMessages sendMessages;
     protected final DeleteMessages deleteMessages;
@@ -27,8 +26,6 @@ public abstract class EventsMethods {
         Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().get(0).getValue();
         return value.map(ApplicationCommandInteractionOptionValue::asSnowflake).orElse(null);
     }
-
-    protected abstract List<EmbedCreateFields.Field> createEmbedFields();
 
     protected abstract void activateEvent();
 

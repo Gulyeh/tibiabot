@@ -8,8 +8,8 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
+import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
-import events.interfaces.EventListener;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
@@ -22,7 +22,7 @@ import java.util.List;
 import static builders.Commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
 
-public class TibiaCoinsEvent extends EventsMethods implements EventListener, Channelable {
+public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
     private final TibiaCoinsService tibiaCoinsService;
 
     public TibiaCoinsEvent() {
@@ -33,7 +33,8 @@ public class TibiaCoinsEvent extends EventsMethods implements EventListener, Cha
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             if(!event.getCommandName().equals(tibiaCoinsCommand)) return null;
-            return event.deferReply().withEphemeral(true).then(setDefaultChannel(event));
+            event.deferReply().withEphemeral(true).subscribe();
+            return setDefaultChannel(event);
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
@@ -64,21 +65,10 @@ public class TibiaCoinsEvent extends EventsMethods implements EventListener, Cha
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
         if(id == null) return event.createFollowup("Could not find channel");
-
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
         saveSetChannel((ChatInputInteractionEvent) event);
-
-        deleteMessages.deleteMessages(channel);
-
-        sendMessages.sendEmbeddedMessages(channel,
-                createEmbedFields(),
-                "Tibia Coins Prices",
-                "(world name)\n(Avg. buy value / Avg. sell value)\n(checked at)",
-                "",
-                "",
-                Color.RED);
-        
-        return event.createFollowup("Set default Tibia coins channel to <#" + id.asString() + ">");
+        sendMessage(channel);
+        return event.createFollowup("Set default Tibia Coins channel to <#" + id.asString() + ">");
     }
 
     @Override
@@ -98,7 +88,21 @@ public class TibiaCoinsEvent extends EventsMethods implements EventListener, Cha
         return fields;
     }
 
+    @Override
+    protected void sendMessage(GuildMessageChannel channel) {
+        deleteMessages.deleteMessages(channel);
+        sendMessages.sendEmbeddedMessages(channel,
+                createEmbedFields(),
+                "Tibia Coins Prices",
+                "(World name)\n(Buy price / Sell price)\n(checked at)",
+                "",
+                "",
+                Color.RED);
+    }
+
     private EmbedCreateFields.Field buildEmbedField(Prices data) {
-        return EmbedCreateFields.Field.of(data.getWorld_name(), data.getBuy_average_price() + " / " + data.getSell_average_price() +"\n`(" + data.getCreated_at() + ")`", true );
+        return EmbedCreateFields.Field.of(data.getWorld_name(),
+                data.getBuy_average_price() + " / " + data.getSell_average_price() +"\n`(" + data.getCreated_at() + ")`",
+                true );
     }
 }

@@ -1,10 +1,12 @@
 package services.tibiaCoins.models;
 
-import lombok.Getter;
-
+import java.util.Comparator;
 import java.util.List;
 
-@Getter
 public class PriceModel {
-    public List<Prices> prices;
+    private List<Prices> prices;
+
+    public List<Prices> getPrices() {
+        return prices.stream().sorted(Comparator.comparing(Prices::getWorld_name)).toList();
+    }
 }

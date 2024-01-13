@@ -1,13 +1,16 @@
 package events;
 
+import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
+import events.abstracts.EmbeddableEvent;
+import events.abstracts.EventsMethods;
 import events.interfaces.EventListener;
 import lombok.SneakyThrows;
 import services.events.EventsService;
 
 import java.util.List;
 
-public class EventsCalendarEvent extends EventsMethods implements EventListener {
+public class EventsCalendarEvent extends EmbeddableEvent implements EventListener {
 
     private final EventsService eventsService;
 
@@ -46,6 +49,11 @@ public class EventsCalendarEvent extends EventsMethods implements EventListener 
     @Override
     protected List<EmbedCreateFields.Field> createEmbedFields() {
         return null;
+    }
+
+    @Override
+    protected void sendMessage(GuildMessageChannel channel) {
+
     }
 
 }
