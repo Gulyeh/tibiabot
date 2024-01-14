@@ -15,9 +15,10 @@ public class Main {
     private static void initializeBot() {
         Connector.connect();
         Connector.addListener(new TibiaCoinsEvent());
-        Connector.addListener(new WorldsEvent());
+        Connector.addListener(new ServerStatusEvent());
+        Connector.addListener(new TrackWorldEvent());
 //        Connector.addListener(new KillStatisticsEvent());
-//        Connector.addListener(new HousesEvent());
+        Connector.addListener(new HousesEvent());
 //        Connector.addListener(new EventsCalendarEvent());
 
         CommandsBuilder.builder()
@@ -28,6 +29,7 @@ public class Main {
                 .setServerStatusChannel()
                 .setTibiaCoinsPricesChannel()
                 .setWorld()
+                .clearUnusedCommands()
                 .build();
     }
 }

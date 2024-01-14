@@ -10,6 +10,7 @@ import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
+import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,7 +38,8 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
                 if (!event.getCommandName().equals(tibiaCoinsCommand)) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 return setDefaultChannel(event);
-            } catch (Exception ignore) {
+            } catch (Exception e) {
+                logINFO.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -45,7 +47,7 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
 
     @Override
     public String getEventName() {
-        return "Tibia Coins Event";
+        return EventName.getTibiaCoins();
     }
 
     @Override
@@ -82,7 +84,7 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
 
         if(model == null) {
             logINFO.info("Could not create embed from empty model");
-            return null;
+            return new ArrayList<>();
         }
 
         for(Prices data : ((PriceModel)model).getPrices()) {

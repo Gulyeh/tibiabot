@@ -4,6 +4,7 @@ import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
 import events.abstracts.EventsMethods;
+import events.utils.EventName;
 import lombok.SneakyThrows;
 import services.killStatistics.KillStatisticsService;
 
@@ -42,7 +43,7 @@ public class KillStatisticsEvent extends EmbeddableEvent {
 
     @Override
     public String getEventName() {
-        return null;
+        return EventName.getKillStatistics();
     }
 
     @Override

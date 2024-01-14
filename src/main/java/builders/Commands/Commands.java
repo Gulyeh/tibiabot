@@ -1,6 +1,8 @@
 package builders.Commands;
 
+import builders.Commands.names.CommandsNames;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import org.slf4j.Logger;
@@ -27,6 +29,25 @@ public class Commands {
         }
 
         logINFO.info("Subscribed to commands");
+    }
+
+    public Commands clearUnusedCommands() {
+        long appId = Objects.requireNonNull(client.getRestClient().getApplicationId().block());
+        List<ApplicationCommandData> list = Objects.requireNonNull(client.getRestClient().getApplicationService().getGlobalApplicationCommands(appId).collectList().block());
+        int iterator = 0;
+
+        for(ApplicationCommandData cmd : list) {
+            if(CommandsNames.getCommands().contains(cmd.name())) continue;
+
+            client.getRestClient().getApplicationService()
+                    .deleteGlobalApplicationCommand(appId, cmd.id().asLong())
+                    .subscribe();
+
+            iterator++;
+        }
+
+        logINFO.info("Unsubscribed "+ iterator + " commands");
+        return this;
     }
 
     public Commands setWorld() {

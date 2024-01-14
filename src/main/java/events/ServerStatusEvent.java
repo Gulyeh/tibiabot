@@ -9,29 +9,25 @@ import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
-import events.abstracts.EventsMethods;
 import events.interfaces.Channelable;
+import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
-import services.tibiaCoins.models.PriceModel;
-import services.tibiaCoins.models.Prices;
 import services.worlds.WorldsService;
 import services.worlds.models.WorldData;
 import services.worlds.models.WorldModel;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static builders.Commands.names.CommandsNames.tibiaCoinsCommand;
-import static builders.Commands.names.CommandsNames.worldCommand;
+import static builders.Commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
 
-public class WorldsEvent extends EmbeddableEvent implements Channelable {
+public class ServerStatusEvent extends EmbeddableEvent implements Channelable {
 
     private final WorldsService worldsService;
 
-    public WorldsEvent() {
+    public ServerStatusEvent() {
         worldsService = new WorldsService();
     }
 
@@ -39,10 +35,11 @@ public class WorldsEvent extends EmbeddableEvent implements Channelable {
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(worldCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(serverStatusCommand)) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 return setDefaultChannel(event);
-            } catch (Exception ignore) {
+            } catch (Exception e) {
+                logINFO.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -55,7 +52,7 @@ public class WorldsEvent extends EmbeddableEvent implements Channelable {
         logINFO.info("Activating " + getEventName());
         while(true) {
             try {
-                logINFO.info("Executing thread Worlds Event");
+                logINFO.info("Executing thread Server Status Event");
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
@@ -68,7 +65,7 @@ public class WorldsEvent extends EmbeddableEvent implements Channelable {
 
     @Override
     public String getEventName() {
-        return "Worlds Event";
+        return EventName.getServerStatus();
     }
 
     @Override
@@ -77,7 +74,7 @@ public class WorldsEvent extends EmbeddableEvent implements Channelable {
 
         if(model == null) {
             logINFO.info("Could not create embed from empty model");
-            return null;
+            return new ArrayList<>();
         }
 
         for(WorldData data : ((WorldModel)model).getWorlds().getRegular_worlds()) {
@@ -108,7 +105,7 @@ public class WorldsEvent extends EmbeddableEvent implements Channelable {
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
         saveSetChannel((ChatInputInteractionEvent) event);
         sendMessage(channel, worldsService.getWorlds());
-        return event.createFollowup("Set default Worlds event channel to <#" + id.asString() + ">");
+        return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
     }
 
     private EmbedCreateFields.Field buildEmbedField(WorldData data) {

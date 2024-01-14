@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
+import java.net.CookieHandler;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
@@ -42,7 +43,7 @@ public abstract class WebClient {
     protected HttpRequest getRequest() {
         return HttpRequest
                 .newBuilder()
-                .uri(getURI())
+                .uri(URI.create(getUrl()))
                 .GET()
                 .build();
     }
@@ -53,27 +54,8 @@ public abstract class WebClient {
             Gson g = new Gson();
             return g.fromJson(response.body(), classType);
         } catch (Exception e) {
-            logINFO.info("Could not parse json data - " + e.getMessage());
+            logINFO.info("Could not parse json data - " + e.getMessage() + " Response: " + response.statusCode());
             return null;
         }
-    }
-
-    private URI getURI() {
-        URI uri;
-
-        try {
-            uri = new URI(getUrl());
-        } catch (Exception ignore) {
-            try {
-                logINFO.info("Could not parse URI - trying by URL");
-                uri = new URL(getUrl()).toURI();
-            } catch (Exception ignore2)
-            {
-                logINFO.info("Could not parse URL to URI");
-                return null;
-            }
-        }
-
-        return uri;
     }
 }

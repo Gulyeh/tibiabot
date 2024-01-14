@@ -5,6 +5,7 @@ import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
 import events.abstracts.EventsMethods;
 import events.interfaces.EventListener;
+import events.utils.EventName;
 import lombok.SneakyThrows;
 import services.events.EventsService;
 
@@ -25,7 +26,7 @@ public class EventsCalendarEvent extends EmbeddableEvent implements EventListene
 
     @Override
     public String getEventName() {
-        return null;
+        return EventName.getEvents();
     }
 
     @Override
