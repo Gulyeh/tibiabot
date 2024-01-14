@@ -76,6 +76,7 @@ public class HousesEvent extends EmbeddableEvent implements Channelable {
     }
 
     @Override
+    @SuppressWarnings({"unchecked"})
     protected <T> void sendMessage(GuildMessageChannel channel, T model) {
         deleteMessages.deleteMessages(channel);
 
