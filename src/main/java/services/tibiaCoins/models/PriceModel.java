@@ -7,6 +7,8 @@ public class PriceModel {
     private List<Prices> prices;
 
     public List<Prices> getPrices() {
-        return prices.stream().sorted(Comparator.comparing(Prices::getWorld_name)).toList();
+        return prices.stream()
+                .sorted(Comparator.comparing(Prices::getWorld_name))
+                .toList();
     }
 }

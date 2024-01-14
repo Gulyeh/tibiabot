@@ -24,7 +24,7 @@ public abstract class EventsMethods implements EventListener {
 
     protected Snowflake getChannelId(ChatInputInteractionEvent event) {
         Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().get(0).getValue();
-        return value.map(ApplicationCommandInteractionOptionValue::asSnowflake).orElse(null);
+        return value.map(x -> Snowflake.of(x.asString().replaceAll("\\D", ""))).orElse(null);
     }
 
     protected abstract void activateEvent();

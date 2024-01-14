@@ -47,12 +47,12 @@ public class EventsCalendarEvent extends EmbeddableEvent implements EventListene
     }
 
     @Override
-    protected List<EmbedCreateFields.Field> createEmbedFields() {
+    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         return null;
     }
 
     @Override
-    protected void sendMessage(GuildMessageChannel channel) {
+    protected <T> void sendMessage(GuildMessageChannel channel, T model) {
 
     }
 

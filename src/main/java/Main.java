@@ -15,7 +15,7 @@ public class Main {
     private static void initializeBot() {
         Connector.connect();
         Connector.addListener(new TibiaCoinsEvent());
-//        Connector.addListener(new WorldsEvent());
+        Connector.addListener(new WorldsEvent());
 //        Connector.addListener(new KillStatisticsEvent());
 //        Connector.addListener(new HousesEvent());
 //        Connector.addListener(new EventsCalendarEvent());

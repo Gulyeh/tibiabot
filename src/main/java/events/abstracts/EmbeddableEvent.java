@@ -6,6 +6,6 @@ import discord4j.core.spec.EmbedCreateFields;
 import java.util.List;
 
 public abstract class EmbeddableEvent extends EventsMethods {
-    protected abstract List<EmbedCreateFields.Field> createEmbedFields();
-    protected abstract void sendMessage(GuildMessageChannel channel);
+    protected abstract <T> List<EmbedCreateFields.Field> createEmbedFields(T model);
+    protected abstract <T> void sendMessage(GuildMessageChannel channel, T model);
 }

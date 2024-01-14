@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import static utils.Date.getFormattedDate;
+
 public class Prices {
     @Getter
     private String world_name;
@@ -21,7 +23,6 @@ public class Prices {
 
     public String getCreated_at() {
         LocalDateTime instanted = LocalDateTime.ofInstant(Instant.parse(created_at), ZoneOffset.UTC);
-        String month = instanted.getMonthValue() < 10 ? "0" + instanted.getMonthValue() : String.valueOf(instanted.getMonthValue());
-        return instanted.getDayOfMonth() + "-" + month + "-" + instanted.getYear() + " " + instanted.getHour() + ":" + instanted.getMinute();
+        return getFormattedDate(instanted);
     }
 }

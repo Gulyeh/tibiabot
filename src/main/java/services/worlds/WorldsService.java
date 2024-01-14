@@ -1,7 +1,9 @@
 package services.worlds;
 
-import org.slf4j.Logger;
 import services.WebClient;
+import services.worlds.models.WorldModel;
+
+import java.net.http.HttpResponse;
 
 public class WorldsService extends WebClient {
     public WorldsService() {
@@ -11,5 +13,10 @@ public class WorldsService extends WebClient {
     @Override
     protected String getUrl() {
         return "https://api.tibiadata.com/v4/worlds";
+    }
+
+    public WorldModel getWorlds() {
+        HttpResponse<String> response = sendRequest(getRequest());
+        return getModel(response, WorldModel.class);
     }
 }

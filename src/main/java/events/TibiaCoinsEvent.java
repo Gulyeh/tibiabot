@@ -11,6 +11,7 @@ import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
 import lombok.SneakyThrows;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
 import services.tibiaCoins.models.PriceModel;
@@ -32,9 +33,13 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
     @Override
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
-            if(!event.getCommandName().equals(tibiaCoinsCommand)) return null;
-            event.deferReply().withEphemeral(true).subscribe();
-            return setDefaultChannel(event);
+            try {
+                if (!event.getCommandName().equals(tibiaCoinsCommand)) return Mono.empty();
+                event.deferReply().withEphemeral(true).subscribe();
+                return setDefaultChannel(event);
+            } catch (Exception ignore) {
+                return event.createFollowup("Could not execute command");
+            }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
@@ -67,21 +72,20 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
         if(id == null) return event.createFollowup("Could not find channel");
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
         saveSetChannel((ChatInputInteractionEvent) event);
-        sendMessage(channel);
+        sendMessage(channel, tibiaCoinsService.getPrices());
         return event.createFollowup("Set default Tibia Coins channel to <#" + id.asString() + ">");
     }
 
     @Override
-    protected List<EmbedCreateFields.Field> createEmbedFields() {
+    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-        PriceModel model = tibiaCoinsService.getPrices();
 
         if(model == null) {
             logINFO.info("Could not create embed from empty model");
             return null;
         }
 
-        for(Prices data : model.getPrices()) {
+        for(Prices data : ((PriceModel)model).getPrices()) {
             fields.add(buildEmbedField(data));
         }
 
@@ -89,10 +93,10 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
     }
 
     @Override
-    protected void sendMessage(GuildMessageChannel channel) {
+    protected <T> void sendMessage(GuildMessageChannel channel, T model) {
         deleteMessages.deleteMessages(channel);
         sendMessages.sendEmbeddedMessages(channel,
-                createEmbedFields(),
+                createEmbedFields(model),
                 "Tibia Coins Prices",
                 "(World name)\n(Buy price / Sell price)\n(checked at)",
                 "",
