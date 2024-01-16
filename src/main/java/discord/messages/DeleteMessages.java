@@ -6,17 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-public class DeleteMessages {
-    private final Logger logINFO = LoggerFactory.getLogger(DeleteMessages.class);
-    private final GetMessages getMessages;
+import static discord.messages.GetMessages.getChannelMessages;
 
-    public DeleteMessages() {
-        getMessages = new GetMessages();
-    }
+public final class DeleteMessages {
+    private static final Logger logINFO = LoggerFactory.getLogger(DeleteMessages.class);
 
-    public void deleteMessages(GuildMessageChannel channel) {
+    public static void deleteMessages(GuildMessageChannel channel) {
         try {
-            Flux<Message> messages = getMessages.getChannelMessages(channel);
+            Flux<Message> messages = getChannelMessages(channel);
             channel.bulkDeleteMessages(messages).subscribe();
             logINFO.info("Deleted " + messages.count().block() + " messages");
         } catch (Exception ignore) {

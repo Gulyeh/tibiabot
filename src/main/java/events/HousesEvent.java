@@ -23,6 +23,8 @@ import java.util.List;
 
 import static builders.Commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
+import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class HousesEvent extends EmbeddableEvent implements Channelable {
 
@@ -72,8 +74,8 @@ public class HousesEvent extends EmbeddableEvent implements Channelable {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    protected <T> void sendMessage(GuildMessageChannel channel, T model) {
-        deleteMessages.deleteMessages(channel);
+    protected <T> void processData(GuildMessageChannel channel, T model) {
+        deleteMessages(channel);
 
         if (model == null) {
             logINFO.warn("model is null");
@@ -87,7 +89,7 @@ public class HousesEvent extends EmbeddableEvent implements Channelable {
                 .toList();
 
         for (HousesModel house : list) {
-            sendMessages.sendEmbeddedMessages(channel,
+            sendEmbeddedMessages(channel,
                     createEmbedFields(house),
                     house.getTown(),
                     "",
@@ -107,7 +109,7 @@ public class HousesEvent extends EmbeddableEvent implements Channelable {
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         saveSetChannel((ChatInputInteractionEvent) event);
-        sendMessage(channel, housesService.getHouses(guildId));
+        processData(channel, housesService.getHouses(guildId));
         return event.createFollowup("Set default Houses event channel to <#" + channelId.asString() + ">");
     }
 

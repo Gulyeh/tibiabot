@@ -22,6 +22,8 @@ import java.util.List;
 
 import static builders.Commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
+import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class ServerStatusEvent extends EmbeddableEvent implements Channelable {
 
@@ -80,9 +82,15 @@ public class ServerStatusEvent extends EmbeddableEvent implements Channelable {
     }
 
     @Override
-    protected <T> void sendMessage(GuildMessageChannel channel, T model) {
-        deleteMessages.deleteMessages(channel);
-        sendMessages.sendEmbeddedMessages(channel,
+    protected <T> void processData(GuildMessageChannel channel, T model) {
+        deleteMessages(channel);
+
+        if (model == null) {
+            logINFO.warn("model is null");
+            return;
+        }
+
+        sendEmbeddedMessages(channel,
                 createEmbedFields(model),
                 "Servers Status",
                 "```Players online: " + ((WorldModel)model).getWorlds().getPlayers_online() +
@@ -99,7 +107,7 @@ public class ServerStatusEvent extends EmbeddableEvent implements Channelable {
         if(id == null) return event.createFollowup("Could not find channel");
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
         saveSetChannel((ChatInputInteractionEvent) event);
-        sendMessage(channel, worldsService.getWorlds());
+        processData(channel, worldsService.getWorlds());
         return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
     }
 

@@ -1,29 +1,19 @@
 package events.abstracts;
 
-import cache.CacheData;
-import cache.enums.EventTypes;
-import discord.messages.DeleteMessages;
-import discord.messages.SendMessages;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.discordjson.json.ApplicationCommandInteractionOptionData;
 import events.interfaces.EventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Optional;
 
 public abstract class EventsMethods implements EventListener {
+
     protected final static Logger logINFO = LoggerFactory.getLogger(EventsMethods.class);
-    protected final SendMessages sendMessages;
-    protected final DeleteMessages deleteMessages;
 
     protected EventsMethods() {
-        sendMessages = new SendMessages();
-        deleteMessages = new DeleteMessages();
         new Thread(this::activateEvent).start();
     }
 

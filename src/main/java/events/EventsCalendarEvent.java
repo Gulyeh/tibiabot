@@ -53,7 +53,7 @@ public class EventsCalendarEvent extends EmbeddableEvent implements EventListene
     }
 
     @Override
-    protected <T> void sendMessage(GuildMessageChannel channel, T model) {
+    protected <T> void processData(GuildMessageChannel channel, T model) {
 
     }
 

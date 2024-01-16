@@ -10,28 +10,25 @@ import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
-import events.abstracts.EventsMethods;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
-import services.houses.models.HouseData;
-import services.houses.models.HousesModel;
 import services.killStatistics.KillStatisticsService;
 import services.killStatistics.models.KillingStatsData;
 import services.killStatistics.models.KillingStatsModel;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static builders.Commands.names.CommandsNames.killingStatsCommand;
-import static builders.Commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
+import static discord.channels.ChannelUtils.addChannelSuffix;
+import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class KillStatisticsEvent extends EmbeddableEvent implements Channelable {
 
@@ -98,13 +95,13 @@ public class KillStatisticsEvent extends EmbeddableEvent implements Channelable 
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         saveSetChannel((ChatInputInteractionEvent) event);
-        sendMessage(channel, killStatisticsService.getStatistics(guildId));
+        processData(channel, killStatisticsService.getStatistics(guildId));
         return event.createFollowup("Set default Killing Statistics channel to <#" + channelId.asString() + ">");
     }
 
     @Override
-    protected <T> void sendMessage(GuildMessageChannel channel, T model) {
-        deleteMessages.deleteMessages(channel);
+    protected <T> void processData(GuildMessageChannel channel, T model) {
+        deleteMessages(channel);
 
         if (model == null) {
             logINFO.warn("model is null");
@@ -112,8 +109,9 @@ public class KillStatisticsEvent extends EmbeddableEvent implements Channelable 
         }
 
         KillingStatsModel data = (KillingStatsModel) model;
+        addChannelSuffix(channel, data.getAllLastDayKilled());
 
-        sendMessages.sendEmbeddedMessages(channel,
+        sendEmbeddedMessages(channel,
                 createEmbedFields(data),
                 "Killed Bosses Statistics",
                 "Last day killed: " + data.getAllLastDayKilled() + " / Last day players killed: " + data.getAllLastDayPlayersKilled() + "\nLast week killed: " +
