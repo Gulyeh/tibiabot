@@ -17,7 +17,7 @@ public class Main {
         Connector.addListener(new TibiaCoinsEvent());
         Connector.addListener(new ServerStatusEvent());
         Connector.addListener(new TrackWorldEvent());
-//        Connector.addListener(new KillStatisticsEvent());
+        Connector.addListener(new KillStatisticsEvent());
         Connector.addListener(new HousesEvent());
 //        Connector.addListener(new EventsCalendarEvent());
 

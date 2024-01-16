@@ -2,12 +2,10 @@ package services.houses;
 
 import cache.CacheData;
 import discord4j.common.util.Snowflake;
-import org.slf4j.Logger;
 import services.WebClient;
 import services.houses.enums.Towns;
 import services.houses.models.HouseBase;
 import services.houses.models.HousesModel;
-import services.worlds.models.WorldModel;
 
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -16,10 +14,6 @@ import java.util.List;
 public class HousesService extends WebClient {
     private String world;
     private String townName;
-
-    public HousesService() {
-
-    }
 
     @Override
     protected String getUrl() {

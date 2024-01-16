@@ -12,7 +12,6 @@ import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
 import services.tibiaCoins.models.PriceModel;
@@ -57,7 +56,7 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
         logINFO.info("Activating " + getEventName());
         while(true) {
             try {
-                logINFO.info("Executing thread Tibia coins");
+                logINFO.info("Executing thread " + getEventName());
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
@@ -81,11 +80,6 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
     @Override
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-
-        if(model == null) {
-            logINFO.info("Could not create embed from empty model");
-            return new ArrayList<>();
-        }
 
         for(Prices data : ((PriceModel)model).getPrices()) {
             fields.add(buildEmbedField(data));

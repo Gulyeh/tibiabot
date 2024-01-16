@@ -30,6 +30,7 @@ public abstract class WebClient {
         HttpResponse<String> response = null;
 
         try {
+            //Zwraca czasem dziwne znaki
              response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             logINFO.info(e.getMessage());

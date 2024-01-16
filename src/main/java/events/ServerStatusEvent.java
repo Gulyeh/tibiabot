@@ -52,7 +52,7 @@ public class ServerStatusEvent extends EmbeddableEvent implements Channelable {
         logINFO.info("Activating " + getEventName());
         while(true) {
             try {
-                logINFO.info("Executing thread Server Status Event");
+                logINFO.info("Executing thread " + getEventName());
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
@@ -71,11 +71,6 @@ public class ServerStatusEvent extends EmbeddableEvent implements Channelable {
     @Override
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-
-        if(model == null) {
-            logINFO.info("Could not create embed from empty model");
-            return new ArrayList<>();
-        }
 
         for(WorldData data : ((WorldModel)model).getWorlds().getRegular_worlds()) {
             fields.add(buildEmbedField(data));

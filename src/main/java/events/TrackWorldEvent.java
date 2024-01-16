@@ -16,13 +16,23 @@ public class TrackWorldEvent extends EventsMethods {
 
     private WorldModel worlds;
 
-    public TrackWorldEvent() {
-        worlds = new WorldsService().getWorlds();
-    }
-
     @Override
     protected void activateEvent() {
-        logINFO.info("No event to activate in " + getEventName());
+        logINFO.info("Getting available worlds for " + getEventName());
+        worlds = new WorldsService().getWorlds();
+        int attempt = 0;
+
+        while(worlds == null) {
+            try {
+                synchronized (this) {
+                    wait(5000);
+                }
+                logINFO.warn("Error while getting worlds - executing again. Attempt: " + (attempt + 1));
+                worlds = new WorldsService().getWorlds();
+                if(worlds != null) logINFO.warn("Successfully obtained world at attempt: " + (attempt + 1));
+                attempt++;
+            } catch (InterruptedException ignore) {}
+        }
     }
 
     @Override
