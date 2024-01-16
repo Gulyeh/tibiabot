@@ -46,7 +46,7 @@ public class Commands {
             iterator++;
         }
 
-        logINFO.info("Unsubscribed "+ iterator + " commands");
+        logINFO.info("Unsubscribed "+ iterator + " command(s)");
         return this;
     }
 
@@ -55,14 +55,6 @@ public class Commands {
                 requestBuilder(worldCommand, "Set default world to watch", "World name", ApplicationCommandOption.Type.STRING);
 
         if(!listOfCommands.contains(worldCmd)) listOfCommands.add(worldCmd);
-        return this;
-    }
-
-    public Commands addBoss() {
-        ApplicationCommandRequest bossCmd =
-                requestBuilder(bossCommand, "Boss to add to watchlist", "Boss name", ApplicationCommandOption.Type.STRING);
-
-        if(!listOfCommands.contains(bossCmd)) listOfCommands.add(bossCmd);
         return this;
     }
 

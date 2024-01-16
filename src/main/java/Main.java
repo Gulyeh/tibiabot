@@ -22,7 +22,6 @@ public class Main {
 //        Connector.addListener(new EventsCalendarEvent());
 
         CommandsBuilder.builder()
-                .addBoss()
                 .setEventsChannel()
                 .setHousesChannel()
                 .setKillingStatsChannel()
