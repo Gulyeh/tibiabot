@@ -1,15 +1,23 @@
 package services.events;
 
-import org.slf4j.Logger;
-import services.WebClient;
+import webDriver.Driver;
+import utils.Image;
 
-public class EventsService extends WebClient {
-    public EventsService() {
+public class EventsService {
+    private int month;
+    private int year;
 
+    private String getUrl() {
+        return "https://www.tibia.com/news/?subtopic=eventcalendar&calendarmonth="+ month +"&calendaryear=" + year;
     }
 
-    @Override
-    protected String getUrl() {
-        return "";
+    public String getEvents(int month, int year) {
+        this.month = month;
+        this.year = year;
+
+        Driver.openDriverUrl(getUrl());
+        String path = Driver.screenshotPage();
+        Driver.closeDriver();
+        return Image.cropImage(path);
     }
 }

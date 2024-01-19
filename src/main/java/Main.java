@@ -19,7 +19,7 @@ public class Main {
         Connector.addListener(new TrackWorldEvent());
         Connector.addListener(new KillStatisticsEvent());
         Connector.addListener(new HousesEvent());
-//        Connector.addListener(new EventsCalendarEvent());
+        Connector.addListener(new EventsCalendarEvent());
 
         CommandsBuilder.builder()
                 .setEventsChannel()

@@ -16,6 +16,8 @@ target/
 *.jar
 *.MF
 *.env
+*.png
+*.jpg
 
 ### Eclipse ###
 .apt_generated
