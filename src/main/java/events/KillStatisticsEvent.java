@@ -72,7 +72,7 @@ public class KillStatisticsEvent extends EmbeddableEvent implements Channelable 
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
-                logINFO.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for thread execution");
+                logINFO.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
                 synchronized (this) {
                     wait(timeLeft);
                 }
