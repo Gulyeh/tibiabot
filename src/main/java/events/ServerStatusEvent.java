@@ -22,6 +22,7 @@ import java.util.List;
 
 import static builders.Commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
+import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;
 
@@ -89,6 +90,8 @@ public class ServerStatusEvent extends EmbeddableEvent implements Channelable {
             logINFO.warn("model is null");
             return;
         }
+
+        addChannelSuffix(channel, ((WorldModel)model).getWorlds().getPlayers_online());
 
         sendEmbeddedMessages(channel,
                 createEmbedFields(model),
