@@ -99,7 +99,8 @@ public class EventsCalendarEvent extends EventsMethods implements Channelable {
         LocalDateTime date = LocalDateTime.now();
         String path = eventsService.getEvents(date.getMonthValue(), date.getYear());
         sendImageMessage(channel, path);
-        path = eventsService.getEvents(date.plusMonths(1).getMonthValue(), date.getYear());
+        date = LocalDateTime.now().plusMonths(1);
+        path = eventsService.getEvents(date.getMonthValue(), date.getYear());
         sendImageMessage(channel, path);
     }
 }
