@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static builders.Commands.names.CommandsNames.killingStatsCommand;
+import static builders.commands.names.CommandsNames.killingStatsCommand;
 import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;

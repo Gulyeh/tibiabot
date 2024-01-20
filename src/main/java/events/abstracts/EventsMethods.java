@@ -39,6 +39,6 @@ public abstract class EventsMethods implements EventListener {
 //        EventTypes eventType = EventTypes.getEnum(getEventName());
 //        boolean guildExists = CacheData.getChannelsCache().containsKey(guildId);
 //        HashMap<EventTypes, Snowflake> mapChannels;
-        //TODO SQL
+        //TODO SQL & EVENT EXECUTOR
     }
 }

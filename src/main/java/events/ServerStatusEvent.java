@@ -20,7 +20,7 @@ import services.worlds.models.WorldModel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static builders.Commands.names.CommandsNames.serverStatusCommand;
+import static builders.commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;

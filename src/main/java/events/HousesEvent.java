@@ -21,7 +21,7 @@ import services.houses.models.HousesModel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static builders.Commands.names.CommandsNames.houseCommand;
+import static builders.commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;

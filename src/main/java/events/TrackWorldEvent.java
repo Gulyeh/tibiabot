@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 import services.worlds.WorldsService;
 import services.worlds.models.WorldModel;
 
-import static builders.Commands.names.CommandsNames.worldCommand;
+import static builders.commands.names.CommandsNames.worldCommand;
 import static discord.Connector.client;
 
 public class TrackWorldEvent extends EventsMethods {

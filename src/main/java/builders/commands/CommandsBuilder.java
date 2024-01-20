@@ -1,4 +1,4 @@
-package builders.Commands;
+package builders.commands;
 
 public final class CommandsBuilder {
     public static Commands builder() {

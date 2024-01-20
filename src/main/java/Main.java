@@ -1,4 +1,4 @@
-import builders.Commands.CommandsBuilder;
+import builders.commands.CommandsBuilder;
 import discord.Connector;
 import events.*;
 

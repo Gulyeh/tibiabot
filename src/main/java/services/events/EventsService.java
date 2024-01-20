@@ -2,7 +2,7 @@ package services.events;
 
 import webDriver.Driver;
 import utils.Image;
-import webDriver.DriverMethods;
+import webDriver.DriverUtils;
 
 public class EventsService {
     private int month;
@@ -17,7 +17,7 @@ public class EventsService {
         this.year = year;
 
         Driver.openDriverUrl(getUrl());
-        String path = DriverMethods.screenshotPage();
+        String path = DriverUtils.screenshotPage();
         Driver.closeDriver();
         return Image.cropImage(path, 555, 265, 870, 580);
     }

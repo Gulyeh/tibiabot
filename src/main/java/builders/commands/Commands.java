@@ -1,6 +1,6 @@
-package builders.Commands;
+package builders.commands;
 
-import builders.Commands.names.CommandsNames;
+import builders.commands.names.CommandsNames;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static builders.Commands.names.CommandsNames.*;
+import static builders.commands.names.CommandsNames.*;
 import static discord.Connector.client;
 
 public class Commands {

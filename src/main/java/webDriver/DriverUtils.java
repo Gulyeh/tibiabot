@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 
-public final class DriverMethods {
+public final class DriverUtils {
     private static final String eventImage = "event.jpg";
 
     @SneakyThrows

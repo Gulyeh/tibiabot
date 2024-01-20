@@ -20,7 +20,7 @@ import services.tibiaCoins.models.Prices;
 import java.util.ArrayList;
 import java.util.List;
 
-import static builders.Commands.names.CommandsNames.tibiaCoinsCommand;
+import static builders.commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;

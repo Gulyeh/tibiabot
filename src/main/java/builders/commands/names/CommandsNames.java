@@ -1,4 +1,4 @@
-package builders.Commands.names;
+package builders.commands.names;
 
 import java.util.Arrays;
 import java.util.List;

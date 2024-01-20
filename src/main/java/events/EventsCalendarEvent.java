@@ -6,25 +6,18 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.object.entity.channel.TextChannel;
-import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.EmbeddableEvent;
 import events.abstracts.EventsMethods;
 import events.interfaces.Channelable;
-import events.interfaces.EventListener;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.events.EventsService;
 
-import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static builders.Commands.names.CommandsNames.eventsCommand;
-import static builders.Commands.names.CommandsNames.houseCommand;
+import static builders.commands.names.CommandsNames.eventsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendImageMessage;
