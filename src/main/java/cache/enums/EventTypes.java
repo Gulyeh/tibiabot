@@ -1,17 +1,17 @@
 package cache.enums;
 
 import events.utils.EventName;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@AllArgsConstructor
+@Getter
 public enum EventTypes {
     TIBIA_COINS(EventName.getTibiaCoins()),
     KILLED_BOSSES(EventName.getKillStatistics()),
     HOUSES(EventName.getHouses()),
     SERVER_STATUS(EventName.getServerStatus()),
     EVENTS_CALENDAR(EventName.getEvents());
-
-    EventTypes(String name) {
-        this.name = name;
-    }
 
     private final String name;
 

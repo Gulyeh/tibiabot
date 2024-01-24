@@ -57,7 +57,7 @@ public class TrackWorldEvent extends EventsMethods {
     private Mono<Message> setWorld(ChatInputInteractionEvent event) {
         String serverName = getTextParameter(event);
         if(!checkIfWorldExists(serverName)) return event.createFollowup(serverName + " is not a valid world");
-        CacheData.addToWorldsCache(getGuildId(event), serverName);
+        saveSetWorld(serverName, getGuildId(event));
         return event.createFollowup("Set default World to: " + worlds.getWorlds()
                 .getRegular_worlds()
                 .stream()
