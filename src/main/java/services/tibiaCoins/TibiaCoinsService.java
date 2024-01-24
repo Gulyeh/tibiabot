@@ -16,7 +16,7 @@ public class TibiaCoinsService extends WebClient {
     }
 
     public PriceModel getPrices() {
-        HttpResponse<String> response = sendRequest(getRequest());
+        String response = sendRequest(getRequest());
         return getModel(response, PriceModel.class);
     }
 }

@@ -54,18 +54,20 @@ public final class DocumentActions {
         return gson.fromJson(doc.toJson(), classType);
     }
 
-    public static void insertDocuments(Document... document) {
+    public static boolean insertDocuments(Document... document) {
         try {
             MongoCollection<Document> collection = getCollection();
             if (document.length == 1) collection.insertOne(document[0]);
             else collection.insertMany(List.of(document));
             logINFO.info("Inserted data to db");
+            return true;
         } catch (Exception e) {
             logINFO.info("Could not insert data to database: " + e.getMessage());
+            return false;
         }
     }
 
-    public static void deleteDocument(Document... documents) {
+    public static boolean deleteDocument(Document... documents) {
         try {
             MongoCollection<Document> collection = getCollection();
 
@@ -75,20 +77,25 @@ public final class DocumentActions {
             }
 
             logINFO.info("Removed data from db");
+
+            return true;
         } catch (Exception e) {
             logINFO.info("Could not delete data from db: " + e.getMessage());
+            return false;
         }
     }
 
-    public static void replaceDocument(Document document) {
+    public static boolean replaceDocument(Document document) {
         try {
             MongoCollection<Document> collection = getCollection();
             Bson query = eq(id, document.get(id));
             ReplaceOptions opts = new ReplaceOptions().upsert(false);
             collection.replaceOne(query, document, opts);
             logINFO.info("Updated data in db");
+            return true;
         } catch (Exception e) {
             logINFO.info("Could not update data in db: " + e.getMessage());
+            return false;
         }
     }
 

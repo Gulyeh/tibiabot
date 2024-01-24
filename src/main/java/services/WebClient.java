@@ -1,19 +1,16 @@
 package services;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
-import org.json.JSONObject;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Type;
-import java.net.CookieHandler;
 import java.net.URI;
-import java.net.URL;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
@@ -23,15 +20,15 @@ public abstract class WebClient {
     protected final static Logger logINFO = LoggerFactory.getLogger(WebClient.class);
 
     public WebClient() {
-        httpClient = HttpClient.newHttpClient();
+        httpClient = HttpClients.createDefault();
     }
 
-    protected HttpResponse<String> sendRequest(HttpRequest request) {
-        HttpResponse<String> response = null;
+    protected String sendRequest(ClassicHttpRequest request) {
+        BasicHttpClientResponseHandler responseHandler = new BasicHttpClientResponseHandler();
+        String response = "";
 
         try {
-            //Zwraca czasem dziwne znaki
-             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+             response = httpClient.execute(request, responseHandler);
         } catch (Exception e) {
             logINFO.info(e.getMessage());
         }
@@ -41,21 +38,17 @@ public abstract class WebClient {
 
     protected abstract String getUrl();
 
-    protected HttpRequest getRequest() {
-        return HttpRequest
-                .newBuilder()
-                .uri(URI.create(getUrl()))
-                .GET()
-                .build();
+    protected ClassicHttpRequest getRequest() {
+        return new HttpGet(getUrl());
     }
 
-    protected <T> T getModel(HttpResponse<String> response, Class<T> classType)
+    protected <T> T getModel(String response, Class<T> classType)
     {
         try {
             Gson g = new Gson();
-            return g.fromJson(response.body(), classType);
+            return g.fromJson(response, classType);
         } catch (Exception e) {
-            logINFO.info("Could not parse json data - " + e.getMessage() + " Response: " + response.statusCode());
+            logINFO.info("Could not parse json data - " + e.getMessage());
             return null;
         }
     }

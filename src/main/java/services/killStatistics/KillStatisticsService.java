@@ -18,7 +18,7 @@ public class KillStatisticsService extends WebClient {
 
     public KillingStatsModel getStatistics(Snowflake guildId) {
         world = CacheData.getWorldCache().get(guildId);
-        HttpResponse<String> response = sendRequest(getRequest());
+        String response = sendRequest(getRequest());
         return getModel(response, KillingStatsBase.class).getKillstatistics();
     }
 }

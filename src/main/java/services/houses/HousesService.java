@@ -27,7 +27,7 @@ public class HousesService extends WebClient {
 
         for(Towns town : Towns.values()){
             townName = town.getTownName().replace(" ", "%20");
-            HttpResponse<String> response = sendRequest(getRequest());
+            String response = sendRequest(getRequest());
             list.add(getModel(response, HouseBase.class).getHouses());
         }
 

@@ -89,12 +89,15 @@ public class KillStatisticsEvent extends EmbeddableEvent implements Channelable 
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!CacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-        saveSetChannel((ChatInputInteractionEvent) event);
+        if(!saveSetChannel((ChatInputInteractionEvent) event))
+            return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
+
         processData(channel, killStatisticsService.getStatistics(guildId));
         return event.createFollowup("Set default Killing Statistics channel to <#" + channelId.asString() + ">");
     }

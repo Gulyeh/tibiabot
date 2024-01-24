@@ -19,19 +19,11 @@ public class TrackWorldEvent extends EventsMethods {
     @Override
     protected void activateEvent() {
         logINFO.info("Getting available worlds for " + getEventName());
-        worlds = new WorldsService().getWorlds();
-        int attempt = 0;
 
-        while(worlds == null) {
-            try {
-                synchronized (this) {
-                    wait(5000);
-                }
-                logINFO.warn("Error while getting worlds - executing again. Attempt: " + (attempt + 1));
-                worlds = new WorldsService().getWorlds();
-                if(worlds != null) logINFO.warn("Successfully obtained world at attempt: " + (attempt + 1));
-                attempt++;
-            } catch (InterruptedException ignore) {}
+        try {
+            worlds = new WorldsService().getWorlds();
+        } catch (Exception e) {
+            logINFO.warn("Error while getting worlds: " + e.getMessage());
         }
     }
 
@@ -55,16 +47,20 @@ public class TrackWorldEvent extends EventsMethods {
     }
 
     private Mono<Message> setWorld(ChatInputInteractionEvent event) {
-        String serverName = getTextParameter(event);
-        if(!checkIfWorldExists(serverName)) return event.createFollowup(serverName + " is not a valid world");
-        saveSetWorld(serverName, getGuildId(event));
-        return event.createFollowup("Set default World to: " + worlds.getWorlds()
+        String serverName = worlds.getWorlds()
                 .getRegular_worlds()
                 .stream()
-                .filter(x -> x.getName().equalsIgnoreCase(serverName))
+                .filter(x -> x.getName().equalsIgnoreCase(getTextParameter(event)))
                 .findFirst()
                 .get()
-                .getName());
+                .getName();
+
+        if(!checkIfWorldExists(serverName)) return event.createFollowup(serverName + " is not a valid world");
+
+        if(!saveSetWorld(serverName, getGuildId(event)))
+            return event.createFollowup("Could not set world to " + serverName);
+
+        return event.createFollowup("Set default World to: " + serverName);
     }
 
     private boolean checkIfWorldExists(String worldName) {

@@ -17,7 +17,7 @@ public final class MongoConnector {
 
     public static void connect() {
         if (mongoDatabase != null) return;
-        String uri = "mongodb://" + login + ":" + password + "@localhost:27017/"+db+"?directConnection=true";
+        String uri = "mongodb://" + login + ":" + password + "@localhost:27017/?directConnection=true&authSource="+db;
         MongoClient mongoClient = MongoClients.create(uri);
         mongoDatabase = mongoClient.getDatabase(db);
     }

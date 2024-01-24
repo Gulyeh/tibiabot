@@ -80,9 +80,13 @@ public class EventsCalendarEvent extends EventsMethods implements Channelable {
     @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
+
         if (channelId == null) return event.createFollowup("Could not find channel");
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-        saveSetChannel((ChatInputInteractionEvent) event);
+
+        if(!saveSetChannel((ChatInputInteractionEvent) event))
+            return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
+
         processData(channel);
         return event.createFollowup("Set default Events calendar channel to <#" + channelId.asString() + ">");
     }

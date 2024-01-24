@@ -6,6 +6,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import events.interfaces.EventListener;
+import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -41,58 +42,70 @@ public abstract class EventsMethods implements EventListener {
 
     protected abstract void activateEvent();
 
-    protected void saveSetChannel(ChatInputInteractionEvent event) {
+    protected boolean saveSetChannel(ChatInputInteractionEvent event) {
         try {
             Snowflake guildId = getGuildId(event);
             Snowflake channelId = getChannelId(event);
             EventTypes eventType = EventTypes.getEnum(getEventName());
 
             boolean guildExists = CacheData.getChannelsCache().containsKey(guildId);
-            CacheData.addToChannelsCache(guildId, channelId, eventType);
 
             if (!guildExists) {
                 GuildModel model = new GuildModel();
+                model.setChannels(new ChannelModel());
                 model.setGuildId(guildId.toString());
                 model.getChannels().setByEventType(eventType, channelId.asString());
-                insertDocuments(createDocument(model));
+                if(!insertDocuments(createDocument(model))) throw new Exception("Could not save model to database");
             } else {
                 GuildModel model = getDocument(guildId, GuildModel.class);
-                if (model == null) return;
+                if (model == null) throw new Exception("Document is null");
+                else if (model.getChannels().isChannelUsed(channelId)) throw new Exception("This channel is already in use");
                 model.getChannels().setByEventType(eventType, channelId.asString());
-                replaceDocument(createDocument(model));
+                if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
             }
+
+            CacheData.addToChannelsCache(guildId, channelId, eventType);
             logINFO.info("Saved channel");
+            return true;
         } catch (Exception e) {
             logINFO.info("Could not save channel: " + e.getMessage());
+            return false;
         }
     }
 
-    protected void saveSetWorld(String serverName, Snowflake guildId) {
+    protected boolean saveSetWorld(String serverName, Snowflake guildId) {
         try {
             boolean guildExists = CacheData.getChannelsCache().containsKey(guildId);
-            CacheData.addToWorldsCache(guildId, serverName);
 
             if (!guildExists) {
                 GuildModel model = new GuildModel();
+                model.setChannels(new ChannelModel());
                 model.setWorld(serverName);
-                insertDocuments(createDocument(model));
+                if(!insertDocuments(createDocument(model))) throw new Exception("Could not save model to database");
             } else {
                 GuildModel model = getDocument(guildId, GuildModel.class);
-                if (model == null) return;
+                if (model == null) throw new Exception("Document is null");
                 model.setWorld(serverName);
-                replaceDocument(createDocument(model));
+                if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
             }
 
+            CacheData.addToWorldsCache(guildId, serverName);
             logINFO.info("Saved server world");
+            return true;
         } catch (Exception e) {
             logINFO.info("Could not save world: " + e.getMessage());
+            return false;
         }
     }
 
     private Document createDocument(GuildModel model) {
-        return new Document()
+        Document doc = new Document()
                 .append("guildId", model.getGuildId())
                 .append("world", model.getWorld())
                 .append("channels", model.getChannels());
+
+        if(model.get_id() != null) doc.append("_id", model.get_id());
+
+        return doc;
     }
 }

@@ -73,8 +73,11 @@ public class TibiaCoinsEvent extends EmbeddableEvent implements Channelable {
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
         if(id == null) return event.createFollowup("Could not find channel");
+
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
-        saveSetChannel((ChatInputInteractionEvent) event);
+        if(!saveSetChannel((ChatInputInteractionEvent) event))
+            return event.createFollowup("Could not set channel <#" + id.asString() + ">");
+
         processData(channel, tibiaCoinsService.getPrices());
         return event.createFollowup("Set default Tibia Coins channel to <#" + id.asString() + ">");
     }

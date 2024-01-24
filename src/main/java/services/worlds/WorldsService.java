@@ -13,7 +13,7 @@ public class WorldsService extends WebClient {
 
     public WorldModel getWorlds() {
         try {
-            HttpResponse<String> response = sendRequest(getRequest());
+            String response = sendRequest(getRequest());
             return getModel(response, WorldModel.class);
         } catch (Exception e) {
             logINFO.warn(e.getMessage());
