@@ -22,11 +22,11 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendImageMessage;
 
-public class EventsCalendarEvent extends EventsMethods implements Channelable {
+public class EventsCalendar extends EventsMethods implements Channelable {
 
     private final EventsService eventsService;
 
-    public EventsCalendarEvent() {
+    public EventsCalendar() {
         eventsService = new EventsService();
     }
 

@@ -26,11 +26,11 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;
 
-public class HousesEvent extends EmbeddableEvent implements Channelable {
+public class Houses extends EmbeddableEvent implements Channelable {
 
     private final HousesService housesService;
 
-    public HousesEvent() {
+    public Houses() {
         housesService = new HousesService();
     }
 

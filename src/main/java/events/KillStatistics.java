@@ -30,11 +30,11 @@ import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;
 
-public class KillStatisticsEvent extends EmbeddableEvent implements Channelable {
+public class KillStatistics extends EmbeddableEvent implements Channelable {
 
     private final KillStatisticsService killStatisticsService;
 
-    public KillStatisticsEvent() {
+    public KillStatistics() {
         killStatisticsService = new KillStatisticsService();
     }
 

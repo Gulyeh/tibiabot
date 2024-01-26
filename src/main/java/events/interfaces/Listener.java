@@ -1,6 +1,6 @@
 package events.interfaces;
 
-public interface EventListener {
+public interface Listener {
     void executeEvent();
     String getEventName();
 }

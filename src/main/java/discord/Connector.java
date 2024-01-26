@@ -8,7 +8,7 @@ import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.discordjson.Id;
-import events.interfaces.EventListener;
+import events.interfaces.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ public final class Connector {
         }
     }
 
-    public static void addListener(EventListener event) {
+    public static void addListener(Listener event) {
         logINFO.info("Listening to: " + event.getEventName());
         event.executeEvent();
     }

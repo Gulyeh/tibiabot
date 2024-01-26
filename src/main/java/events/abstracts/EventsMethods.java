@@ -5,7 +5,7 @@ import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import events.interfaces.EventListener;
+import events.interfaces.Listener;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import org.bson.Document;
@@ -16,7 +16,7 @@ import java.util.Optional;
 import static cache.CacheData.isGuildCached;
 import static mongo.DocumentActions.*;
 
-public abstract class EventsMethods implements EventListener {
+public abstract class EventsMethods implements Listener {
 
     protected final static Logger logINFO = LoggerFactory.getLogger(EventsMethods.class);
 
@@ -91,16 +91,5 @@ public abstract class EventsMethods implements EventListener {
             logINFO.info("Could not save world: " + e.getMessage());
             return false;
         }
-    }
-
-    private Document createDocument(GuildModel model) {
-        Document doc = new Document()
-                .append("guildId", model.getGuildId())
-                .append("world", model.getWorld())
-                .append("channels", model.getChannels());
-
-        if(model.get_id() != null) doc.append("_id", model.get_id());
-
-        return doc;
     }
 }

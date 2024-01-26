@@ -12,7 +12,7 @@ import services.worlds.models.WorldModel;
 import static builders.commands.names.CommandsNames.worldCommand;
 import static discord.Connector.client;
 
-public class TrackWorldEvent extends EventsMethods {
+public class TrackWorld extends EventsMethods {
 
     private WorldModel worlds;
 

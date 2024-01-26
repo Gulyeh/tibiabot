@@ -5,6 +5,8 @@ import discord.Connector;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import events.*;
+import events.guildEvents.RemovedChannel;
+import events.guildEvents.RemovedGuild;
 import lombok.extern.slf4j.Slf4j;
 import mongo.DocumentActions;
 import mongo.MongoConnector;
@@ -27,12 +29,14 @@ public class Main {
 
     private static void initializeBot() {
         Connector.connect();
-        Connector.addListener(new TibiaCoinsEvent());
-        Connector.addListener(new ServerStatusEvent());
-        Connector.addListener(new TrackWorldEvent());
-        Connector.addListener(new KillStatisticsEvent());
-        Connector.addListener(new HousesEvent());
-        Connector.addListener(new EventsCalendarEvent());
+        Connector.addListener(new TibiaCoins());
+        Connector.addListener(new ServerStatus());
+        Connector.addListener(new TrackWorld());
+        Connector.addListener(new KillStatistics());
+        Connector.addListener(new Houses());
+        Connector.addListener(new EventsCalendar());
+        Connector.addListener(new RemovedChannel());
+        Connector.addListener(new RemovedGuild());
 
         CommandsBuilder.builder()
                 .setEventsChannel()

@@ -8,7 +8,7 @@ import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 
-import static utils.Date.getFormattedDate;
+import static utils.Methods.getFormattedDate;
 
 @Getter
 public class GameData {

@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
-import static utils.Date.getFormattedDate;
+import static utils.Methods.getFormattedDate;
 
 public class Prices {
     @Getter

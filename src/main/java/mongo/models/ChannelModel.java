@@ -4,6 +4,9 @@ import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
+
+import java.lang.reflect.Field;
 
 @Getter
 public class ChannelModel {
@@ -13,16 +16,6 @@ public class ChannelModel {
     private String houses = "";
     private String tibiaCoins = "";
 
-    public String getByEventType(EventTypes eventType) {
-        return switch (eventType) {
-            case HOUSES -> getHouses();
-            case TIBIA_COINS -> getTibiaCoins();
-            case KILLED_BOSSES -> getKillStatistics();
-            case SERVER_STATUS -> getServerStatus();
-            case EVENTS_CALENDAR -> getEvents();
-        };
-    }
-
     public void setByEventType(EventTypes eventType, String channelId) {
         switch (eventType) {
             case HOUSES -> houses = channelId;
@@ -31,6 +24,13 @@ public class ChannelModel {
             case SERVER_STATUS -> serverStatus = channelId;
             case EVENTS_CALENDAR -> events = channelId;
         };
+    }
+
+    public void removeChannel(String channelId) throws IllegalAccessException {
+        for(Field field : this.getClass().getDeclaredFields()) {
+            if(!field.get(this).equals(channelId)) continue;
+            field.set(this, "");
+        }
     }
 
     public boolean isChannelUsed(Snowflake channelId) {

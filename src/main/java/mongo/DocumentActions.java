@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
 import discord4j.common.util.Snowflake;
+import mongo.models.GuildModel;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.Conventions;
@@ -114,6 +115,17 @@ public final class DocumentActions {
             logINFO.info("Could not update data in db: " + e.getMessage());
             return false;
         }
+    }
+
+    public static Document createDocument(GuildModel model) {
+        Document doc = new Document()
+                .append("guildId", model.getGuildId())
+                .append("world", model.getWorld())
+                .append("channels", model.getChannels());
+
+        if(model.get_id() != null) doc.append("_id", model.get_id());
+
+        return doc;
     }
 
     private static MongoCollection<Document> getCollection() {
