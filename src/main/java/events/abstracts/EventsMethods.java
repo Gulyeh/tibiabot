@@ -9,13 +9,11 @@ import events.interfaces.EventListener;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 import java.util.Optional;
 
+import static cache.CacheData.isGuildCached;
 import static mongo.DocumentActions.*;
 
 public abstract class EventsMethods implements EventListener {
@@ -48,11 +46,7 @@ public abstract class EventsMethods implements EventListener {
             Snowflake channelId = getChannelId(event);
             EventTypes eventType = EventTypes.getEnum(getEventName());
 
-            GuildModel doc = getDocument(guildId, GuildModel.class);
-            boolean guildExists = doc != null && doc.getGuildId() != null;
-
-
-            if (!guildExists) {
+            if (!isGuildCached(guildId)) {
                 GuildModel model = new GuildModel();
                 model.setChannels(new ChannelModel());
                 model.setGuildId(guildId.asString());
@@ -77,11 +71,7 @@ public abstract class EventsMethods implements EventListener {
 
     protected boolean saveSetWorld(String serverName, Snowflake guildId) {
         try {
-
-            GuildModel doc = getDocument(guildId, GuildModel.class);
-            boolean guildExists = doc != null && doc.getGuildId() != null;
-
-            if (!guildExists) {
+            if (!isGuildCached(guildId)) {
                 GuildModel model = new GuildModel();
                 model.setChannels(new ChannelModel());
                 model.setGuildId(guildId.asString());

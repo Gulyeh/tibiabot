@@ -10,9 +10,6 @@ import mongo.DocumentActions;
 import mongo.MongoConnector;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
-import org.bson.Document;
-
-import java.util.ArrayList;
 import java.util.List;
 
 import static discord.Connector.client;
@@ -74,10 +71,10 @@ public class Main {
                 } catch (Exception e) {
                     log.info("Cannot cache data: " + e.getMessage());
                 } finally {
-                    log.info("Waiting 60 minutes for next caching");
+                    log.info("Waiting 30 minutes for next caching");
                     synchronized (Main.class) {
                         try {
-                            Main.class.wait(3600000);
+                            Main.class.wait(1800000);
                         } catch (Exception ignore) {}
                     }
                 }
@@ -97,27 +94,27 @@ public class Main {
         Snowflake guildId = Snowflake.of(model.getGuildId());
         ChannelModel channels = model.getChannels();
 
-        if(channels.getEvents() != null && !channels.getEvents().isEmpty()) {
+        if(!channels.getEvents().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getEvents());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.EVENTS_CALENDAR);
         }
 
-        if(channels.getHouses() != null && !channels.getHouses().isEmpty()) {
+        if(!channels.getHouses().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getHouses());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.HOUSES);
         }
 
-        if(channels.getKillStatistics() != null && !channels.getKillStatistics().isEmpty()) {
+        if(!channels.getKillStatistics().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getKillStatistics());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.KILLED_BOSSES);
         }
 
-        if(channels.getTibiaCoins() != null && !channels.getTibiaCoins().isEmpty()) {
+        if(!channels.getTibiaCoins().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getTibiaCoins());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.TIBIA_COINS);
         }
 
-        if(channels.getServerStatus() != null && !channels.getServerStatus().isEmpty()) {
+        if(!channels.getServerStatus().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getServerStatus());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.SERVER_STATUS);
         }

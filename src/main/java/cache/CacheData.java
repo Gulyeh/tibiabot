@@ -32,4 +32,8 @@ public final class CacheData {
         worldCache = new HashMap<>();
         channelsCache = new HashMap<>();
     }
+
+    public static boolean isGuildCached(Snowflake guildId) {
+        return channelsCache.containsKey(guildId) || worldCache.containsKey(guildId);
+    }
 }
