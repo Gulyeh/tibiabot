@@ -3,25 +3,28 @@ import cache.CacheData;
 import cache.enums.EventTypes;
 import discord.Connector;
 import discord4j.common.util.Snowflake;
+import discord4j.core.object.entity.Guild;
 import events.*;
 import lombok.extern.slf4j.Slf4j;
 import mongo.DocumentActions;
 import mongo.MongoConnector;
+import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
+import org.bson.Document;
 
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static discord.Connector.client;
+import static mongo.DocumentActions.deleteDocument;
+import static mongo.DocumentActions.getDocument;
 
 
 @Slf4j
 public class Main {
     public static void main(String[] args) {
-        fillCache();
         initializeBot();
+        fillCache();
         client.onDisconnect().block();
     }
 
@@ -51,13 +54,23 @@ public class Main {
         new Thread(() -> {
             while(true) {
                 try {
+                    List<Guild> guilds = client.getGuilds().collectList().block();
+                    if(guilds == null) throw new RuntimeException("Bot has no guilds");
+                    log.info("Bot is in " + guilds.size() + " server(s)");
+
                     log.info("Caching data from db");
                     List<GuildModel> models = DocumentActions.getDocuments(GuildModel.class);
                     CacheData.resetCache();
+
                     for (GuildModel model : models) {
-                        addToWorldCache(model);
-                        addToChannelsCache(model);
+                        if(guilds.stream().anyMatch(x -> x.getId().asString().equals(model.getGuildId()))) {
+                            addToWorldCache(model);
+                            addToChannelsCache(model);
+                        } else {
+                            deleteDocument(getDocument(Snowflake.of(model.getGuildId())));
+                        }
                     }
+
                 } catch (Exception e) {
                     log.info("Cannot cache data: " + e.getMessage());
                 } finally {
@@ -82,28 +95,29 @@ public class Main {
     private static void addToChannelsCache(GuildModel model) {
         if(model.getChannels() == null || model.getGuildId().isEmpty()) return;
         Snowflake guildId = Snowflake.of(model.getGuildId());
+        ChannelModel channels = model.getChannels();
 
-        if(!model.getChannels().getEvents().isEmpty()) {
+        if(channels.getEvents() != null && !channels.getEvents().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getEvents());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.EVENTS_CALENDAR);
         }
 
-        if(!model.getChannels().getHouses().isEmpty()) {
+        if(channels.getHouses() != null && !channels.getHouses().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getHouses());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.HOUSES);
         }
 
-        if(!model.getChannels().getKillStatistics().isEmpty()) {
+        if(channels.getKillStatistics() != null && !channels.getKillStatistics().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getKillStatistics());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.KILLED_BOSSES);
         }
 
-        if(!model.getChannels().getTibiaCoins().isEmpty()) {
+        if(channels.getTibiaCoins() != null && !channels.getTibiaCoins().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getTibiaCoins());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.TIBIA_COINS);
         }
 
-        if(!model.getChannels().getServerStatus().isEmpty()) {
+        if(channels.getServerStatus() != null && !channels.getServerStatus().isEmpty()) {
             Snowflake channelId = Snowflake.of(model.getChannels().getServerStatus());
             CacheData.addToChannelsCache(guildId, channelId, EventTypes.SERVER_STATUS);
         }

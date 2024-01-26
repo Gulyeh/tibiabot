@@ -7,11 +7,11 @@ import lombok.Setter;
 
 @Getter
 public class ChannelModel {
-    private String serverStatus;
-    private String killStatistics;
-    private String events;
-    private String houses;
-    private String tibiaCoins;
+    private String serverStatus = "";
+    private String killStatistics = "";
+    private String events = "";
+    private String houses = "";
+    private String tibiaCoins = "";
 
     public String getByEventType(EventTypes eventType) {
         return switch (eventType) {

@@ -48,17 +48,19 @@ public abstract class EventsMethods implements EventListener {
             Snowflake channelId = getChannelId(event);
             EventTypes eventType = EventTypes.getEnum(getEventName());
 
-            boolean guildExists = CacheData.getChannelsCache().containsKey(guildId);
+            GuildModel doc = getDocument(guildId, GuildModel.class);
+            boolean guildExists = doc != null && doc.getGuildId() != null;
+
 
             if (!guildExists) {
                 GuildModel model = new GuildModel();
                 model.setChannels(new ChannelModel());
-                model.setGuildId(guildId.toString());
+                model.setGuildId(guildId.asString());
                 model.getChannels().setByEventType(eventType, channelId.asString());
                 if(!insertDocuments(createDocument(model))) throw new Exception("Could not save model to database");
             } else {
                 GuildModel model = getDocument(guildId, GuildModel.class);
-                if (model == null) throw new Exception("Document is null");
+                if (model == null || model.get_id() == null) throw new Exception("Document is null");
                 else if (model.getChannels().isChannelUsed(channelId)) throw new Exception("This channel is already in use");
                 model.getChannels().setByEventType(eventType, channelId.asString());
                 if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
@@ -75,16 +77,19 @@ public abstract class EventsMethods implements EventListener {
 
     protected boolean saveSetWorld(String serverName, Snowflake guildId) {
         try {
-            boolean guildExists = CacheData.getChannelsCache().containsKey(guildId);
+
+            GuildModel doc = getDocument(guildId, GuildModel.class);
+            boolean guildExists = doc != null && doc.getGuildId() != null;
 
             if (!guildExists) {
                 GuildModel model = new GuildModel();
                 model.setChannels(new ChannelModel());
+                model.setGuildId(guildId.asString());
                 model.setWorld(serverName);
                 if(!insertDocuments(createDocument(model))) throw new Exception("Could not save model to database");
             } else {
                 GuildModel model = getDocument(guildId, GuildModel.class);
-                if (model == null) throw new Exception("Document is null");
+                if (model == null || model.get_id() == null) throw new Exception("Document is null");
                 model.setWorld(serverName);
                 if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
             }

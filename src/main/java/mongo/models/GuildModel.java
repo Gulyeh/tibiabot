@@ -11,4 +11,9 @@ public class GuildModel {
     private String guildId;
     private String world;
     private ChannelModel channels;
+
+    public ChannelModel getChannels() {
+        if(channels == null) return new ChannelModel();
+        return channels;
+    }
 }

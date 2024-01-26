@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class Connector {
+
     public static GatewayDiscordClient client;
     private final static String status = "Hello giga mates";
     private final static Logger logINFO = LoggerFactory.getLogger(Connector.class);

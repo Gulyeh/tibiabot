@@ -1,11 +1,15 @@
 package mongo;
 
 import com.google.gson.*;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
 import discord4j.common.util.Snowflake;
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.Conventions;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -17,6 +21,8 @@ import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 import static mongo.MongoConnector.mongoDatabase;
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 import static utils.Configurator.config;
 
 public final class DocumentActions {
@@ -41,12 +47,24 @@ public final class DocumentActions {
         return list;
     }
 
+    public static Document getDocument(Snowflake guildId) {
+        MongoCollection<Document> collection = getCollection();
+
+        Document doc = collection.find(Filters.eq("guildId", guildId.asString())).first();
+        if(doc == null || doc.isEmpty()) {
+            logINFO.info("Could not find specified document");
+            return null;
+        }
+
+        return doc;
+    }
+
     public static <T> T getDocument(Snowflake guildId, Class<T> classType) {
         MongoCollection<Document> collection = getCollection();
         Gson gson = getGson();
 
-        Document doc = collection.find(Filters.eq(Filters.gt("guildId", guildId.asString()))).explain();
-        if(doc.isEmpty()) {
+        Document doc = collection.find(Filters.eq("guildId", guildId.asString())).first();
+        if(doc == null || doc.isEmpty()) {
             logINFO.info("Could not find specified document");
             return null;
         }
@@ -89,8 +107,7 @@ public final class DocumentActions {
         try {
             MongoCollection<Document> collection = getCollection();
             Bson query = eq(id, document.get(id));
-            ReplaceOptions opts = new ReplaceOptions().upsert(false);
-            collection.replaceOne(query, document, opts);
+            collection.replaceOne(query, document);
             logINFO.info("Updated data in db");
             return true;
         } catch (Exception e) {
@@ -100,7 +117,12 @@ public final class DocumentActions {
     }
 
     private static MongoCollection<Document> getCollection() {
-        return mongoDatabase.getCollection(collectionName);
+        var providers = fromRegistries(
+                MongoClientSettings.getDefaultCodecRegistry(),
+                fromProviders(PojoCodecProvider.builder()
+                        .automatic(true)
+                        .build()));
+        return mongoDatabase.getCollection(collectionName).withCodecRegistry(providers);
     }
 
     private static Gson getGson() {
