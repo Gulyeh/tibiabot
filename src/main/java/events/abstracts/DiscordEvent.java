@@ -16,7 +16,7 @@ public abstract class DiscordEvent implements Listener {
 
     protected void removeGuild(Snowflake guildId) {
         try {
-            if(!CacheData.getChannelsCache().containsKey(guildId)) throw new Exception("Guild does not exist in cache");
+            if(!CacheData.isGuildCached(guildId)) throw new Exception("Guild does not exist in cache");
 
             Document doc = getDocument(guildId);
             if(doc == null) throw new Exception("Could not find guild in db");
