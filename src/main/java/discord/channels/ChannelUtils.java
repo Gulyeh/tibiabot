@@ -10,7 +10,7 @@ public final class ChannelUtils {
                 .modify(ChannelModifyRequest
                         .builder()
                         .name(channelName)
-                        .build(), "null")
+                        .build(), null)
                 .subscribe();
     }
 }
