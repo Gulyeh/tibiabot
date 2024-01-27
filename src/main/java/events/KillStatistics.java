@@ -147,7 +147,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
                         data.getAllLastWeekKilled() + " / Last week players killed: " + data.getAllLastWeekPlayersKilled() + "\n\n Killed: (last day) / (last week)",
                 "",
                 "",
-                Color.GREEN);
+                getRandomColor());
     }
 
     @Override

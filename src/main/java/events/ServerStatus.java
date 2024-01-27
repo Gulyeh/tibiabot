@@ -128,7 +128,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
                         "\nRecord date: " + ((WorldModel)model).getWorlds().getRecord_date() + "``",
                 "",
                 "",
-                Color.BLUE);
+                getRandomColor());
     }
 
     @Override

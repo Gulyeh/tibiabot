@@ -100,7 +100,7 @@ public class Houses extends EmbeddableEvent implements Channelable {
                     "",
                     "",
                     "",
-                    Color.GRAY);
+                    getRandomColor());
         }
     }
 

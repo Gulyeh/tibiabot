@@ -136,7 +136,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
                 "(World name)\n(Buy price / Sell price)\n(checked at)",
                 "",
                 "",
-                Color.RED);
+                getRandomColor());
     }
 
     private EmbedCreateFields.Field buildEmbedField(Prices data) {
