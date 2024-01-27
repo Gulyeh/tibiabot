@@ -31,14 +31,18 @@ public class EventsService implements Cacheable {
 
     @Override
     public void clearCache() {
-        if(cachedFiles != null) {
-            File folder = new File(config.get(Configurator.ConfigPaths.EVENTS_PATH.getName()));
-            File[] fList = folder.listFiles();
-            if (fList != null) {
-                for (File f : fList) {
-                    if (cachedFiles.containsKey(f.getName())) f.delete();
+        try {
+            if (cachedFiles != null) {
+                File folder = new File(config.get(Configurator.ConfigPaths.EVENTS_PATH.getName()));
+                File[] fList = folder.listFiles();
+                if (fList != null) {
+                    for (File f : fList) {
+                        if (cachedFiles.containsKey(f.getName())) f.delete();
+                    }
                 }
             }
+        } catch (Exception e) {
+            logINFO.info("Could not delete files");
         }
 
         cachedFiles = new HashMap<>();
