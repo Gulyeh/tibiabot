@@ -39,6 +39,8 @@ public class EventsCalendar extends ProcessEvent implements Channelable {
             try {
                 if (!event.getCommandName().equals(eventsCommand)) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
+                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+
                 return setDefaultChannel(event);
             } catch (Exception e) {
                 logINFO.error(e.getMessage());

@@ -32,6 +32,8 @@ public class TrackWorld extends EventsMethods {
             try {
                 if (!event.getCommandName().equals(worldCommand)) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
+                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+
                 return setWorld(event);
             } catch (Exception e) {
                 logINFO.error(e.getMessage());
