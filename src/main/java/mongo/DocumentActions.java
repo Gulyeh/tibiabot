@@ -15,6 +15,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.Configurator;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import static utils.Configurator.config;
 
 public final class DocumentActions {
     private final static Logger logINFO = LoggerFactory.getLogger(DocumentActions.class);
-    private final static String collectionName = config.get("DB_COLLECTION");
+    private final static String collectionName = config.get(Configurator.ConfigPaths.DB_COLLECTION.getName());
     private final static String id = "_id";
 
     public static <T> List<T> getDocuments(Class<T> classType) {

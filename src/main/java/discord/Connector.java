@@ -17,7 +17,7 @@ public final class Connector {
     public static GatewayDiscordClient client;
     private final static String status = "Hello giga mates";
     private final static Logger logINFO = LoggerFactory.getLogger(Connector.class);
-    private final static String key = Configurator.config.get("BOT_KEY");
+    private final static String key = Configurator.config.get(Configurator.ConfigPaths.BOT_KEY.getName());
 
     public static void connect() {
         try {

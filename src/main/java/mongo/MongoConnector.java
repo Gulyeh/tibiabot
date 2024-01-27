@@ -5,15 +5,16 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import lombok.Getter;
+import utils.Configurator;
 
 import static utils.Configurator.config;
 
 public final class MongoConnector {
     @Getter
     public static MongoDatabase mongoDatabase;
-    private static final String login = config.get("DB_LOGIN");
-    private static final String password = config.get("DB_PASSWORD");
-    private static final String db = config.get("DB_NAME");
+    private static final String login = config.get(Configurator.ConfigPaths.DB_LOGIN.getName());
+    private static final String password = config.get(Configurator.ConfigPaths.DB_PASSWORD.getName());
+    private static final String db = config.get(Configurator.ConfigPaths.DB_NAME.getName());
 
     public static void connect() {
         if (mongoDatabase != null) return;

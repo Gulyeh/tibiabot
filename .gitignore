@@ -18,6 +18,7 @@ target/
 *.env
 *.png
 *.jpg
+*.exe
 
 ### Eclipse ###
 .apt_generated
