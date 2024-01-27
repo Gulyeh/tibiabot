@@ -2,11 +2,14 @@ package mongo.models;
 
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
+import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
 
 @Getter
 public class ChannelModel {
@@ -33,10 +36,32 @@ public class ChannelModel {
         }
     }
 
+    public int removeChannelsExcept(List<GuildChannel> channels) throws IllegalAccessException {
+        int removedFields = 0;
+
+        for(Field field : this.getClass().getDeclaredFields()) {
+            if(field.get(this).equals("") || channels.stream().anyMatch(x -> {
+                try {
+                    return field.get(this).equals(x.getId().asString());
+                } catch (Exception ignore) {
+                    return false;
+                }
+            })) continue;
+            field.set(this, "");
+            removedFields++;
+        }
+
+        return removedFields;
+    }
+
     public boolean isChannelUsed(Snowflake channelId) {
         String channel = channelId.asString();
-        return getHouses().equals(channel) || getTibiaCoins().equals(channel) ||
-                getServerStatus().equals(channel) || getKillStatistics().equals(channel) ||
-                getEvents().equals(channel);
+        return Arrays.stream(this.getClass().getDeclaredFields()).anyMatch(x -> {
+            try {
+                return x.get(this).equals(channel);
+            } catch (Exception e) {
+                return false;
+            }
+        });
     }
 }
