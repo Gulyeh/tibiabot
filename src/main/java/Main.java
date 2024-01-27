@@ -14,8 +14,12 @@ import mongo.DocumentActions;
 import mongo.MongoConnector;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
+import services.events.EventsService;
+import services.houses.HousesService;
+import services.killStatistics.KillStatisticsService;
+import services.tibiaCoins.TibiaCoinsService;
+import services.worlds.WorldsService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static discord.Connector.client;
@@ -24,19 +28,20 @@ import static mongo.DocumentActions.*;
 @Slf4j
 public class Main {
     public static void main(String[] args) {
-        initializeBot();
+        initializeServices();
         fillCache();
         client.onDisconnect().block();
     }
 
-    private static void initializeBot() {
+    private static void initializeServices() {
         Connector.connect();
-        Connector.addListener(new TibiaCoins());
-        Connector.addListener(new ServerStatus());
+
+        Connector.addListener(new TibiaCoins(new TibiaCoinsService()));
+        Connector.addListener(new ServerStatus(new WorldsService()));
         Connector.addListener(new TrackWorld());
-        Connector.addListener(new KillStatistics());
-        Connector.addListener(new Houses());
-        Connector.addListener(new EventsCalendar());
+        Connector.addListener(new KillStatistics(new KillStatisticsService()));
+        Connector.addListener(new Houses(new HousesService()));
+        Connector.addListener(new EventsCalendar(new EventsService()));
         Connector.addListener(new RemovedChannel());
         Connector.addListener(new RemovedGuild());
 
@@ -52,9 +57,9 @@ public class Main {
     }
 
     private static void fillCache() {
-        MongoConnector.connect();
-
         new Thread(() -> {
+            MongoConnector.connect();
+
             while(true) {
                 try {
                     List<Guild> guilds = client.getGuilds().collectList().block();

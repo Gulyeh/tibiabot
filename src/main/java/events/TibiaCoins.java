@@ -1,8 +1,11 @@
 package events;
 
+import cache.CacheData;
+import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -16,9 +19,11 @@ import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
 import services.tibiaCoins.models.PriceModel;
 import services.tibiaCoins.models.Prices;
+import services.worlds.models.WorldModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static builders.commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
@@ -28,8 +33,8 @@ import static discord.messages.SendMessages.sendEmbeddedMessages;
 public class TibiaCoins extends EmbeddableEvent implements Channelable {
     private final TibiaCoinsService tibiaCoinsService;
 
-    public TibiaCoins() {
-        tibiaCoinsService = new TibiaCoinsService();
+    public TibiaCoins(TibiaCoinsService tibiaCoinsService) {
+        this.tibiaCoinsService = new TibiaCoinsService();
     }
 
     @Override
@@ -59,6 +64,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
         while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
+                executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
@@ -66,6 +72,28 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
                     wait(3600000);
                 }
             }
+        }
+    }
+
+    protected void executeEventProcess() {
+        Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
+        if(guildIds.isEmpty()) return;
+
+        PriceModel prices = tibiaCoinsService.getPrices();
+
+        for (Snowflake guildId : guildIds) {
+            Snowflake channel = CacheData.getChannelsCache()
+                    .get(guildId)
+                    .get(EventTypes.TIBIA_COINS);
+            if(channel == null || channel.asString().isEmpty()) continue;
+
+            Guild guild = client.getGuildById(guildId).block();
+            if(guild == null) continue;
+
+            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            if(guildChannel == null) continue;
+
+            processData(guildChannel, prices);
         }
     }
 

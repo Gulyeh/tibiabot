@@ -1,8 +1,11 @@
 package events;
 
+import cache.CacheData;
+import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -19,6 +22,7 @@ import services.worlds.models.WorldModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
@@ -30,8 +34,8 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
 
     private final WorldsService worldsService;
 
-    public ServerStatus() {
-        worldsService = new WorldsService();
+    public ServerStatus(WorldsService worldsService) {
+        this.worldsService = worldsService;
     }
 
     @Override
@@ -56,6 +60,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
         while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
+                executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
@@ -63,6 +68,28 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
                     wait(300000);
                 }
             }
+        }
+    }
+
+    protected void executeEventProcess() {
+        Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
+        if(guildIds.isEmpty()) return;
+
+        WorldModel worlds = worldsService.getWorlds();
+
+        for (Snowflake guildId : guildIds) {
+            Snowflake channel = CacheData.getChannelsCache()
+                    .get(guildId)
+                    .get(EventTypes.SERVER_STATUS);
+            if(channel == null || channel.asString().isEmpty()) continue;
+
+            Guild guild = client.getGuildById(guildId).block();
+            if(guild == null) continue;
+
+            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            if(guildChannel == null) continue;
+
+            processData(guildChannel, worlds);
         }
     }
 

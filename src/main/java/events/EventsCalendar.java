@@ -1,12 +1,15 @@
 package events;
 
+import cache.CacheData;
+import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import events.abstracts.EventsMethods;
+import events.abstracts.ProcessEvent;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -22,12 +25,12 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendImageMessage;
 
-public class EventsCalendar extends EventsMethods implements Channelable {
+public class EventsCalendar extends ProcessEvent implements Channelable {
 
     private final EventsService eventsService;
 
-    public EventsCalendar() {
-        eventsService = new EventsService();
+    public EventsCalendar(EventsService eventsService) {
+        this.eventsService = eventsService;
     }
 
     @Override
@@ -63,9 +66,11 @@ public class EventsCalendar extends EventsMethods implements Channelable {
 
         long timeLeft = LocalDateTime.now().until(requiredTime, ChronoUnit.MILLIS);
 
-        while(true) {
+        while (true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
+                eventsService.clearCache();
+                executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
@@ -78,13 +83,31 @@ public class EventsCalendar extends EventsMethods implements Channelable {
     }
 
     @Override
+    protected void executeEventProcess() {
+        for (Snowflake guildId : CacheData.getChannelsCache().keySet()) {
+            Snowflake channel = CacheData.getChannelsCache()
+                    .get(guildId)
+                    .get(EventTypes.EVENTS_CALENDAR);
+            if(channel == null || channel.asString().isEmpty()) continue;
+
+            Guild guild = client.getGuildById(guildId).block();
+            if(guild == null) continue;
+
+            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            if(guildChannel == null) continue;
+
+            processData(guildChannel);
+        }
+    }
+
+    @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
 
         if (channelId == null) return event.createFollowup("Could not find channel");
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
 
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
         processData(channel);

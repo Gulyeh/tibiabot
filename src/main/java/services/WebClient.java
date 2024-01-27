@@ -17,7 +17,7 @@ import java.net.http.HttpResponse;
 
 public abstract class WebClient {
     private final HttpClient httpClient;
-    protected final static Logger logINFO = LoggerFactory.getLogger(WebClient.class);
+    protected final Logger logINFO = LoggerFactory.getLogger(WebClient.class);
 
     public WebClient() {
         httpClient = HttpClients.createDefault();

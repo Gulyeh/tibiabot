@@ -6,9 +6,6 @@ import services.tibiaCoins.models.PriceModel;
 import java.net.http.HttpResponse;
 
 public class TibiaCoinsService extends WebClient {
-    public TibiaCoinsService() {
-
-    }
 
     @Override
     protected String getUrl() {
