@@ -2,12 +2,11 @@ package services.killStatistics;
 
 import cache.CacheData;
 import discord4j.common.util.Snowflake;
-import events.interfaces.Cacheable;
+import services.interfaces.Cacheable;
 import services.WebClient;
 import services.killStatistics.models.KillingStatsBase;
 import services.killStatistics.models.KillingStatsModel;
 
-import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 

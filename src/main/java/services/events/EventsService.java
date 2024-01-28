@@ -1,9 +1,8 @@
 package services.events;
 
-import events.interfaces.Cacheable;
+import services.interfaces.Cacheable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import services.WebClient;
 import utils.Configurator;
 import webDriver.Driver;
 import utils.Image;

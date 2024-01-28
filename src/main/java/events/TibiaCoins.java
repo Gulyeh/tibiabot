@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
 import services.tibiaCoins.models.PriceModel;
 import services.tibiaCoins.models.Prices;
+import services.worlds.WorldsService;
+import services.worlds.models.WorldData;
 import services.worlds.models.WorldModel;
 
 import java.util.ArrayList;
@@ -34,7 +36,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
     private final TibiaCoinsService tibiaCoinsService;
 
     public TibiaCoins(TibiaCoinsService tibiaCoinsService) {
-        this.tibiaCoinsService = new TibiaCoinsService();
+        this.tibiaCoinsService = tibiaCoinsService;
     }
 
     @Override
@@ -115,7 +117,6 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
     @Override
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-
         for(Prices data : ((PriceModel)model).getPrices()) {
             fields.add(buildEmbedField(data));
         }
@@ -142,8 +143,8 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
     }
 
     private EmbedCreateFields.Field buildEmbedField(Prices data) {
-        return EmbedCreateFields.Field.of(data.getWorld_name(),
-                data.getBuy_average_price() + " / " + data.getSell_average_price() +"\n`(" + data.getCreated_at() + ")`",
-                true );
+        return EmbedCreateFields.Field.of(data.getBattleEye_type().getIcon() + " " + data.getWorld_name() + " " + data.getLocation().getIcon() + "\n```(" + data.getWorld_type() + ")```",
+                "**" + data.getBuy_average_price() + " / " + data.getSell_average_price() +"**\n`(" + data.getCreated_at() + ")`",
+                true);
     }
 }

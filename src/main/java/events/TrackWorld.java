@@ -14,13 +14,18 @@ import static discord.Connector.client;
 public class TrackWorld extends EventsMethods {
 
     private WorldModel worlds;
+    private final WorldsService worldsService;
+
+    public TrackWorld(WorldsService worldsService) {
+        this.worldsService = worldsService;
+    }
 
     @Override
     protected void activateEvent() {
         logINFO.info("Getting available worlds for " + getEventName());
 
         try {
-            worlds = new WorldsService().getWorlds();
+            worlds = worldsService.getWorlds();
         } catch (Exception e) {
             logINFO.warn("Error while getting worlds: " + e.getMessage());
         }

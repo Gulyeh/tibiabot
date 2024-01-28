@@ -62,6 +62,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
         while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
+                worldsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
@@ -147,10 +148,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
     }
 
     private EmbedCreateFields.Field buildEmbedField(WorldData data) {
-        String flag = data.getLocation().contains("America") ? ":flag_um:" : ":flag_eu:";
-        String status = data.getStatus().contains("online") ? ":green_circle:" : ":red_circle:";
-
-        return EmbedCreateFields.Field.of(data.getName() + " " + flag + " - " + status,
+        return EmbedCreateFields.Field.of(data.getStatus_type().getIcon() + " " + data.getName() + " " + data.getLocation_type().getIcon(),
                 "Players online: " + data.getPlayers_online() + "\nTransfer: " + data.getTransfer_type(),
                 true);
     }

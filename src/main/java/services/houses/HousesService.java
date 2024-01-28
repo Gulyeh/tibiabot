@@ -2,7 +2,7 @@ package services.houses;
 
 import cache.CacheData;
 import discord4j.common.util.Snowflake;
-import events.interfaces.Cacheable;
+import services.interfaces.Cacheable;
 import services.WebClient;
 import services.houses.enums.Towns;
 import services.houses.models.HouseBase;

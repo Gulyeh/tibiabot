@@ -1,6 +1,9 @@
 package services.tibiaCoins.models;
 
 import lombok.Getter;
+import lombok.Setter;
+import services.worlds.enums.BattleEyeType;
+import services.worlds.enums.Location;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,6 +22,15 @@ public class Prices {
     private String buy_highest_price;
     @Getter
     private String sell_lowest_price;
+    @Getter
+    @Setter
+    private String world_type = "";
+    @Getter
+    @Setter
+    private BattleEyeType battleEye_type = BattleEyeType.OFF;
+    @Getter
+    @Setter
+    private Location location = Location.EUROPE;
     private String created_at;
 
     public String getCreated_at() {

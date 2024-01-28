@@ -36,9 +36,11 @@ public class Main {
     private static void initializeServices() {
         Connector.connect();
 
-        Connector.addListener(new TibiaCoins(new TibiaCoinsService()));
-        Connector.addListener(new ServerStatus(new WorldsService()));
-        Connector.addListener(new TrackWorld());
+        WorldsService worldsService = new WorldsService();
+
+        Connector.addListener(new TibiaCoins(new TibiaCoinsService(worldsService)));
+        Connector.addListener(new ServerStatus(worldsService));
+        Connector.addListener(new TrackWorld(worldsService));
         Connector.addListener(new KillStatistics(new KillStatisticsService()));
         Connector.addListener(new Houses(new HousesService()));
         Connector.addListener(new EventsCalendar(new EventsService()));

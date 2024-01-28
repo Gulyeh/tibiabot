@@ -20,7 +20,7 @@ public class GameData {
     public List<WorldData> getRegular_worlds() {
         return regular_worlds.stream()
                 .sorted(Comparator.comparing(WorldData::getPlayers_online).reversed())
-                .sorted(Comparator.comparing(WorldData::getLocation))
+                .sorted(Comparator.comparing(WorldData::getLocation_type).reversed())
                 .toList();
     }
 

@@ -9,6 +9,7 @@ public class PriceModel {
     public List<Prices> getPrices() {
         return prices.stream()
                 .sorted(Comparator.comparing(Prices::getWorld_name))
+                .sorted(Comparator.comparing(Prices::getLocation).reversed())
                 .toList();
     }
 }
