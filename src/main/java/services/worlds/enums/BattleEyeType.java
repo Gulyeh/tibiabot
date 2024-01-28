@@ -7,8 +7,8 @@ import lombok.Getter;
 @Getter
 public enum BattleEyeType {
     OFF(":no_entry_sign:"),
-    GBE(":icon_battleyeinitial:"),
-    YBE(":icon_battleye:");
+    GBE(":green_circle:"),
+    YBE(":yellow_circle:");
 
     private final String icon;
 }
