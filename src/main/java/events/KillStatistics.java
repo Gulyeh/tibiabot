@@ -63,13 +63,19 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
 
-        LocalDateTime requiredTime = LocalDateTime.now()
-                .plusDays(1)
-                .withHour(10)
-                .withMinute(10)
+        LocalDateTime now = LocalDateTime.now();
+        int expectedHour = 10;
+        int expectedMinute = 30;
+
+        LocalDateTime requiredTime = now
+                .withHour(expectedHour)
+                .withMinute(expectedMinute)
                 .withSecond(0);
 
-        long timeLeft = LocalDateTime.now().until(requiredTime, ChronoUnit.MILLIS);
+        if(now.getHour() > expectedHour || (now.getHour() == expectedHour && now.getMinute() >= expectedMinute))
+            requiredTime = requiredTime.plusDays(1);
+
+        long timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
 
         while(true) {
             try {
