@@ -17,6 +17,7 @@ import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.killStatistics.KillStatisticsService;
+import services.killStatistics.models.BossType;
 import services.killStatistics.models.KillingStatsData;
 import services.killStatistics.models.KillingStatsModel;
 
@@ -64,15 +65,14 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
         logINFO.info("Activating " + getEventName());
 
         LocalDateTime now = LocalDateTime.now();
-        int expectedHour = 10;
-        int expectedMinute = 30;
+        int expectedHour = 3;
 
         LocalDateTime requiredTime = now
                 .withHour(expectedHour)
-                .withMinute(expectedMinute)
+                .withMinute(0)
                 .withSecond(0);
 
-        if(now.getHour() > expectedHour || (now.getHour() == expectedHour && now.getMinute() >= expectedMinute))
+        if(now.getHour() >= expectedHour)
             requiredTime = requiredTime.plusDays(1);
 
         long timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
@@ -146,24 +146,36 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
         }
 
         KillingStatsModel data = (KillingStatsModel) model;
+        List<KillingStatsData> bosses = data.getEntries();
         addChannelSuffix(channel, data.getAllLastDayKilled());
 
-        sendEmbeddedMessages(channel,
-                createEmbedFields(data),
+
+        sendEmbeddedMessages(channel, null,
                 "Killed Bosses Statistics",
                 "Last day killed: " + data.getAllLastDayKilled() + " / Last day players killed: " + data.getAllLastDayPlayersKilled() + "\nLast week killed: " +
                         data.getAllLastWeekKilled() + " / Last week players killed: " + data.getAllLastWeekPlayersKilled() + "\n\n Killed: (last day) / (last week)",
                 "",
                 "",
                 getRandomColor());
+
+        for (BossType type : BossType.values()) {
+            sendEmbeddedMessages(channel, createEmbedFields(bosses.stream()
+                            .filter(x -> x.getBossType().equals(type))
+                            .toList()),
+                    "--- " + type.getName() + " ---",
+                    "",
+                    "",
+                    "",
+                    getRandomColor());
+        }
     }
 
     @Override
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-        KillingStatsModel data = (KillingStatsModel) model;
+        List<KillingStatsData> data = (List<KillingStatsData>) model;
 
-        for (KillingStatsData statsData : data.getEntries()) {
+        for (KillingStatsData statsData : data) {
             fields.add(buildEmbedField(statsData));
         }
 
@@ -171,8 +183,11 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
     }
 
     private EmbedCreateFields.Field buildEmbedField(KillingStatsData data) {
-        return EmbedCreateFields.Field.of(data.getRace(),
-                "```Killed: " + data.getLast_day_killed() + " / " + data.getLast_week_killed() + "\nPlayers killed: " +
+        String respawnPossibility = data.getSpawnPossibility() == 0.0 ? "" : "``Spawn possibility: " + data.getSpawnPossibility() + "%``\n";
+        String expectedSpawnTime = data.getSpawnExpectedTime() == 0 ? "" : "``Expected in: " + data.getSpawnExpectedTime() + " day(s)``\n";
+
+        return EmbedCreateFields.Field.of("**" + data.getRace() + "**",
+                respawnPossibility + expectedSpawnTime + "```Killed: " + data.getLast_day_killed() + " / " + data.getLast_week_killed() + "\nPlayers killed: " +
                     data.getLast_day_players_killed() + " / " + data.getLast_week_players_killed() + "```",
                 true);
     }

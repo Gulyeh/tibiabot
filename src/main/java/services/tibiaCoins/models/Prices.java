@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import services.worlds.enums.BattleEyeType;
 import services.worlds.enums.Location;
+import services.worlds.models.WorldData;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -24,13 +25,7 @@ public class Prices {
     private String sell_lowest_price;
     @Getter
     @Setter
-    private String world_type = "";
-    @Getter
-    @Setter
-    private BattleEyeType battleEye_type = BattleEyeType.OFF;
-    @Getter
-    @Setter
-    private Location location = Location.EUROPE;
+    private WorldData world = new WorldData();
     private String created_at;
 
     public String getCreated_at() {

@@ -1,13 +1,16 @@
 package services.killStatistics.models;
 
 import lombok.Getter;
+import lombok.Setter;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Character.isUpperCase;
 
 @Getter
+@Setter
 public class KillingStatsModel {
 
     private String world;
@@ -19,39 +22,44 @@ public class KillingStatsModel {
 
     public List<KillingStatsData> getEntries() {
         return entries.stream()
-                .filter(x -> isUpperCase(x.getRace().charAt(0)) &&
-                        x.getLast_day_killed() > 0 &&
-                        x.getLast_week_killed() > 0)
+                .sorted(Comparator.comparingInt(KillingStatsData::getSpawnExpectedTime).reversed())
+                .sorted(Comparator.comparingDouble(KillingStatsData::getSpawnPossibility).reversed())
+                .sorted()
                 .toList();
     }
 
     public int getAllLastDayKilled() {
         AtomicInteger counter = new AtomicInteger(0);
-        getFilteredEntries().forEach(x -> counter.getAndAdd(x.getLast_day_killed()));
+        getEntries().forEach(x -> counter.getAndAdd(x.getLast_day_killed()));
         return counter.get();
     }
 
     public int getAllLastDayPlayersKilled() {
         AtomicInteger counter = new AtomicInteger(0);
-        getFilteredEntries().forEach(x -> counter.getAndAdd(x.getLast_day_players_killed()));
+        getEntries().forEach(x -> counter.getAndAdd(x.getLast_day_players_killed()));
         return counter.get();
     }
 
     public int getAllLastWeekKilled() {
         AtomicInteger counter = new AtomicInteger(0);
-        getFilteredEntries().forEach(x -> counter.getAndAdd(x.getLast_week_killed()));
+        getEntries().forEach(x -> counter.getAndAdd(x.getLast_week_killed()));
         return counter.get();
     }
 
     public int getAllLastWeekPlayersKilled() {
         AtomicInteger counter = new AtomicInteger(0);
-        getFilteredEntries().forEach(x -> counter.getAndAdd(x.getLast_week_players_killed()));
+        getEntries().forEach(x -> counter.getAndAdd(x.getLast_week_players_killed()));
         return counter.get();
     }
 
-    private List<KillingStatsData> getFilteredEntries() {
-        return entries.stream()
-                .filter(x -> isUpperCase(x.getRace().charAt(0)))
-                .toList();
+    public void addToBossList(List<BossModel> boss) {
+        for(BossModel model : boss) {
+            KillingStatsData data = new KillingStatsData();
+            data.setRace(model.getBossName());
+            data.setBossType(model.getBossType());
+            data.setSpawnExpectedTime(model.getSpawnExpectedTime());
+            data.setSpawnPossibility(model.getSpawnPossibility());
+            entries.add(data);
+        }
     }
 }

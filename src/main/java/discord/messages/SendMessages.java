@@ -52,10 +52,16 @@ public final class SendMessages {
     }
 
     private static List<EmbedData> splitEmbeddedMessage(List<EmbedCreateFields.Field> fields, EmbedCreateSpec embedData) {
+        List<EmbedData> listOfMessages = new ArrayList<>();
+
+        if(fields == null || fields.isEmpty()) {
+            EmbedCreateSpec builder = generateEmbed(embedData, 0, 0);
+            listOfMessages.add(builder.asRequest());
+            return listOfMessages;
+        }
+
         int maxIndex, minIndex, maxFields = 20;
         int iterations = (int) Math.ceil((double) fields.size() / maxFields);
-        List<EmbedData> listOfMessages = new ArrayList<>();
-        boolean isFirstMessage = true;
 
         for(int i = 0; i < iterations; i++) {
             minIndex = maxFields * i;
@@ -64,7 +70,6 @@ public final class SendMessages {
 
             List<EmbedCreateFields.Field> fieldsSplitted = fields.subList(minIndex, maxIndex);
             EmbedCreateSpec builder = generateEmbed(embedData, i, iterations);
-            if(isFirstMessage) isFirstMessage = false;
 
             listOfMessages.add(builder.withFields(fieldsSplitted).asRequest());
         }

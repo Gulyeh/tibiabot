@@ -34,9 +34,7 @@ public class TibiaCoinsService extends WebClient {
                    .findFirst()
                    .get();
 
-           price.setLocation(data.getLocation_type());
-           price.setWorld_type(data.getPvp_type());
-           price.setBattleEye_type(data.getBattleEyeType());
+           price.setWorld(data);
         }
 
         return prices;

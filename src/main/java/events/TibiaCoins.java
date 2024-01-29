@@ -20,10 +20,13 @@ import services.tibiaCoins.TibiaCoinsService;
 import services.tibiaCoins.models.PriceModel;
 import services.tibiaCoins.models.Prices;
 import services.worlds.WorldsService;
+import services.worlds.enums.BattleEyeType;
+import services.worlds.enums.Location;
 import services.worlds.models.WorldData;
 import services.worlds.models.WorldModel;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -117,7 +120,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
     @Override
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-        for(Prices data : ((PriceModel)model).getPrices()) {
+        for(Prices data : (List<Prices>)model) {
             fields.add(buildEmbedField(data));
         }
 
@@ -133,17 +136,33 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
             return;
         }
 
-        sendEmbeddedMessages(channel,
-                createEmbedFields(model),
-                "Tibia Coins Prices",
-                "(World name)\n(Buy price / Sell price)\n(checked at)",
-                "",
-                "",
-                getRandomColor());
+        List<Prices> data = ((PriceModel)model).getPrices();
+        boolean isFirstMessage = true;
+
+        for(BattleEyeType eye : BattleEyeType.values()) {
+            List<Prices> servers = data.stream()
+                    .filter(x -> x.getWorld().getBattleEyeType().equals(eye))
+                    .sorted(Comparator.comparing(Prices::getWorld_name))
+                    .sorted(Comparator.comparing(x -> x.getWorld().getLocation_type(), Comparator.reverseOrder()))
+                    .toList();
+
+            String title = isFirstMessage ? "Tibia Coins Prices\n``" + eye.getName() + "``" : "``" + eye.getName() + "``";
+            String desc = isFirstMessage ? "(Buy price / Sell price)\n(checked at)" : "";
+
+            sendEmbeddedMessages(channel,
+                    createEmbedFields(servers),
+                    title,
+                    desc,
+                    "",
+                    "",
+                    getRandomColor());
+
+            if(isFirstMessage) isFirstMessage = false;
+        }
     }
 
     private EmbedCreateFields.Field buildEmbedField(Prices data) {
-        return EmbedCreateFields.Field.of(data.getBattleEye_type().getIcon() + " " + data.getWorld_name() + " " + data.getLocation().getIcon() + "\n```(" + data.getWorld_type() + ")```",
+        return EmbedCreateFields.Field.of(data.getWorld().getBattleEyeType().getIcon() + " " + data.getWorld_name() + " " + data.getWorld().getLocation_type().getIcon() + "\n```(" + data.getWorld().getPvp_type() + ")```",
                 "**" + data.getBuy_average_price() + " / " + data.getSell_average_price() +"**\n`(" + data.getCreated_at() + ")`",
                 true);
     }

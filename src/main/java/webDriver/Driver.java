@@ -1,27 +1,37 @@
 package webDriver;
 
-import lombok.Getter;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.PageFactory;
 import utils.Configurator;
 
 import java.time.Duration;
 
 import static utils.Configurator.config;
 
-public final class Driver {
-    @Getter
-    private static ChromeDriver webDriver = null;
+public abstract class Driver {
 
-    public static void openDriverUrl(String url) {
-        System.setProperty("webdriver.chrome.driver", config.get(Configurator.ConfigPaths.CHROMEDRIVER_PATH.getName()));
-        webDriver = new ChromeDriver(new ChromeOptions().addArguments("--headless", "--window-size=1920,1080", "--remote-allow-origins=*", "--disable-gpu", "--silent"));
-        webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-        webDriver.manage().timeouts().pageLoadTimeout(Duration.ofMinutes(1));
-        webDriver.get(url);
+    protected ChromeDriver webDriver = null;
+
+    public Driver() {
+        initDriver();
+        PageFactory.initElements(webDriver, this);
     }
 
-    public static void closeDriver() {
+    protected void initDriver() {
+        System.setProperty("webdriver.chrome.driver", config.get(Configurator.ConfigPaths.CHROMEDRIVER_PATH.getName()));
+        webDriver = new ChromeDriver(new ChromeOptions().addArguments("--headless", "--window-size=1920,1080", "--remote-allow-origins=*", "--disable-gpu", "--silent"));
+        webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
+        webDriver.manage().timeouts().pageLoadTimeout(Duration.ofMinutes(1));
+    }
+
+    protected void openWebsite(String url) {
+        if(webDriver == null) return;
+        webDriver.get(url);
+
+    }
+
+    protected void closeDriver() {
         if (webDriver == null) return;
         webDriver.quit();
     }

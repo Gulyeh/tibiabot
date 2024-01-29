@@ -6,9 +6,10 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum BattleEyeType {
-    OFF(":no_entry_sign:"),
-    GBE(":green_circle:"),
-    YBE(":yellow_circle:");
+    OFF(":no_entry_sign:", "No Protection"),
+    GBE(":green_circle:", "Green Battleye"),
+    YBE(":yellow_circle:", "Yellow Battleye");
 
     private final String icon;
+    private final String name;
 }
