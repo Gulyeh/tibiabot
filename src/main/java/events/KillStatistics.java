@@ -67,6 +67,8 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
 
         while(true) {
             try {
+                logINFO.info("Executing thread " + getEventName());
+
                 LocalDateTime now = LocalDateTime.now();
                 int expectedHour = 3;
 
@@ -80,7 +82,6 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
 
                 timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
 
-                logINFO.info("Executing thread " + getEventName());
                 killStatisticsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
