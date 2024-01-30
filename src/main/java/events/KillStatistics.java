@@ -63,22 +63,23 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
     @SuppressWarnings("InfiniteLoopStatement")
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
-
-        LocalDateTime now = LocalDateTime.now();
-        int expectedHour = 3;
-
-        LocalDateTime requiredTime = now
-                .withHour(expectedHour)
-                .withMinute(0)
-                .withSecond(0);
-
-        if(now.getHour() >= expectedHour)
-            requiredTime = requiredTime.plusDays(1);
-
-        long timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
+        long timeLeft = 0;
 
         while(true) {
             try {
+                LocalDateTime now = LocalDateTime.now();
+                int expectedHour = 3;
+
+                LocalDateTime requiredTime = now
+                        .withHour(expectedHour)
+                        .withMinute(0)
+                        .withSecond(0);
+
+                if(now.getHour() >= expectedHour)
+                    requiredTime = requiredTime.plusDays(1);
+
+                timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
+
                 logINFO.info("Executing thread " + getEventName());
                 killStatisticsService.clearCache();
                 executeEventProcess();

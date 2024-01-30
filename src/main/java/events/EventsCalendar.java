@@ -59,24 +59,26 @@ public class EventsCalendar extends ProcessEvent implements Channelable {
     @SuppressWarnings("InfiniteLoopStatement")
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
-
-        LocalDateTime now = LocalDateTime.now();
-        int expectedHour = 10;
-        int expectedMinute = 30;
-
-        LocalDateTime requiredTime = now
-                .withHour(expectedHour)
-                .withMinute(expectedMinute)
-                .withSecond(0);
-
-        if(now.getHour() > expectedHour || (now.getHour() == expectedHour && now.getMinute() >= expectedMinute))
-            requiredTime = requiredTime.plusDays(1);
-
-        long timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
+        long timeLeft = 0;
 
         while (true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
+
+                LocalDateTime now = LocalDateTime.now();
+                int expectedHour = 10;
+                int expectedMinute = 30;
+
+                LocalDateTime requiredTime = now
+                        .withHour(expectedHour)
+                        .withMinute(expectedMinute)
+                        .withSecond(0);
+
+                if(now.getHour() > expectedHour || (now.getHour() == expectedHour && now.getMinute() >= expectedMinute))
+                    requiredTime = requiredTime.plusDays(1);
+
+                timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
+
                 eventsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
