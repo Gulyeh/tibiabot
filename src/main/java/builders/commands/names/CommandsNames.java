@@ -10,8 +10,9 @@ public final class CommandsNames {
     public final static String killingStatsCommand = "setkillingstats";
     public final static String houseCommand = "sethouses";
     public final static String eventsCommand = "setevents";
+    public final static String miniWorldChangesCommand = "setminiworldchanges";
 
     public static List<String> getCommands() {
-        return Arrays.asList(worldCommand, serverStatusCommand, tibiaCoinsCommand, killingStatsCommand, houseCommand, eventsCommand);
+        return Arrays.asList(worldCommand, serverStatusCommand, tibiaCoinsCommand, killingStatsCommand, houseCommand, eventsCommand, miniWorldChangesCommand);
     }
 }

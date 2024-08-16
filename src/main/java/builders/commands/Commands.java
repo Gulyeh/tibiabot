@@ -98,6 +98,14 @@ public class Commands {
         return this;
     }
 
+    public Commands setMiniWorldChangeChannel() {
+        ApplicationCommandRequest setMiniWorldChangesCmd =
+                requestBuilder(eventsCommand, "Set default channel for mini world changes", "Channel name", ApplicationCommandOption.Type.CHANNEL);
+
+        if(!listOfCommands.contains(setMiniWorldChangesCmd)) listOfCommands.add(setMiniWorldChangesCmd);
+        return this;
+    }
+
     private ApplicationCommandRequest requestBuilder(String name, String description, String optionDescription, ApplicationCommandOption.Type type) {
         return ApplicationCommandRequest.builder()
                 .name(name)

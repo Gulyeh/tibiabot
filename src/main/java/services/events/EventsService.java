@@ -53,5 +53,4 @@ public class EventsService implements Cacheable {
         cachedFiles.put(key, crop);
         return crop;
     }
-
 }

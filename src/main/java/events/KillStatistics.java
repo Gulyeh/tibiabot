@@ -70,7 +70,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
                 logINFO.info("Executing thread " + getEventName());
 
                 LocalDateTime now = LocalDateTime.now();
-                int expectedHour = 3;
+                int expectedHour = 5;
 
                 LocalDateTime requiredTime = now
                         .withHour(expectedHour)

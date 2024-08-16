@@ -15,4 +15,6 @@ public final class EventName {
     private static final String killStatistics = "Kill Statistics Event";
     @Getter
     private static final String trackWorld = "Track World Event";
+    @Getter
+    private static final String miniWorldChanges = "Mini World Changes Event";
 }

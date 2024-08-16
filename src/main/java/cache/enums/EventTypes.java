@@ -11,6 +11,7 @@ public enum EventTypes {
     KILLED_BOSSES(EventName.getKillStatistics()),
     HOUSES(EventName.getHouses()),
     SERVER_STATUS(EventName.getServerStatus()),
+    MINI_WORLD_CHANGES(EventName.getMiniWorldChanges()),
     EVENTS_CALENDAR(EventName.getEvents());
 
     private final String name;
