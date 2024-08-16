@@ -100,7 +100,7 @@ public class Commands {
 
     public Commands setMiniWorldChangeChannel() {
         ApplicationCommandRequest setMiniWorldChangesCmd =
-                requestBuilder(eventsCommand, "Set default channel for mini world changes", "Channel name", ApplicationCommandOption.Type.CHANNEL);
+                requestBuilder(miniWorldChangesCommand, "Set default channel for mini world changes", "Channel name", ApplicationCommandOption.Type.CHANNEL);
 
         if(!listOfCommands.contains(setMiniWorldChangesCmd)) listOfCommands.add(setMiniWorldChangesCmd);
         return this;
