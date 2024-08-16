@@ -17,6 +17,7 @@ import mongo.models.GuildModel;
 import services.events.EventsService;
 import services.houses.HousesService;
 import services.killStatistics.KillStatisticsService;
+import services.miniWorldEvents.MiniWorldEventsService;
 import services.tibiaCoins.TibiaCoinsService;
 import services.worlds.WorldsService;
 
@@ -29,13 +30,13 @@ import static mongo.DocumentActions.*;
 public class Main {
     public static void main(String[] args) {
         initializeServices();
+        buildCommands();
         fillCache();
         client.onDisconnect().block();
     }
 
     private static void initializeServices() {
         Connector.connect();
-
         WorldsService worldsService = new WorldsService();
 
         Connector.addListener(new TibiaCoins(new TibiaCoinsService(worldsService)));
@@ -44,9 +45,12 @@ public class Main {
         Connector.addListener(new KillStatistics(new KillStatisticsService()));
         Connector.addListener(new Houses(new HousesService()));
         Connector.addListener(new EventsCalendar(new EventsService()));
+        Connector.addListener(new MiniWorldEvents(new MiniWorldEventsService(worldsService)));
         Connector.addListener(new RemovedChannel());
         Connector.addListener(new RemovedGuild());
+    }
 
+    private static void buildCommands() {
         CommandsBuilder.builder()
                 .setEventsChannel()
                 .setHousesChannel()
@@ -54,6 +58,7 @@ public class Main {
                 .setServerStatusChannel()
                 .setTibiaCoinsPricesChannel()
                 .setWorld()
+                .setMiniWorldChangeChannel()
                 .clearUnusedCommands()
                 .build();
     }
@@ -116,29 +121,35 @@ public class Main {
         Snowflake guildId = Snowflake.of(model.getGuildId());
         ChannelModel channels = model.getChannels();
 
-        if(!channels.getEvents().isEmpty()) {
-            Snowflake channelId = Snowflake.of(model.getChannels().getEvents());
-            CacheData.addToChannelsCache(guildId, channelId, EventTypes.EVENTS_CALENDAR);
-        }
+        for(EventTypes eventType : EventTypes.values()) {
+            Snowflake channelId = switch (eventType) {
+                case MINI_WORLD_CHANGES -> {
+                    if(channels.getMiniWorldChanges().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getMiniWorldChanges());
+                }
+                case EVENTS_CALENDAR -> {
+                    if(channels.getEvents().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getEvents());
+                }
+                case SERVER_STATUS -> {
+                    if(channels.getServerStatus().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getServerStatus());
+                }
+                case HOUSES -> {
+                    if(channels.getHouses().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getHouses());
+                }
+                case KILLED_BOSSES -> {
+                    if(channels.getKillStatistics().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getKillStatistics());
+                }
+                case TIBIA_COINS -> {
+                    if(channels.getTibiaCoins().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getTibiaCoins());
+                }
+            };
 
-        if(!channels.getHouses().isEmpty()) {
-            Snowflake channelId = Snowflake.of(model.getChannels().getHouses());
-            CacheData.addToChannelsCache(guildId, channelId, EventTypes.HOUSES);
-        }
-
-        if(!channels.getKillStatistics().isEmpty()) {
-            Snowflake channelId = Snowflake.of(model.getChannels().getKillStatistics());
-            CacheData.addToChannelsCache(guildId, channelId, EventTypes.KILLED_BOSSES);
-        }
-
-        if(!channels.getTibiaCoins().isEmpty()) {
-            Snowflake channelId = Snowflake.of(model.getChannels().getTibiaCoins());
-            CacheData.addToChannelsCache(guildId, channelId, EventTypes.TIBIA_COINS);
-        }
-
-        if(!channels.getServerStatus().isEmpty()) {
-            Snowflake channelId = Snowflake.of(model.getChannels().getServerStatus());
-            CacheData.addToChannelsCache(guildId, channelId, EventTypes.SERVER_STATUS);
+            CacheData.addToChannelsCache(guildId, channelId, eventType);
         }
     }
 

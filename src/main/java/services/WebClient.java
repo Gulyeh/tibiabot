@@ -42,6 +42,10 @@ public abstract class WebClient {
         return new HttpGet(getUrl());
     }
 
+    protected ClassicHttpRequest getRequest(String additionalParams) {
+        return new HttpGet(getUrl() + additionalParams);
+    }
+
     protected <T> T getModel(String response, Class<T> classType)
     {
         try {

@@ -13,16 +13,19 @@ import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
+import events.interfaces.ServerSaveWaiter;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
+import services.miniWorldEvents.MiniWorldEventsService;
 import services.worlds.WorldsService;
+import services.worlds.enums.Status;
 import services.worlds.models.WorldData;
 import services.worlds.models.WorldModel;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
@@ -30,7 +33,7 @@ import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;
 
-public class ServerStatus extends EmbeddableEvent implements Channelable {
+public class ServerStatus extends EmbeddableEvent implements Channelable, ServerSaveWaiter {
 
     private final WorldsService worldsService;
 
@@ -59,6 +62,8 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
     @SuppressWarnings("InfiniteLoopStatement")
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
+        getAndCacheWorlds();
+
         while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
@@ -68,7 +73,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(300000);
+                    wait(getWaitTime(300000));
                 }
             }
         }
@@ -78,7 +83,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
         Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
-        WorldModel worlds = worldsService.getWorlds();
+        WorldModel worlds = getAndCacheWorlds();
 
         for (Snowflake guildId : guildIds) {
             Snowflake channel = CacheData.getChannelsCache()
@@ -145,6 +150,12 @@ public class ServerStatus extends EmbeddableEvent implements Channelable {
 
         processData(channel, worldsService.getWorlds());
         return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
+    }
+
+    private WorldModel getAndCacheWorlds() {
+        WorldModel worlds = worldsService.getWorlds();
+        CacheData.setWorldsStatus(worlds);
+        return worlds;
     }
 
     private EmbedCreateFields.Field buildEmbedField(WorldData data) {

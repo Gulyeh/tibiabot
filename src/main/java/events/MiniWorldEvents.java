@@ -12,36 +12,40 @@ import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
+import events.interfaces.ServerSaveWaiter;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
-import services.houses.HousesService;
-import services.houses.models.HouseData;
-import services.houses.models.HousesModel;
+import services.miniWorldEvents.MiniWorldEventsService;
+import services.miniWorldEvents.models.MiniWorldEvent;
+import services.miniWorldEvents.models.MiniWorldEventsModel;
+import services.worlds.enums.Status;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
-import static builders.commands.names.CommandsNames.houseCommand;
+import static builders.commands.names.CommandsNames.miniWorldChangesCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;
+import static utils.Methods.getFormattedDate;
 
-public class Houses extends EmbeddableEvent implements Channelable {
+public class MiniWorldEvents extends EmbeddableEvent implements Channelable, ServerSaveWaiter {
 
-    private final HousesService housesService;
+    private final MiniWorldEventsService miniWorldEventsService;
+    private HashMap<String, Status> beforeWorldsStatus;
 
-    public Houses(HousesService housesService) {
-        this.housesService = housesService;
+    public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
+        this.miniWorldEventsService = miniWorldEventsService;
+        beforeWorldsStatus = new HashMap<>();
     }
-
 
     @Override
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(houseCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(miniWorldChangesCommand)) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -58,28 +62,22 @@ public class Houses extends EmbeddableEvent implements Channelable {
     @SuppressWarnings("InfiniteLoopStatement")
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
-        while (true) {
+        while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
-                housesService.clearCache();
+                miniWorldEventsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(1800000);
+                    wait(getWaitTime(300000));
                 }
             }
         }
     }
 
     @Override
-    public String getEventName() {
-        return EventName.getHouses();
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked"})
     protected <T> void processData(GuildMessageChannel channel, T model) {
         deleteMessages(channel);
 
@@ -88,41 +86,16 @@ public class Houses extends EmbeddableEvent implements Channelable {
             return;
         }
 
-        List<HousesModel> list = ((List<HousesModel>) model)
-                .stream()
-                .filter(x -> x.getHouse_list() != null &&
-                        !x.getHouse_list().isEmpty())
-                .toList();
+        List<MiniWorldEvent> miniWorldChanges = ((MiniWorldEventsModel) model).getActive_mini_world_changes();
 
-        for (HousesModel house : list) {
+        for (MiniWorldEvent events : miniWorldChanges) {
             sendEmbeddedMessages(channel,
-                    createEmbedFields(house),
-                    house.getTown(),
+                    null,
+                    events.getMini_world_change_name(),
+                    "``Mini world change from \n" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
                     "",
-                    "",
-                    "",
+                    events.getMini_world_change_icon(),
                     getRandomColor());
-        }
-    }
-
-    @Override
-    protected void executeEventProcess() {
-        Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
-        if(guildIds.isEmpty()) return;
-
-        for (Snowflake guildId : guildIds) {
-            Snowflake channel = CacheData.getChannelsCache()
-                    .get(guildId)
-                    .get(EventTypes.HOUSES);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
-            if(guildChannel == null) continue;
-
-            processData(guildChannel, housesService.getHouses(guildId));
         }
     }
 
@@ -138,29 +111,51 @@ public class Houses extends EmbeddableEvent implements Channelable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processData(channel, housesService.getHouses(guildId));
-        return event.createFollowup("Set default Houses event channel to <#" + channelId.asString() + ">");
+        processData(channel, miniWorldEventsService.getMiniWorldChanges(guildId));
+        return event.createFollowup("Set default Mini World Changes event channel to <#" + channelId.asString() + ">");
     }
 
     @Override
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
-        List<EmbedCreateFields.Field> fields = new ArrayList<>();
-
-        for (HouseData data : ((HousesModel) model).getHouse_list()) {
-            fields.add(buildEmbedField(data, ((HousesModel) model).getWorld()));
-        }
-
-        return fields;
+        //embed does not have any fields
+        return new ArrayList<>();
     }
 
-    private EmbedCreateFields.Field buildEmbedField(HouseData data, String world) {
-        String auctionLink = "[Auction](https://www.tibia.com/community/?subtopic=houses&page=view&houseid="
-        + data.getHouse_id() + "&world=" + world + ")";
+    @Override
+    protected void executeEventProcess() {
+        for (Snowflake guildId : CacheData.getChannelsCache().keySet()) {
+            if(!serverStatusChangedForServer(guildId)) continue;
 
-        return EmbedCreateFields.Field.of(data.getName() + " (" + data.getHouse_id() + ")",
-                "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n\n``Current bid: " +
-                        data.getAuction().getCurrent_bid() + " gold\nTime left: " + data.getAuction().getTime_left() +
-                        "``\n\n" + auctionLink,
-                true);
+            Snowflake channel = CacheData.getChannelsCache()
+                    .get(guildId)
+                    .get(EventTypes.MINI_WORLD_CHANGES);
+            if(channel == null || channel.asString().isEmpty()) continue;
+
+            Guild guild = client.getGuildById(guildId).block();
+            if(guild == null) continue;
+
+            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            if(guildChannel == null) continue;
+
+            processData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
+        }
+
+        beforeWorldsStatus = CacheData.getWorldsStatus();
+    }
+
+
+    @Override
+    public String getEventName() {
+        return EventName.getMiniWorldChanges();
+    }
+
+    private boolean serverStatusChangedForServer(Snowflake guildId) {
+        if(beforeWorldsStatus.isEmpty() || CacheData.getWorldsStatus().isEmpty()) return true;
+
+        String serverName = CacheData.getWorldCache().get(guildId);
+        Status actualStatus = CacheData.getWorldsStatus().get(serverName);
+        Status beforeStatus = beforeWorldsStatus.get(serverName);
+
+        return beforeStatus.equals(Status.OFFLINE) && actualStatus.equals(Status.ONLINE);
     }
 }

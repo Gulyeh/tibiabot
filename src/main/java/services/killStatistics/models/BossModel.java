@@ -20,10 +20,6 @@ public class BossModel {
         throw new IllegalArgumentException();
     }
 
-    public void setBossType(BossType type) {
-        bossType = type;
-    }
-
     public void setSpawnPossibility(String possibility) {
         try {
             spawnPossibility = Double.parseDouble(possibility.replace("%", ""));

@@ -10,7 +10,9 @@ import java.util.Random;
 
 public abstract class EmbeddableEvent extends ProcessEvent {
     protected abstract <T> List<EmbedCreateFields.Field> createEmbedFields(T model);
+
     protected abstract <T> void processData(GuildMessageChannel channel, T model);
+
     protected Color getRandomColor() {
         Random rand = new Random();
         return Color.of(rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
