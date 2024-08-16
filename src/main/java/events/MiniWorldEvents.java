@@ -92,9 +92,9 @@ public class MiniWorldEvents extends EmbeddableEvent implements Channelable, Ser
             sendEmbeddedMessages(channel,
                     null,
                     events.getMini_world_change_name(),
-                    "Mini world change active since server restart - " + getFormattedDate(events.getActivationDate()),
+                    "``Mini world change from \n" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
+                    "",
                     events.getMini_world_change_icon(),
-                    "[World Change Info]("+events.getExternal_url()+")",
                     getRandomColor());
         }
     }

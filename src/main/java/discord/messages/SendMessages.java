@@ -36,8 +36,8 @@ public final class SendMessages {
             }
 
             return sentMessages;
-        } catch (Exception ignore) {
-            logINFO.info("Could not send embedded messages");
+        } catch (Exception msg) {
+            logINFO.info("Could not send embedded messages - " + msg);
             return new ArrayList<>();
         }
     }

@@ -57,10 +57,7 @@ public class MiniWorldEventsService extends WebClient implements Cacheable {
         MiniWorldEventsModel model = getModel(response, MiniWorldEventsModel.class);
         if(model == null) return new MiniWorldEventsModel();
 
-        LocalDateTime activationDate = LocalDateTime.now();
-        model.getActive_mini_world_changes().forEach(x -> x.setActivationDate(activationDate));
         miniWorldEventsCache.put(world, model);
-
         return model;
     }
 }

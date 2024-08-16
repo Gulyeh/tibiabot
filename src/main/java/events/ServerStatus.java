@@ -62,6 +62,8 @@ public class ServerStatus extends EmbeddableEvent implements Channelable, Server
     @SuppressWarnings("InfiniteLoopStatement")
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
+        getAndCacheWorlds();
+
         while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
@@ -81,8 +83,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable, Server
         Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
-        WorldModel worlds = worldsService.getWorlds();
-        CacheData.setWorldsStatus(worlds);
+        WorldModel worlds = getAndCacheWorlds();
 
         for (Snowflake guildId : guildIds) {
             Snowflake channel = CacheData.getChannelsCache()
@@ -149,6 +150,12 @@ public class ServerStatus extends EmbeddableEvent implements Channelable, Server
 
         processData(channel, worldsService.getWorlds());
         return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
+    }
+
+    private WorldModel getAndCacheWorlds() {
+        WorldModel worlds = worldsService.getWorlds();
+        CacheData.setWorldsStatus(worlds);
+        return worlds;
     }
 
     private EmbedCreateFields.Field buildEmbedField(WorldData data) {
