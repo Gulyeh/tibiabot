@@ -1,6 +1,6 @@
 package events;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -10,7 +10,6 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
 import events.utils.EventName;
@@ -19,11 +18,7 @@ import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
 import services.tibiaCoins.models.PriceModel;
 import services.tibiaCoins.models.Prices;
-import services.worlds.WorldsService;
 import services.worlds.enums.BattleEyeType;
-import services.worlds.enums.Location;
-import services.worlds.models.WorldData;
-import services.worlds.models.WorldModel;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -83,13 +78,13 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
     }
 
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
         PriceModel prices = tibiaCoinsService.getPrices();
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = CacheData.getChannelsCache()
+            Snowflake channel = DatabaseCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.TIBIA_COINS);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -118,6 +113,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
         for(Prices data : (List<Prices>)model) {

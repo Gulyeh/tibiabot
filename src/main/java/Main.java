@@ -1,5 +1,5 @@
 import builders.commands.CommandsBuilder;
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import cache.enums.EventTypes;
 import discord.Connector;
 import discord4j.common.util.Snowflake;
@@ -75,7 +75,7 @@ public class Main {
 
                     log.info("Caching data from db");
                     List<GuildModel> models = DocumentActions.getDocuments(GuildModel.class);
-                    CacheData.resetCache();
+                    DatabaseCacheData.resetCache();
 
                     for (GuildModel model : models) {
                         removeUnusedChannels(model);
@@ -109,7 +109,7 @@ public class Main {
         }
 
         Snowflake guildId = Snowflake.of(model.getGuildId());
-        CacheData.addToWorldsCache(guildId, model.getWorld());
+        DatabaseCacheData.addToWorldsCache(guildId, model.getWorld());
     }
 
     private static void addToChannelsCache(GuildModel model) {
@@ -149,7 +149,7 @@ public class Main {
                 }
             };
 
-            CacheData.addToChannelsCache(guildId, channelId, eventType);
+            DatabaseCacheData.addToChannelsCache(guildId, channelId, eventType);
         }
     }
 

@@ -1,6 +1,6 @@
 package events;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -94,8 +94,8 @@ public class EventsCalendar extends ProcessEvent implements Channelable {
 
     @Override
     protected void executeEventProcess() {
-        for (Snowflake guildId : CacheData.getChannelsCache().keySet()) {
-            Snowflake channel = CacheData.getChannelsCache()
+        for (Snowflake guildId : DatabaseCacheData.getChannelsCache().keySet()) {
+            Snowflake channel = DatabaseCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.EVENTS_CALENDAR);
             if(channel == null || channel.asString().isEmpty()) continue;

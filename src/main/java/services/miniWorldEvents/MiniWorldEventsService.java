@@ -1,6 +1,6 @@
 package services.miniWorldEvents;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,6 @@ import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.WorldsService;
 import services.worlds.models.WorldData;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +36,7 @@ public class MiniWorldEventsService extends WebClient implements Cacheable {
     }
 
     public MiniWorldEventsModel getMiniWorldChanges(Snowflake guildId) {
-        String world = CacheData.getWorldCache().get(guildId);
+        String world = DatabaseCacheData.getWorldCache().get(guildId);
         if(miniWorldEventsCache.containsKey(world)) {
             logINFO.info("Getting Mini world events from cache");
             return miniWorldEventsCache.get(world);

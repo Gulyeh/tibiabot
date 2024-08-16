@@ -1,6 +1,6 @@
 package events;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -10,7 +10,6 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
 import events.utils.EventName;
@@ -97,11 +96,11 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = CacheData.getChannelsCache()
+            Snowflake channel = DatabaseCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.KILLED_BOSSES);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -127,7 +126,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!CacheData.getWorldCache().containsKey(guildId))
+        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
@@ -173,6 +172,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
         List<KillingStatsData> data = (List<KillingStatsData>) model;

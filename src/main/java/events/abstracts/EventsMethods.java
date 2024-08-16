@@ -1,6 +1,6 @@
 package events.abstracts;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-import static cache.CacheData.isGuildCached;
+import static cache.DatabaseCacheData.isGuildCached;
 import static discord.Connector.client;
 import static mongo.DocumentActions.*;
 
@@ -76,7 +76,7 @@ public abstract class EventsMethods implements Listener {
                 if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
             }
 
-            CacheData.addToChannelsCache(guildId, channelId, eventType);
+            DatabaseCacheData.addToChannelsCache(guildId, channelId, eventType);
             logINFO.info("Saved channel");
             return true;
         } catch (Exception e) {
@@ -100,7 +100,7 @@ public abstract class EventsMethods implements Listener {
                 if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
             }
 
-            CacheData.addToWorldsCache(guildId, serverName);
+            DatabaseCacheData.addToWorldsCache(guildId, serverName);
             logINFO.info("Saved server world");
             return true;
         } catch (Exception e) {

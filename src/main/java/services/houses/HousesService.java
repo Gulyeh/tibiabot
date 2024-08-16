@@ -1,6 +1,6 @@
 package services.houses;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
 import services.interfaces.Cacheable;
 import services.WebClient;
@@ -32,7 +32,7 @@ public class HousesService extends WebClient implements Cacheable {
     }
 
     public List<HousesModel> getHouses(Snowflake guildId) {
-        world = CacheData.getWorldCache().get(guildId);
+        world = DatabaseCacheData.getWorldCache().get(guildId);
         List<HousesModel> list = new ArrayList<>();
 
         if(housesCache.containsKey(world)) {

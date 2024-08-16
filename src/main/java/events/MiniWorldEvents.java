@@ -1,6 +1,7 @@
 package events;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
+import cache.UtilsCache;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -105,7 +106,7 @@ public class MiniWorldEvents extends EmbeddableEvent implements Channelable, Ser
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!CacheData.getWorldCache().containsKey(guildId))
+        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
@@ -123,10 +124,10 @@ public class MiniWorldEvents extends EmbeddableEvent implements Channelable, Ser
 
     @Override
     protected void executeEventProcess() {
-        for (Snowflake guildId : CacheData.getChannelsCache().keySet()) {
+        for (Snowflake guildId : DatabaseCacheData.getChannelsCache().keySet()) {
             if(!serverStatusChangedForServer(guildId)) continue;
 
-            Snowflake channel = CacheData.getChannelsCache()
+            Snowflake channel = DatabaseCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.MINI_WORLD_CHANGES);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -140,7 +141,7 @@ public class MiniWorldEvents extends EmbeddableEvent implements Channelable, Ser
             processData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
         }
 
-        beforeWorldsStatus = CacheData.getWorldsStatus();
+        beforeWorldsStatus = UtilsCache.getWorldsStatus();
     }
 
 
@@ -150,10 +151,10 @@ public class MiniWorldEvents extends EmbeddableEvent implements Channelable, Ser
     }
 
     private boolean serverStatusChangedForServer(Snowflake guildId) {
-        if(beforeWorldsStatus.isEmpty() || CacheData.getWorldsStatus().isEmpty()) return true;
+        if(beforeWorldsStatus.isEmpty() || UtilsCache.getWorldsStatus().isEmpty()) return true;
 
-        String serverName = CacheData.getWorldCache().get(guildId);
-        Status actualStatus = CacheData.getWorldsStatus().get(serverName);
+        String serverName = DatabaseCacheData.getWorldCache().get(guildId);
+        Status actualStatus = UtilsCache.getWorldsStatus().get(serverName);
         Status beforeStatus = beforeWorldsStatus.get(serverName);
 
         return beforeStatus.equals(Status.OFFLINE) && actualStatus.equals(Status.ONLINE);

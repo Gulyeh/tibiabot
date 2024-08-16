@@ -7,26 +7,16 @@ import services.worlds.enums.Status;
 import services.worlds.models.WorldData;
 import services.worlds.models.WorldModel;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import static utils.Methods.getKey;
 
-public final class CacheData {
+public final class DatabaseCacheData {
     @Getter
     private static HashMap<Snowflake, String> worldCache = new HashMap<>();
     @Getter
     private static HashMap<Snowflake, HashMap<EventTypes, Snowflake>> channelsCache = new HashMap<>();
-    @Getter
-    private static HashMap<String, Status> worldsStatus = new HashMap<>();
 
-
-    public static void setWorldsStatus(WorldModel worlds) {
-        for(WorldData world : worlds.getWorlds().getRegular_worlds()) {
-            worldsStatus.put(world.getName(), world.getStatus_type());
-        }
-    }
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
         if(guildId == null || worldName.isEmpty()) return;
@@ -59,7 +49,6 @@ public final class CacheData {
     public static void resetCache() {
         worldCache = new HashMap<>();
         channelsCache = new HashMap<>();
-        worldsStatus = new HashMap<>();
     }
 
     public static boolean isGuildCached(Snowflake guildId) {

@@ -1,6 +1,6 @@
 package services.killStatistics;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
 import services.interfaces.Cacheable;
 import services.WebClient;
@@ -33,7 +33,7 @@ public class KillStatisticsService extends WebClient implements Cacheable {
     }
 
     public KillingStatsModel getStatistics(Snowflake guildId) {
-        world = CacheData.getWorldCache().get(guildId);
+        world = DatabaseCacheData.getWorldCache().get(guildId);
         if(mapCache.containsKey(world)) {
             logINFO.info("Getting Killed bosses from cache");
             return mapCache.get(world);

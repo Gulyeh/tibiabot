@@ -1,6 +1,6 @@
 package events.abstracts;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
 import events.interfaces.Listener;
 import mongo.models.GuildModel;
@@ -16,13 +16,13 @@ public abstract class DiscordEvent implements Listener {
 
     protected void removeGuild(Snowflake guildId) {
         try {
-            if(!CacheData.isGuildCached(guildId)) throw new Exception("Guild does not exist in cache");
+            if(!DatabaseCacheData.isGuildCached(guildId)) throw new Exception("Guild does not exist in cache");
 
             Document doc = getDocument(guildId);
             if(doc == null) throw new Exception("Could not find guild in db");
             if(!deleteDocument(doc)) throw new Exception("Could not delete document");
 
-            CacheData.removeGuild(guildId);
+            DatabaseCacheData.removeGuild(guildId);
             logINFO.info("Successfully removed guild");
         } catch (Exception e) {
             logINFO.info("Could not remove guild: " + e.getMessage());
@@ -31,7 +31,7 @@ public abstract class DiscordEvent implements Listener {
 
     protected void removeChannel(Snowflake guildId, Snowflake channelId) {
         try {
-            if(!CacheData.getChannelsCache().containsKey(guildId)) throw new Exception("Guild does not exist in cache");
+            if(!DatabaseCacheData.getChannelsCache().containsKey(guildId)) throw new Exception("Guild does not exist in cache");
 
             GuildModel doc = getDocument(guildId, GuildModel.class);
             if(doc == null) throw new Exception("Could not find guild in db");
@@ -40,7 +40,7 @@ public abstract class DiscordEvent implements Listener {
             doc.getChannels().removeChannel(channelId.asString());
             if(!replaceDocument(createDocument(doc))) throw new Exception("Could not remove channelId from db");
 
-            CacheData.removeChannel(guildId, channelId);
+            DatabaseCacheData.removeChannel(guildId, channelId);
             logINFO.info("Successfully removed channel");
         } catch (Exception e) {
             logINFO.info("Could not remove channel: " + e.getMessage());

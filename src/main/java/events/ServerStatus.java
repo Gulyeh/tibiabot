@@ -1,6 +1,7 @@
 package events;
 
-import cache.CacheData;
+import cache.DatabaseCacheData;
+import cache.UtilsCache;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -10,21 +11,16 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Channelable;
 import events.interfaces.ServerSaveWaiter;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
-import services.miniWorldEvents.MiniWorldEventsService;
 import services.worlds.WorldsService;
-import services.worlds.enums.Status;
 import services.worlds.models.WorldData;
 import services.worlds.models.WorldModel;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
@@ -80,13 +76,13 @@ public class ServerStatus extends EmbeddableEvent implements Channelable, Server
     }
 
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = CacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
         WorldModel worlds = getAndCacheWorlds();
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = CacheData.getChannelsCache()
+            Snowflake channel = DatabaseCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.SERVER_STATUS);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -154,7 +150,7 @@ public class ServerStatus extends EmbeddableEvent implements Channelable, Server
 
     private WorldModel getAndCacheWorlds() {
         WorldModel worlds = worldsService.getWorlds();
-        CacheData.setWorldsStatus(worlds);
+        UtilsCache.setWorldsStatus(worlds);
         return worlds;
     }
 
