@@ -11,9 +11,8 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.EmbeddableEvent;
+import events.abstracts.ServerSaveEvent;
 import events.interfaces.Channelable;
-import events.interfaces.ServerSaveWaiter;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
@@ -32,10 +31,10 @@ import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;
 import static utils.Methods.getFormattedDate;
 
-public class MiniWorldEvents extends EmbeddableEvent implements Channelable, ServerSaveWaiter {
+public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
 
     private final MiniWorldEventsService miniWorldEventsService;
-    private HashMap<String, Status> beforeWorldsStatus;
+    private final HashMap<String, Status> beforeWorldsStatus;
 
     public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
         this.miniWorldEventsService = miniWorldEventsService;
@@ -93,7 +92,7 @@ public class MiniWorldEvents extends EmbeddableEvent implements Channelable, Ser
             sendEmbeddedMessages(channel,
                     null,
                     events.getMini_world_change_name(),
-                    "``Mini world change from \n" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
+                    "Mini world change from``\n" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
                     "",
                     events.getMini_world_change_icon(),
                     getRandomColor());
@@ -141,9 +140,8 @@ public class MiniWorldEvents extends EmbeddableEvent implements Channelable, Ser
             processData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
         }
 
-        beforeWorldsStatus = UtilsCache.getWorldsStatus();
+        beforeWorldsStatus.putAll(UtilsCache.getWorldsStatus());
     }
-
 
     @Override
     public String getEventName() {

@@ -1,12 +1,12 @@
-package events.interfaces;
+package events.abstracts;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-public interface ServerSaveWaiter {
-    default long getWaitTime(int specifiedMillis) {
+public abstract class ServerSaveEvent extends EmbeddableEvent {
+    protected long getWaitTime(int specifiedMillis) {
         int expectedHour = 10;
-        int expectedMinute = 1;
+        int expectedMinute = 2;
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime requiredTime = now
