@@ -66,6 +66,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
             try {
                 logINFO.info("Executing thread " + getEventName());
                 miniWorldEventsService.clearCache();
+                if(isAfterSaverSave()) beforeWorldsStatus.clear();
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
@@ -87,6 +88,16 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
         }
 
         List<MiniWorldEvent> miniWorldChanges = ((MiniWorldEventsModel) model).getActive_mini_world_changes();
+        if(miniWorldChanges.isEmpty()) {
+            sendEmbeddedMessages(channel,
+                    null,
+                    "There are no active mini world changes on this world currently",
+                    "",
+                    "",
+                    "",
+                    getRandomColor());
+            return;
+        }
 
         for (MiniWorldEvent events : miniWorldChanges) {
             sendEmbeddedMessages(channel,

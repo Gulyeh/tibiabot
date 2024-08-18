@@ -63,6 +63,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
             try {
                 logINFO.info("Executing thread " + getEventName());
                 worldsService.clearCache();
+                if(isAfterSaverSave()) UtilsCache.getWorldsStatus().clear();
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());

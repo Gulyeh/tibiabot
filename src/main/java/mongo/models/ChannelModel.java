@@ -4,8 +4,6 @@ import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.SneakyThrows;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -19,6 +17,7 @@ public class ChannelModel {
     private String houses = "";
     private String tibiaCoins = "";
     private String miniWorldChanges = "";
+    private String boosteds = "";
 
     public void setByEventType(EventTypes eventType, String channelId) {
         switch (eventType) {
@@ -28,7 +27,8 @@ public class ChannelModel {
             case SERVER_STATUS -> serverStatus = channelId;
             case EVENTS_CALENDAR -> events = channelId;
             case MINI_WORLD_CHANGES -> miniWorldChanges = channelId;
-        };
+            case BOOSTEDS -> boosteds = channelId;
+        }
     }
 
     public void removeChannel(String channelId) throws IllegalAccessException {

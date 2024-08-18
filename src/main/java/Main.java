@@ -14,6 +14,7 @@ import mongo.DocumentActions;
 import mongo.MongoConnector;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
+import services.boosteds.BoostedsService;
 import services.events.EventsService;
 import services.houses.HousesService;
 import services.killStatistics.KillStatisticsService;
@@ -46,6 +47,7 @@ public class Main {
         Connector.addListener(new Houses(new HousesService()));
         Connector.addListener(new EventsCalendar(new EventsService()));
         Connector.addListener(new MiniWorldEvents(new MiniWorldEventsService(worldsService)));
+        Connector.addListener(new Boosteds(new BoostedsService()));
         Connector.addListener(new RemovedChannel());
         Connector.addListener(new RemovedGuild());
     }
@@ -58,6 +60,7 @@ public class Main {
                 .setServerStatusChannel()
                 .setTibiaCoinsPricesChannel()
                 .setWorld()
+                .setBoostedsChannel()
                 .setMiniWorldChangeChannel()
                 .clearUnusedCommands()
                 .build();
@@ -146,6 +149,10 @@ public class Main {
                 case TIBIA_COINS -> {
                     if(channels.getTibiaCoins().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getTibiaCoins());
+                }
+                case BOOSTEDS -> {
+                    if(channels.getBoosteds().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getBoosteds());
                 }
             };
 

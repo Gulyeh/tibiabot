@@ -9,35 +9,36 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import events.abstracts.ProcessEvent;
+import discord4j.core.spec.EmbedCreateFields;
+import events.abstracts.ServerSaveEvent;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
-import services.events.EventsService;
+import services.boosteds.BoostedsService;
+import services.boosteds.models.BoostedModel;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 
-import static builders.commands.names.CommandsNames.eventsCommand;
+import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendImageMessage;
+import static discord.messages.SendMessages.sendEmbeddedMessages;
 
-public class EventsCalendar extends ProcessEvent implements Channelable {
+public class Boosteds extends ServerSaveEvent implements Channelable {
+    private final BoostedsService boostedsService;
 
-    private final EventsService eventsService;
-
-    public EventsCalendar(EventsService eventsService) {
-        this.eventsService = eventsService;
+    public Boosteds(BoostedsService boostedsService) {
+        this.boostedsService = boostedsService;
     }
+
 
     @Override
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(eventsCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(boostedsCommand)) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -50,42 +51,20 @@ public class EventsCalendar extends ProcessEvent implements Channelable {
     }
 
     @Override
-    public String getEventName() {
-        return EventName.getEvents();
-    }
-
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     protected void activateEvent() {
         logINFO.info("Activating " + getEventName());
-        long timeLeft = 0;
-
         while (true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
-
-                LocalDateTime now = LocalDateTime.now();
-                int expectedHour = 10;
-                int expectedMinute = 30;
-
-                LocalDateTime requiredTime = now
-                        .withHour(expectedHour)
-                        .withMinute(expectedMinute)
-                        .withSecond(0);
-
-                if(now.isAfter(requiredTime) || now.isEqual(requiredTime)) requiredTime = requiredTime.plusDays(1);
-
-                timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
-
-                eventsService.clearCache();
+                boostedsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
-                logINFO.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
                 synchronized (this) {
-                    wait(timeLeft);
+                    wait(getWaitTime());
                 }
             }
         }
@@ -96,7 +75,7 @@ public class EventsCalendar extends ProcessEvent implements Channelable {
         for (Snowflake guildId : DatabaseCacheData.getChannelsCache().keySet()) {
             Snowflake channel = DatabaseCacheData.getChannelsCache()
                     .get(guildId)
-                    .get(EventTypes.EVENTS_CALENDAR);
+                    .get(EventTypes.BOOSTEDS);
             if(channel == null || channel.asString().isEmpty()) continue;
 
             Guild guild = client.getGuildById(guildId).block();
@@ -105,31 +84,55 @@ public class EventsCalendar extends ProcessEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel);
+            processData(guildChannel, boostedsService.getBoostedCreature());
+            processData(guildChannel, boostedsService.getBoostedBoss());
         }
+    }
+
+    @Override
+    protected <T> void processData(GuildMessageChannel channel, T model) {
+        deleteMessages(channel);
+
+        if (model == null) {
+            logINFO.warn("model is null");
+            return;
+        }
+
+        BoostedModel boosted = (BoostedModel) model;
+
+        sendEmbeddedMessages(channel,
+                null,
+                boosted.getBoostedTypeText(),
+                "["+boosted.getName().toUpperCase()+"]("+boosted.getBoosted_data_link()+")",
+                "",
+                boosted.getIcon_link(),
+                getRandomColor());
     }
 
     @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
-        if (channelId == null) return event.createFollowup("Could not find channel");
+        if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
+        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
+            return event.createFollowup("You have to set tracking world first");
+
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-
         if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-
-        processData(channel);
-        return event.createFollowup("Set default Events calendar channel to <#" + channelId.asString() + ">");
+        processData(channel, boostedsService.getBoostedCreature());
+        processData(channel, boostedsService.getBoostedBoss());
+        return event.createFollowup("Set default Boosteds event channel to <#" + channelId.asString() + ">");
     }
 
-    private void processData(GuildMessageChannel channel) {
-        deleteMessages(channel);
-        LocalDateTime date = LocalDateTime.now();
-        String path = eventsService.getEvents(date.getMonthValue(), date.getYear());
-        sendImageMessage(channel, path);
-        date = LocalDateTime.now().plusMonths(1);
-        path = eventsService.getEvents(date.getMonthValue(), date.getYear());
-        sendImageMessage(channel, path);
+    @Override
+    public String getEventName() {
+        return EventName.getBoosteds();
+    }
+
+    @Override
+    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
+        return new ArrayList<>();
     }
 }

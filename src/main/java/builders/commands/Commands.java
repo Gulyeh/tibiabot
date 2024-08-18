@@ -106,6 +106,14 @@ public class Commands {
         return this;
     }
 
+    public Commands setBoostedsChannel() {
+        ApplicationCommandRequest setBoostedsCmd =
+                requestBuilder(boostedsCommand, "Set default channel for Boosteds", "Channel name", ApplicationCommandOption.Type.CHANNEL);
+
+        if(!listOfCommands.contains(setBoostedsCmd)) listOfCommands.add(setBoostedsCmd);
+        return this;
+    }
+
     private ApplicationCommandRequest requestBuilder(String name, String description, String optionDescription, ApplicationCommandOption.Type type) {
         return ApplicationCommandRequest.builder()
                 .name(name)

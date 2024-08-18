@@ -17,4 +17,6 @@ public final class EventName {
     private static final String trackWorld = "Track World Event";
     @Getter
     private static final String miniWorldChanges = "Mini World Changes Event";
+    @Getter
+    private static final String boosteds = "Boosteds Event";
 }
