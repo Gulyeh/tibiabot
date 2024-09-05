@@ -13,11 +13,11 @@ public class BoostedModel {
     private String boosted_data_link;
 
     public String getIcon_link() {
-        return "https://tibia.fandom.com/wiki/Special:Redirect/file/"+getName().replace(" ", "_")+".gif";
+        return "https://tibia.fandom.com/wiki/Special:Redirect/file/"+getName().replace(" ", "_").replace("The", "the")+".gif";
     }
 
     public String getBoosted_data_link() {
-        return "https://tibia.fandom.com/wiki/"+getName().replace(" ", "_");
+        return "https://tibia.fandom.com/wiki/"+getName().replace(" ", "_").replace("The", "the");
     }
 
     public String getBoostedTypeText() {

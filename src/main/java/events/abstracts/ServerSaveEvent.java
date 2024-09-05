@@ -8,7 +8,7 @@ public abstract class ServerSaveEvent extends EmbeddableEvent {
 
     private LocalDateTime serverSaveTime;
     private final int expectedHour = 10;
-    private final int expectedMinute = 2;
+    private final int expectedMinute = 3;
 
     public ServerSaveEvent() {
         serverSaveTime = LocalDateTime.now()
