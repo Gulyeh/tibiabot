@@ -114,6 +114,22 @@ public class Commands {
         return this;
     }
 
+    public Commands setDeathsChannel() {
+        ApplicationCommandRequest setDeathsCmd =
+                requestBuilder(deathsCommand, "Set default channel for Deaths", "Channel name", ApplicationCommandOption.Type.CHANNEL);
+
+        if(!listOfCommands.contains(setDeathsCmd)) listOfCommands.add(setDeathsCmd);
+        return this;
+    }
+
+    public Commands setMinimumDeathsLevel() {
+        ApplicationCommandRequest setDeathsLevelCmd =
+                requestBuilder(setMinimumDeathsLevelCommand, "Set minimum level for Deaths", "Level", ApplicationCommandOption.Type.INTEGER);
+
+        if(!listOfCommands.contains(setDeathsLevelCmd)) listOfCommands.add(setDeathsLevelCmd);
+        return this;
+    }
+
     private ApplicationCommandRequest requestBuilder(String name, String description, String optionDescription, ApplicationCommandOption.Type type) {
         return ApplicationCommandRequest.builder()
                 .name(name)

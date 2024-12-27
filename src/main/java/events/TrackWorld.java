@@ -1,15 +1,21 @@
 package events;
 
+import cache.DatabaseCacheData;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import events.abstracts.EventsMethods;
 import events.utils.EventName;
+import mongo.models.ChannelModel;
+import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
 import services.worlds.WorldsService;
 import services.worlds.models.WorldModel;
 
 import static builders.commands.names.CommandsNames.worldCommand;
+import static cache.DatabaseCacheData.isGuildCached;
 import static discord.Connector.client;
+import static mongo.DocumentActions.*;
 
 public class TrackWorld extends EventsMethods {
 
@@ -73,5 +79,28 @@ public class TrackWorld extends EventsMethods {
         return worlds.getWorlds().getRegular_worlds()
                 .stream()
                 .anyMatch(x -> x.getName().equalsIgnoreCase(worldName));
+    }
+
+    private boolean saveSetWorld(String serverName, Snowflake guildId) {
+        try {
+            if (!isGuildCached(guildId)) {
+                GuildModel model = new GuildModel();
+                model.setChannels(new ChannelModel());
+                model.setGuildId(guildId.asString());
+                model.setWorld(serverName);
+                if(!insertDocuments(createDocument(model))) throw new Exception("Could not save model to database");
+            } else {
+                GuildModel model = getGuild(guildId);
+                model.setWorld(serverName);
+                if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
+            }
+
+            DatabaseCacheData.addToWorldsCache(guildId, serverName);
+            logINFO.info("Saved server world");
+            return true;
+        } catch (Exception e) {
+            logINFO.info("Could not save world: " + e.getMessage());
+            return false;
+        }
     }
 }

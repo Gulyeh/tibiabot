@@ -10,6 +10,7 @@ public class GuildModel {
     private ObjectId _id;
     private String guildId;
     private String world;
+    private int deathMinimumLevel = 8;
     private ChannelModel channels;
 
     public ChannelModel getChannels() {

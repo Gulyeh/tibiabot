@@ -18,6 +18,7 @@ public class ChannelModel {
     private String tibiaCoins = "";
     private String miniWorldChanges = "";
     private String boosteds = "";
+    private String deathTracker = "";
 
     public void setByEventType(EventTypes eventType, String channelId) {
         switch (eventType) {
@@ -28,6 +29,7 @@ public class ChannelModel {
             case EVENTS_CALENDAR -> events = channelId;
             case MINI_WORLD_CHANGES -> miniWorldChanges = channelId;
             case BOOSTEDS -> boosteds = channelId;
+            case DEATH_TRACKER -> deathTracker = channelId;
         }
     }
 

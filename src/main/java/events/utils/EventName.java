@@ -19,4 +19,8 @@ public final class EventName {
     private static final String miniWorldChanges = "Mini World Changes Event";
     @Getter
     private static final String boosteds = "Boosteds Event";
+    @Getter
+    private static final String deathTracker = "Death Tracker Event";
+    @Getter
+    private static final String minimumDeathLevel = "Minimum Death Level Event";
 }

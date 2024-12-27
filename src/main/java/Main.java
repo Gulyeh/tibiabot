@@ -1,4 +1,5 @@
 import builders.commands.CommandsBuilder;
+import cache.CacheInitializer;
 import cache.DatabaseCacheData;
 import cache.enums.EventTypes;
 import discord.Connector;
@@ -15,6 +16,7 @@ import mongo.MongoConnector;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import services.boosteds.BoostedsService;
+import services.deathTracker.DeathTrackerService;
 import services.events.EventsService;
 import services.houses.HousesService;
 import services.killStatistics.KillStatisticsService;
@@ -32,7 +34,7 @@ public class Main {
     public static void main(String[] args) {
         initializeServices();
         buildCommands();
-        fillCache();
+        fillCache(new CacheInitializer());
         client.onDisconnect().block();
     }
 
@@ -48,6 +50,8 @@ public class Main {
         Connector.addListener(new EventsCalendar(new EventsService()));
         Connector.addListener(new MiniWorldEvents(new MiniWorldEventsService(worldsService)));
         Connector.addListener(new Boosteds(new BoostedsService()));
+        Connector.addListener(new DeathTracker(new DeathTrackerService()));
+        Connector.addListener(new MinimumDeathLevel());
         Connector.addListener(new RemovedChannel());
         Connector.addListener(new RemovedGuild());
     }
@@ -62,11 +66,13 @@ public class Main {
                 .setWorld()
                 .setBoostedsChannel()
                 .setMiniWorldChangeChannel()
+                .setDeathsChannel()
+                .setMinimumDeathsLevel()
                 .clearUnusedCommands()
                 .build();
     }
 
-    private static void fillCache() {
+    private static void fillCache(CacheInitializer initializer) {
         new Thread(() -> {
             MongoConnector.connect();
 
@@ -81,11 +87,12 @@ public class Main {
                     DatabaseCacheData.resetCache();
 
                     for (GuildModel model : models) {
-                        removeUnusedChannels(model);
+                        initializer.removeUnusedChannels(model);
 
                         if(guilds.stream().anyMatch(x -> x.getId().asString().equals(model.getGuildId()))) {
-                            addToWorldCache(model);
-                            addToChannelsCache(model);
+                            initializer.addToWorldCache(model);
+                            initializer.addToChannelsCache(model);
+                            initializer.addToDeathsCache(model);
                         } else {
                             deleteDocument(getDocument(Snowflake.of(model.getGuildId())));
                         }
@@ -103,80 +110,5 @@ public class Main {
                 }
             }
         }).start();
-    }
-
-    private static void addToWorldCache(GuildModel model) {
-        if(model.getWorld() == null || model.getWorld().isEmpty() || model.getGuildId().isEmpty()) {
-            log.info("Could not add world to cache");
-            return;
-        }
-
-        Snowflake guildId = Snowflake.of(model.getGuildId());
-        DatabaseCacheData.addToWorldsCache(guildId, model.getWorld());
-    }
-
-    private static void addToChannelsCache(GuildModel model) {
-        if(model.getChannels() == null || model.getGuildId().isEmpty()) {
-            log.info("Could not add to channels to cache");
-            return;
-        }
-
-        Snowflake guildId = Snowflake.of(model.getGuildId());
-        ChannelModel channels = model.getChannels();
-
-        for(EventTypes eventType : EventTypes.values()) {
-            Snowflake channelId = switch (eventType) {
-                case MINI_WORLD_CHANGES -> {
-                    if(channels.getMiniWorldChanges().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getMiniWorldChanges());
-                }
-                case EVENTS_CALENDAR -> {
-                    if(channels.getEvents().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getEvents());
-                }
-                case SERVER_STATUS -> {
-                    if(channels.getServerStatus().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getServerStatus());
-                }
-                case HOUSES -> {
-                    if(channels.getHouses().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getHouses());
-                }
-                case KILLED_BOSSES -> {
-                    if(channels.getKillStatistics().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getKillStatistics());
-                }
-                case TIBIA_COINS -> {
-                    if(channels.getTibiaCoins().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getTibiaCoins());
-                }
-                case BOOSTEDS -> {
-                    if(channels.getBoosteds().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getBoosteds());
-                }
-            };
-
-            DatabaseCacheData.addToChannelsCache(guildId, channelId, eventType);
-        }
-    }
-
-    private static void removeUnusedChannels(GuildModel model) {
-        try {
-            List<GuildChannel> channels = client.getGuildChannels(Snowflake.of(model.getGuildId()))
-                    .filter(x -> x instanceof TextChannel)
-                    .collectList()
-                    .block();
-
-            if (channels == null) throw new Exception("Could not find channels for guild " + model.getGuildId());
-
-            int removed = model.getChannels().removeChannelsExcept(channels);
-
-            if (removed > 0) {
-                replaceDocument(createDocument(model));
-                log.info("Removed " + removed + " channels from guild " + model.getGuildId());
-            }
-        } catch (Exception e) {
-            log.info("Could not remove unused channels from guild " + model.getGuildId() + ": " + e.getMessage());
-        }
     }
 }

@@ -16,11 +16,18 @@ public final class DatabaseCacheData {
     private static HashMap<Snowflake, String> worldCache = new HashMap<>();
     @Getter
     private static HashMap<Snowflake, HashMap<EventTypes, Snowflake>> channelsCache = new HashMap<>();
+    @Getter
+    private static HashMap<Snowflake, Integer> minimumDeathLevelCache = new HashMap<>();
 
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
         if(guildId == null || worldName.isEmpty()) return;
         worldCache.put(guildId, worldName);
+    }
+
+    public static void addMinimumDeathLevelCache(Snowflake guildId, int minimumLevel) {
+        if(guildId == null || minimumLevel < 1) return;
+        minimumDeathLevelCache.put(guildId, minimumLevel);
     }
 
     public static void addToChannelsCache(Snowflake guildId, Snowflake channelId, EventTypes eventType) {
@@ -38,6 +45,7 @@ public final class DatabaseCacheData {
         if(guildId == null) return;
         worldCache.remove(guildId);
         channelsCache.remove(guildId);
+        minimumDeathLevelCache.remove(guildId);
     }
 
     public static void removeChannel(Snowflake guildId, Snowflake channelId) {
@@ -49,6 +57,7 @@ public final class DatabaseCacheData {
     public static void resetCache() {
         worldCache = new HashMap<>();
         channelsCache = new HashMap<>();
+        minimumDeathLevelCache = new HashMap<>();
     }
 
     public static boolean isGuildCached(Snowflake guildId) {

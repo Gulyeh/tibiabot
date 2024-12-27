@@ -3,6 +3,9 @@ package services.boosteds.models;
 import lombok.Getter;
 import lombok.Setter;
 
+import static utils.Methods.formatWikiGifLink;
+import static utils.Methods.formatWikiLink;
+
 @Getter
 public class BoostedModel {
     @Setter
@@ -13,11 +16,11 @@ public class BoostedModel {
     private String boosted_data_link;
 
     public String getIcon_link() {
-        return "https://tibia.fandom.com/wiki/Special:Redirect/file/"+getName().replace(" ", "_").replace("The", "the")+".gif";
+        return formatWikiGifLink(getName());
     }
 
     public String getBoosted_data_link() {
-        return "https://tibia.fandom.com/wiki/"+getName().replace(" ", "_").replace("The", "the");
+        return formatWikiLink(getName());
     }
 
     public String getBoostedTypeText() {

@@ -7,14 +7,22 @@ import java.util.concurrent.TimeUnit;
 public abstract class ServerSaveEvent extends EmbeddableEvent {
 
     private LocalDateTime serverSaveTime;
-    private final int expectedHour = 10;
-    private final int expectedMinute = 3;
+    private int expectedHour = 10;
+    private int expectedMinute = 3;
 
     public ServerSaveEvent() {
         serverSaveTime = LocalDateTime.now()
                 .withHour(expectedHour)
                 .withMinute(expectedMinute)
                 .withSecond(0);
+    }
+
+    protected void setExpectedHour(int value) {
+        expectedHour = value;
+    }
+
+    protected void setExpectedMinute(int value) {
+        expectedMinute = value;
     }
 
     protected long getWaitTime(int specifiedMillis) {

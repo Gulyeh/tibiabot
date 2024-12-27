@@ -39,6 +39,8 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
     public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
         this.miniWorldEventsService = miniWorldEventsService;
         beforeWorldsStatus = new HashMap<>();
+        setExpectedHour(11);
+        setExpectedMinute(0);
     }
 
     @Override

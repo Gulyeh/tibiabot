@@ -13,6 +13,7 @@ public enum EventTypes {
     SERVER_STATUS(EventName.getServerStatus()),
     MINI_WORLD_CHANGES(EventName.getMiniWorldChanges()),
     EVENTS_CALENDAR(EventName.getEvents()),
+    DEATH_TRACKER(EventName.getDeathTracker()),
     BOOSTEDS(EventName.getBoosteds());
 
     private final String name;

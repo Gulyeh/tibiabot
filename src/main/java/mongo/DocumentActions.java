@@ -119,9 +119,11 @@ public final class DocumentActions {
     }
 
     public static Document createDocument(GuildModel model) {
+
         Document doc = new Document()
                 .append("guildId", model.getGuildId())
                 .append("world", model.getWorld())
+                .append("minimumDeathLevel", model.getDeathMinimumLevel())
                 .append("channels", model.getChannels());
 
         if(model.get_id() != null) doc.append("_id", model.get_id());

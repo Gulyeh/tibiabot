@@ -42,6 +42,10 @@ public abstract class WebClient {
         return new HttpGet(getUrl());
     }
 
+    protected ClassicHttpRequest getCustomRequest(String url) {
+        return new HttpGet(url);
+    }
+
     protected ClassicHttpRequest getRequest(String additionalParams) {
         return new HttpGet(getUrl() + additionalParams);
     }
