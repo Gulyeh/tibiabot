@@ -79,6 +79,10 @@ public class CacheInitializer {
                     if(channels.getDeathTracker().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getDeathTracker());
                 }
+                case ONLINE_TRACKER -> {
+                    if(channels.getOnlineTracker().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getOnlineTracker());
+                }
             };
 
             DatabaseCacheData.addToChannelsCache(guildId, channelId, eventType);

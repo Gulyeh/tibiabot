@@ -16,9 +16,9 @@ import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
+import apis.tibiaData.model.worlds.WorldData;
+import apis.tibiaData.model.worlds.WorldModel;
 import services.worlds.WorldsService;
-import services.worlds.models.WorldData;
-import services.worlds.models.WorldModel;
 
 import java.util.*;
 
@@ -32,8 +32,8 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
 
     private final WorldsService worldsService;
 
-    public ServerStatus(WorldsService worldsService) {
-        this.worldsService = worldsService;
+    public ServerStatus() {
+        this.worldsService = new WorldsService();
     }
 
     @Override

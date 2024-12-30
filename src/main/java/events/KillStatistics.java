@@ -17,12 +17,13 @@ import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.killStatistics.KillStatisticsService;
 import services.killStatistics.models.BossType;
-import services.killStatistics.models.KillingStatsData;
-import services.killStatistics.models.KillingStatsModel;
+import apis.tibiaData.model.killstats.KillingStatsData;
+import apis.tibiaData.model.killstats.KillingStatsModel;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -175,7 +176,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
     @SuppressWarnings("unchecked")
     protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-        List<KillingStatsData> data = (List<KillingStatsData>) model;
+        List<KillingStatsData> data = ((List<KillingStatsData>) model);
 
         for (KillingStatsData statsData : data) {
             fields.add(buildEmbedField(statsData));

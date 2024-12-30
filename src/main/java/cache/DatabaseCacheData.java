@@ -3,10 +3,6 @@ package cache;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import lombok.Getter;
-import services.worlds.enums.Status;
-import services.worlds.models.WorldData;
-import services.worlds.models.WorldModel;
-
 import java.util.HashMap;
 
 import static utils.Methods.getKey;

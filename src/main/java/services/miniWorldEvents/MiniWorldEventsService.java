@@ -4,30 +4,27 @@ import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import services.WebClient;
+import apis.tibiaData.model.worlds.WorldData;
+import apis.tibiaTrade.TibiaTradeAPI;
 import services.interfaces.Cacheable;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.WorldsService;
-import services.worlds.models.WorldData;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class MiniWorldEventsService extends WebClient implements Cacheable {
+public class MiniWorldEventsService implements Cacheable {
 
     private Map<String, MiniWorldEventsModel> miniWorldEventsCache;
     private final Logger logINFO = LoggerFactory.getLogger(MiniWorldEventsService.class);
     private final WorldsService worldsService;
+    private final TibiaTradeAPI tibiaTradeAPI;
 
-    public MiniWorldEventsService(WorldsService worldsService) {
+    public MiniWorldEventsService() {
         clearCache();
-        this.worldsService = worldsService;
-    }
-
-    @Override
-    protected String getUrl() {
-        return "https://tibiatrade.gg/api/miniWorldChange/active/";
+        this.worldsService = new WorldsService();
+        tibiaTradeAPI = new TibiaTradeAPI();
     }
 
     @Override
@@ -51,11 +48,7 @@ public class MiniWorldEventsService extends WebClient implements Cacheable {
 
         if(worldModel.isEmpty()) return new MiniWorldEventsModel();
         WorldData modelData = worldModel.get();
-
-        String response = sendRequest(getRequest(modelData.getId().toString()));
-        MiniWorldEventsModel model = getModel(response, MiniWorldEventsModel.class);
-        if(model == null) return new MiniWorldEventsModel();
-
+        MiniWorldEventsModel model = tibiaTradeAPI.getMiniWorldEvents(modelData.getId().toString());
         miniWorldEventsCache.put(world, model);
         return model;
     }

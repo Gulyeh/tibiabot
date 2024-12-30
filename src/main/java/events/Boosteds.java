@@ -16,7 +16,7 @@ import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
-import services.boosteds.models.BoostedModel;
+import apis.tibiaLabs.model.BoostedModel;
 
 import java.util.ArrayList;
 import java.util.List;

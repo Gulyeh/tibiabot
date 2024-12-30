@@ -17,7 +17,7 @@ import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
-import services.deathTracker.model.api.Killer;
+import apis.tibiaData.model.deathtracker.Killer;
 import utils.Methods;
 
 import java.time.ZoneOffset;
@@ -119,6 +119,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected <T> void processData(GuildMessageChannel channel, T model) {
         if (model == null) {
             logINFO.warn("model is null");
@@ -146,7 +147,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
     private String getTitle(DeathData data) {
         String icon = data.getCharacter().getVocation().getIcon();
         String name = data.getCharacter().getName();
-        return icon + "[" + name + "](https://www.tibia.com/community/?name=" + name + ")" + icon;
+        return icon + "[" + name + "]("+ data.getCharacter().getCharacterLink() + ")" + icon;
     }
 
     private String getDescription(DeathData data) {
@@ -157,8 +158,8 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                     .append(data.getGuild().getRank())
                     .append(" of the [")
                     .append(name)
-                    .append("](https://www.tibia.com/community/?subtopic=guilds&page=view&GuildName=")
-                    .append(name)
+                    .append("](")
+                    .append(data.getGuild().getGuildLink())
                     .append(")\n");
         }
         builder.append("Died ")

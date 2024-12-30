@@ -21,6 +21,7 @@ import services.events.EventsService;
 import services.houses.HousesService;
 import services.killStatistics.KillStatisticsService;
 import services.miniWorldEvents.MiniWorldEventsService;
+import services.onlines.OnlineService;
 import services.tibiaCoins.TibiaCoinsService;
 import services.worlds.WorldsService;
 
@@ -40,17 +41,17 @@ public class Main {
 
     private static void initializeServices() {
         Connector.connect();
-        WorldsService worldsService = new WorldsService();
 
-        Connector.addListener(new TibiaCoins(new TibiaCoinsService(worldsService)));
-        Connector.addListener(new ServerStatus(worldsService));
-        Connector.addListener(new TrackWorld(worldsService));
+        Connector.addListener(new TibiaCoins(new TibiaCoinsService()));
+        Connector.addListener(new ServerStatus());
+        Connector.addListener(new TrackWorld());
         Connector.addListener(new KillStatistics(new KillStatisticsService()));
         Connector.addListener(new Houses(new HousesService()));
         Connector.addListener(new EventsCalendar(new EventsService()));
-        Connector.addListener(new MiniWorldEvents(new MiniWorldEventsService(worldsService)));
+        Connector.addListener(new MiniWorldEvents(new MiniWorldEventsService()));
         Connector.addListener(new Boosteds(new BoostedsService()));
         Connector.addListener(new DeathTracker(new DeathTrackerService()));
+        Connector.addListener(new OnlineTracker(new OnlineService()));
         Connector.addListener(new MinimumDeathLevel());
         Connector.addListener(new RemovedChannel());
         Connector.addListener(new RemovedGuild());
@@ -68,6 +69,7 @@ public class Main {
                 .setMiniWorldChangeChannel()
                 .setDeathsChannel()
                 .setMinimumDeathsLevel()
+                .setOnlineTracker()
                 .clearUnusedCommands()
                 .build();
     }

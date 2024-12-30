@@ -14,6 +14,7 @@ public enum EventTypes {
     MINI_WORLD_CHANGES(EventName.getMiniWorldChanges()),
     EVENTS_CALENDAR(EventName.getEvents()),
     DEATH_TRACKER(EventName.getDeathTracker()),
+    ONLINE_TRACKER(EventName.getOnlineTracker()),
     BOOSTEDS(EventName.getBoosteds());
 
     private final String name;

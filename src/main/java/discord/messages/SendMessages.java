@@ -70,7 +70,6 @@ public final class SendMessages {
 
             List<EmbedCreateFields.Field> fieldsSplitted = fields.subList(minIndex, maxIndex);
             EmbedCreateSpec builder = generateEmbed(embedData, i, iterations);
-
             listOfMessages.add(builder.withFields(fieldsSplitted).asRequest());
         }
 

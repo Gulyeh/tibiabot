@@ -2,12 +2,13 @@ package services.killStatistics;
 
 import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import apis.tibiaData.TibiaDataAPI;
 import services.interfaces.Cacheable;
-import services.WebClient;
 import services.killStatistics.models.BossModel;
-import services.killStatistics.models.KillingStatsBase;
-import services.killStatistics.models.KillingStatsData;
-import services.killStatistics.models.KillingStatsModel;
+import apis.tibiaData.model.killstats.KillingStatsData;
+import apis.tibiaData.model.killstats.KillingStatsModel;
 import services.killStatistics.pageObjects.GuildStatsBosses;
 
 import java.util.HashMap;
@@ -15,17 +16,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class KillStatisticsService extends WebClient implements Cacheable {
+public class KillStatisticsService implements Cacheable {
     private String world;
     private Map<String, KillingStatsModel> mapCache;
+    private final Logger logINFO = LoggerFactory.getLogger(KillStatisticsService.class);
+    private final TibiaDataAPI api;
 
     public KillStatisticsService() {
+        api = new TibiaDataAPI();
         clearCache();
-    }
-
-    @Override
-    protected String getUrl() {
-        return "https://api.tibiadata.com/v4/killstatistics/"+world;
     }
 
     public void clearCache() {
@@ -39,10 +38,7 @@ public class KillStatisticsService extends WebClient implements Cacheable {
             return mapCache.get(world);
         }
 
-        String response = sendRequest(getRequest());
-        KillingStatsModel model = getMoreInformations(getModel(response, KillingStatsBase.class)
-                .filterBosses()
-                .getKillstatistics());
+        KillingStatsModel model = getMoreInformations(api.getKillStatistics(world));
         mapCache.put(world, model);
         return model;
     }

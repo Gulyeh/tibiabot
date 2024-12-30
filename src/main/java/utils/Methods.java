@@ -31,6 +31,8 @@ public final class Methods {
     }
 
     private static String replaceWikiChars(String name) {
-        return name.replace(" ", "_").replace("The", "the");
+        return name.replace(" ", "_")
+                .replace("The", "the")
+                .replace("Of", "of");
     }
 }

@@ -16,8 +16,8 @@ import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.houses.HousesService;
-import services.houses.models.HouseData;
-import services.houses.models.HousesModel;
+import apis.tibiaData.model.house.HouseData;
+import apis.tibiaData.model.house.HousesModel;
 
 import java.util.ArrayList;
 import java.util.List;

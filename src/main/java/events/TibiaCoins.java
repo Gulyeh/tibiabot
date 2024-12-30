@@ -16,8 +16,8 @@ import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
-import services.tibiaCoins.models.PriceModel;
-import services.tibiaCoins.models.Prices;
+import apis.tibiaTrade.model.prices.PriceModel;
+import apis.tibiaTrade.model.prices.Prices;
 import services.worlds.enums.BattleEyeType;
 
 import java.util.ArrayList;

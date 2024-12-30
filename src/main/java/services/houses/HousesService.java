@@ -2,29 +2,26 @@ package services.houses;
 
 import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import apis.tibiaData.TibiaDataAPI;
 import services.interfaces.Cacheable;
-import services.WebClient;
 import services.houses.enums.Towns;
-import services.houses.models.HouseBase;
-import services.houses.models.HousesModel;
+import apis.tibiaData.model.house.HousesModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HousesService extends WebClient implements Cacheable {
-    private String world;
-    private String townName;
+public class HousesService implements Cacheable {
     private Map<String, List<HousesModel>> housesCache;
+    private final TibiaDataAPI api;
+    private final Logger logINFO = LoggerFactory.getLogger(HousesService.class);
 
     public HousesService() {
+        api = new TibiaDataAPI();
         clearCache();
-    }
-
-    @Override
-    protected String getUrl() {
-        return "https://api.tibiadata.com/v4/houses/" + world + "/" + townName;
     }
 
     public void clearCache() {
@@ -32,7 +29,7 @@ public class HousesService extends WebClient implements Cacheable {
     }
 
     public List<HousesModel> getHouses(Snowflake guildId) {
-        world = DatabaseCacheData.getWorldCache().get(guildId);
+        String world = DatabaseCacheData.getWorldCache().get(guildId);
         List<HousesModel> list = new ArrayList<>();
 
         if(housesCache.containsKey(world)) {
@@ -41,9 +38,8 @@ public class HousesService extends WebClient implements Cacheable {
         }
         else {
             for (Towns town : Towns.values()) {
-                townName = town.getTownName().replace(" ", "%20");
-                String response = sendRequest(getRequest());
-                list.add(getModel(response, HouseBase.class).getHouses());
+                String townName = town.getTownName().replace(" ", "%20");
+                list.add(api.getTownHouses(world, townName));
             }
             housesCache.put(world, list);
         }

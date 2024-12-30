@@ -1,30 +1,42 @@
 package services.worlds;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import apis.tibiaData.TibiaDataAPI;
+import apis.tibiaData.model.worlds.WorldData;
+import apis.tibiaData.model.worlds.WorldModel;
+import apis.tibiaTrade.TibiaTradeAPI;
+import apis.tibiaTrade.model.world.TibiaTradeWorld;
+import apis.tibiaTrade.model.world.TibiaTradeWorldsModel;
 import services.interfaces.Cacheable;
-import services.WebClient;
-import services.worlds.models.WorldData;
-import services.worlds.models.WorldModel;
 
-public class WorldsService extends WebClient implements Cacheable {
+import java.util.Optional;
+
+public class WorldsService implements Cacheable {
     private WorldModel worldsData;
-    private final TibiaTradeWorldsService tibiaTradeWorldsService;
+    private TibiaTradeWorldsModel worldsCache;
+    private final TibiaDataAPI tibiaDataAPI;
+    private final TibiaTradeAPI tibiaTradeAPI;
+    private final Logger logINFO = LoggerFactory.getLogger(WorldsService.class);
 
     public WorldsService() {
-        tibiaTradeWorldsService = new TibiaTradeWorldsService();
+        tibiaDataAPI = new TibiaDataAPI();
+        tibiaTradeAPI = new TibiaTradeAPI();
         clearCache();
     }
 
     @Override
-    protected String getUrl() {
-        return "https://api.tibiadata.com/v4/worlds";
+    public void clearCache() {
+        worldsData = null;
+        worldsCache = null;
     }
+
 
     public WorldModel getWorlds() {
         if(worldsData != null) return worldsData;
 
         try {
-            String response = sendRequest(getRequest());
-            worldsData = getModel(response, WorldModel.class);
+            worldsData = tibiaDataAPI.getWorlds();
             setWorldsIds();
             return worldsData;
         } catch (Exception e) {
@@ -34,15 +46,33 @@ public class WorldsService extends WebClient implements Cacheable {
         return null;
     }
 
-    @Override
-    public void clearCache() {
-        worldsData = null;
-        tibiaTradeWorldsService.clearCache();
-    }
-
     private void setWorldsIds() {
         for(WorldData data : worldsData.getWorlds().getRegular_worlds()) {
-            data.setId(tibiaTradeWorldsService.getTibiaTradeWorldId(data.getName()));
+            data.setId(getTibiaTradeWorldId(data.getName()));
         }
+    }
+
+    public Integer getTibiaTradeWorldId(String worldName) {
+        if(worldsCache != null) return findWorld(worldName);
+        TibiaTradeWorldsModel model = tibiaTradeAPI.getWorlds();
+
+        if(model.getWorlds().isEmpty()) {
+            logINFO.info("Could not get worlds data");
+            return 0;
+        }
+
+        worldsCache = model;
+        return findWorld(worldName);
+    }
+
+    private Integer findWorld(String worldName) {
+        Optional<TibiaTradeWorld> world = worldsCache.getWorlds()
+                .stream()
+                .filter(x -> x.getName().equalsIgnoreCase(worldName))
+                .findFirst();
+
+        if(world.isPresent()) return world.get().getId();
+        logINFO.info("Could not find world " + worldName);
+        return 0;
     }
 }

@@ -1,9 +1,9 @@
 package cache;
 
 import lombok.Getter;
+import apis.tibiaData.model.worlds.WorldData;
+import apis.tibiaData.model.worlds.WorldModel;
 import services.worlds.enums.Status;
-import services.worlds.models.WorldData;
-import services.worlds.models.WorldModel;
 
 import java.util.HashMap;
 

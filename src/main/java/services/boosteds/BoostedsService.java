@@ -1,15 +1,21 @@
 package services.boosteds;
 
-import services.WebClient;
+import apis.WebClient;
+import apis.tibiaLabs.TibiaLabsAPI;
 import services.boosteds.enums.Boosteds;
-import services.boosteds.models.BoostedModel;
+import apis.tibiaLabs.model.BoostedModel;
 import services.interfaces.Cacheable;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class BoostedsService extends WebClient implements Cacheable {
-    private Map<Boosteds, BoostedModel> boostedCache = new HashMap<>();
+    private final Map<Boosteds, BoostedModel> boostedCache = new HashMap<>();
+    private final TibiaLabsAPI api;
+
+    public BoostedsService() {
+        api = new TibiaLabsAPI();
+    }
 
     @Override
     protected String getUrl() {
@@ -18,27 +24,15 @@ public class BoostedsService extends WebClient implements Cacheable {
 
     public BoostedModel getBoostedCreature() {
         if(boostedCache.containsKey(Boosteds.CREATURE)) return boostedCache.get(Boosteds.CREATURE);
-
-        String response = sendRequest(getRequest("boostedcreature"));
-        BoostedModel model = new BoostedModel();
-        if(response.contains(":")) {
-            model.setName(response.split(": ")[1].trim());
-            model.setBoostedTypeText(response.split(": ")[0]);
-            boostedCache.put(Boosteds.CREATURE, model);
-        }
+        BoostedModel model = api.getBoostedCreature();
+        boostedCache.put(Boosteds.CREATURE, model);
         return model;
     }
 
     public BoostedModel getBoostedBoss() {
         if(boostedCache.containsKey(Boosteds.BOSS)) return boostedCache.get(Boosteds.BOSS);
-
-        String response = sendRequest(getRequest("boostedboss"));
-        BoostedModel model = new BoostedModel();
-        if(response.contains(":")) {
-            model.setName(response.split(": ")[1].trim());
-            model.setBoostedTypeText(response.split(": ")[0]);
-            boostedCache.put(Boosteds.BOSS, model);
-        }
+        BoostedModel model = api.getBoostedBoss();
+        boostedCache.put(Boosteds.BOSS, model);
         return model;
     }
 

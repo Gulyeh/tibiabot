@@ -9,8 +9,8 @@ import events.utils.EventName;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
+import apis.tibiaData.model.worlds.WorldModel;
 import services.worlds.WorldsService;
-import services.worlds.models.WorldModel;
 
 import static builders.commands.names.CommandsNames.worldCommand;
 import static cache.DatabaseCacheData.isGuildCached;
@@ -22,8 +22,8 @@ public class TrackWorld extends EventsMethods {
     private WorldModel worlds;
     private final WorldsService worldsService;
 
-    public TrackWorld(WorldsService worldsService) {
-        this.worldsService = worldsService;
+    public TrackWorld() {
+        this.worldsService = new WorldsService();
     }
 
     @Override

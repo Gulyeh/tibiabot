@@ -19,6 +19,7 @@ public class ChannelModel {
     private String miniWorldChanges = "";
     private String boosteds = "";
     private String deathTracker = "";
+    private String onlineTracker = "";
 
     public void setByEventType(EventTypes eventType, String channelId) {
         switch (eventType) {
@@ -30,6 +31,7 @@ public class ChannelModel {
             case MINI_WORLD_CHANGES -> miniWorldChanges = channelId;
             case BOOSTEDS -> boosteds = channelId;
             case DEATH_TRACKER -> deathTracker = channelId;
+            case ONLINE_TRACKER -> onlineTracker = channelId;
         }
     }
 

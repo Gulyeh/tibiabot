@@ -1,31 +1,25 @@
 package services.tibiaCoins;
 
-import services.WebClient;
-import services.tibiaCoins.models.PriceModel;
-import services.tibiaCoins.models.Prices;
+import apis.tibiaData.model.worlds.WorldData;
+import apis.tibiaData.model.worlds.WorldModel;
+import apis.tibiaTrade.TibiaTradeAPI;
+import apis.tibiaTrade.model.prices.PriceModel;
+import apis.tibiaTrade.model.prices.Prices;
 import services.worlds.WorldsService;
-import services.worlds.models.WorldData;
-import services.worlds.models.WorldModel;
 
-import java.net.http.HttpResponse;
-
-public class TibiaCoinsService extends WebClient {
+public class TibiaCoinsService {
 
     private final WorldsService worldsService;
+    private final TibiaTradeAPI tibiaTradeAPI;
 
-    public TibiaCoinsService(WorldsService worldsService) {
-        this.worldsService = worldsService;
-    }
-
-    @Override
-    protected String getUrl() {
-        return "https://tibiatrade.gg/api/tibiaCoinPrices";
+    public TibiaCoinsService() {
+        this.worldsService = new WorldsService();
+        tibiaTradeAPI = new TibiaTradeAPI();
     }
 
     public PriceModel getPrices() {
-        String response = sendRequest(getRequest());
         WorldModel worlds = worldsService.getWorlds();
-        PriceModel prices = getModel(response, PriceModel.class);
+        PriceModel prices = tibiaTradeAPI.getTibiaCoinsPrices();
 
         for(Prices price : prices.getPrices()) {
            WorldData data = worlds.getWorlds().getRegular_worlds()
