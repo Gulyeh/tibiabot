@@ -77,6 +77,8 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
+        List<DeathData> cachedDeaths = deathsCache.get(world);
+        if(cachedDeaths == null) cachedDeaths = new ArrayList<>();
         List<DeathData> deaths = new ArrayList<>();
 
         for(CharacterData character : chars) {
@@ -93,13 +95,14 @@ public class DeathTrackerService implements Cacheable {
                     DeathData info = new DeathData(character, death, data.getCharacter().getCharacter().getGuild());
                     deaths.add(info);
                 }
-                if(!deaths.isEmpty()) character.setDead(false);
+                if(!actualDeaths.isEmpty()) character.setDead(false);
             } catch (Exception e) {
                logINFO.info(e.getMessage());
             }
         }
 
-        deathsCache.put(world, deaths);
+        cachedDeaths.addAll(deaths);
+        deathsCache.put(world, cachedDeaths);
         clearRecentDeathsCache(world);
         return deaths;
     }

@@ -10,20 +10,19 @@ public class TibiaLabsAPI extends WebClient {
     }
 
     public BoostedModel getBoostedCreature() {
-        String response = sendRequest(getRequest("boostedcreature"));
-        BoostedModel model = new BoostedModel();
-        if(response.contains(":") && response.split(":").length > 0) {
-            model.setName(response.split(": ")[1].trim());
-            model.setBoostedTypeText(response.split(": ")[0]);
-        }
-        return model;
+        return getBoostedBase("boostedcreature");
     }
 
     public BoostedModel getBoostedBoss() {
-        String response = sendRequest(getRequest("boostedboss"));
+        return getBoostedBase("boostedboss");
+    }
+
+    private BoostedModel getBoostedBase(String param) {
+        String response = sendRequest(getRequest(param));
         BoostedModel model = new BoostedModel();
-        if(response.contains(":") && response.split(":").length > 0) {
-            model.setName(response.split(": ")[1].trim());
+        if(response.contains(":")) {
+            if(response.split(": ").length > 1)
+                model.setName(response.split(": ")[1].trim());
             model.setBoostedTypeText(response.split(": ")[0]);
         }
         return model;

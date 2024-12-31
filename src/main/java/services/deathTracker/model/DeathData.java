@@ -18,6 +18,7 @@ public class DeathData {
     private final CharacterData character;
     private final List<Killer> killedBy;
     private final int killedAtLevel;
+    private final int lostLevels;
     private final LocalDateTime killedAtDate;
     private final GuildData guild;
 
@@ -26,6 +27,7 @@ public class DeathData {
         killedBy = death.getKillers();
         killedAtLevel = death.getLevel();
         killedAtDate = death.getTimeUTC();
+        lostLevels = death.getLevel() - character.getLevel();
         this.guild = guild;
     }
 

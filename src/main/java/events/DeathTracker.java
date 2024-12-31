@@ -135,7 +135,8 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                     getDescription(death),
                     "",
                     getThumbnail(death),
-                    getRandomColor());
+                    getRandomColor(),
+                    getFooter(death));
         }
     }
 
@@ -178,5 +179,14 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
     private String getThumbnail(DeathData data) {
         Optional<Killer> killer = data.getKilledBy().stream().filter(x -> !x.isPlayer()).findFirst();
         return killer.map(value -> formatWikiGifLink(value.getName())).orElseGet(Methods::getPlayerIcon);
+    }
+
+    private EmbedCreateFields.Footer getFooter(DeathData data) {
+        String builder = data.getCharacter().getName() +
+                " lost " +
+                data.getLostLevels() +
+                " level(s) and was downgraded to Level " +
+                data.getCharacter().getLevel();
+        return EmbedCreateFields.Footer.of(builder, null);
     }
 }

@@ -25,8 +25,13 @@ public final class SendMessages {
     private static final Logger logINFO = LoggerFactory.getLogger(SendMessages.class);
 
     public static List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color) {
+       return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, null);
+    }
+
+    public static List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description,
+                                                         String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
         try {
-            EmbedCreateSpec template = buildEmbedTemplate(title, description, imageUrl, thumbnailUrl, color);
+            EmbedCreateSpec template = buildEmbedTemplate(title, description, imageUrl, thumbnailUrl, color, footer);
             List<EmbedData> messages = new ArrayList<>(splitEmbeddedMessage(fields, template));
             List<MessageData> sentMessages = new ArrayList<>();
 
@@ -82,15 +87,19 @@ public final class SendMessages {
                 .description(embedData.description().get())
                 .image(embedData.image().get())
                 .thumbnail(embedData.thumbnail().get())
-                .color(embedData.color().get());
+                .color(embedData.color().get())
+                .footer(embedData.footer());
 
-        if(currentIndex != 0) copy.title("").description("").image("").thumbnail("");
-        if(currentIndex == lastIndex - 1) copy.footer("Last updated", "").timestamp(Instant.now());
+        if(currentIndex != 0)
+            copy.title("").description("").image("").thumbnail("");
+
+        if(embedData.footer() != null && currentIndex == lastIndex - 1)
+            copy.footer("Last updated", "").timestamp(Instant.now());
 
         return copy.build();
     }
 
-    private static EmbedCreateSpec buildEmbedTemplate(String title, String description, String imageUrl, String thumbnailUrl, Color color)
+    private static EmbedCreateSpec buildEmbedTemplate(String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer)
     {
         return EmbedCreateSpec.builder()
                 .title(title)
@@ -98,6 +107,7 @@ public final class SendMessages {
                 .image(imageUrl)
                 .thumbnail(thumbnailUrl)
                 .color(color)
+                .footer(footer)
                 .build();
     }
 }
