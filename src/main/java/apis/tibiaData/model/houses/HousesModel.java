@@ -1,4 +1,4 @@
-package apis.tibiaData.model.house;
+package apis.tibiaData.model.houses;
 
 import lombok.Getter;
 

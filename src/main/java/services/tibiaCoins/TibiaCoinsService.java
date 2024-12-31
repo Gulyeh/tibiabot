@@ -7,8 +7,9 @@ import apis.tibiaTrade.model.prices.PriceModel;
 import apis.tibiaTrade.model.prices.Prices;
 import services.worlds.WorldsService;
 
-public class TibiaCoinsService {
+import java.util.Optional;
 
+public class TibiaCoinsService {
     private final WorldsService worldsService;
     private final TibiaTradeAPI tibiaTradeAPI;
 
@@ -22,13 +23,12 @@ public class TibiaCoinsService {
         PriceModel prices = tibiaTradeAPI.getTibiaCoinsPrices();
 
         for(Prices price : prices.getPrices()) {
-           WorldData data = worlds.getWorlds().getRegular_worlds()
+           Optional<WorldData> data = worlds.getWorlds().getRegular_worlds()
                    .stream()
                    .filter(x -> x.getName().equalsIgnoreCase(price.getWorld_name()))
-                   .findFirst()
-                   .get();
+                   .findFirst();
 
-           price.setWorld(data);
+           data.ifPresent(price::setWorld);
         }
 
         return prices;

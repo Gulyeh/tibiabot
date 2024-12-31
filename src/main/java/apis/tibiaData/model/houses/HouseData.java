@@ -1,4 +1,4 @@
-package apis.tibiaData.model.house;
+package apis.tibiaData.model.houses;
 
 import lombok.Getter;
 
@@ -11,4 +11,8 @@ public class HouseData {
     private boolean rented;
     private boolean auctioned;
     private AuctionData auction;
+
+    public String getHouseLink(String world) {
+        return "https://www.tibia.com/community/?subtopic=houses&page=view&houseid=" + getHouse_id() + "&world=" + world;
+    }
 }

@@ -99,14 +99,22 @@ public class Boosteds extends ServerSaveEvent implements Channelable {
         }
 
         BoostedModel boosted = (BoostedModel) model;
-
-        sendEmbeddedMessages(channel,
-                null,
-                boosted.getBoostedTypeText(),
-                "["+boosted.getName().toUpperCase()+"]("+boosted.getBoosted_data_link()+")",
-                "",
-                boosted.getIcon_link(),
-                getRandomColor());
+        if(boosted.getName() == null || boosted.getName().isEmpty())
+            sendEmbeddedMessages(channel,
+                    null,
+                    boosted.getBoostedTypeText(),
+                    "\u1CBC\u1CBC\u1CBCNo data could be found",
+                    "",
+                    "",
+                    getRandomColor());
+        else
+            sendEmbeddedMessages(channel,
+                    null,
+                    boosted.getBoostedTypeText(),
+                    "### \u1CBC\u1CBC\u1CBC:star: [" + boosted.getName() + "](" + boosted.getBoosted_data_link() + ")",
+                    "",
+                    boosted.getIcon_link(),
+                    getRandomColor());
     }
 
     @Override

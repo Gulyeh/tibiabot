@@ -52,7 +52,7 @@ public class WorldsService implements Cacheable {
         }
     }
 
-    public Integer getTibiaTradeWorldId(String worldName) {
+    private Integer getTibiaTradeWorldId(String worldName) {
         if(worldsCache != null) return findWorld(worldName);
         TibiaTradeWorldsModel model = tibiaTradeAPI.getWorlds();
 

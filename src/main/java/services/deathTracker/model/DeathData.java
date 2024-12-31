@@ -7,6 +7,9 @@ import apis.tibiaData.model.deathtracker.GuildData;
 import apis.tibiaData.model.deathtracker.Killer;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +25,7 @@ public class DeathData {
         this.character = character;
         killedBy = death.getKillers();
         killedAtLevel = death.getLevel();
-        killedAtDate = death.getTime();
+        killedAtDate = death.getTimeUTC();
         this.guild = guild;
     }
 
@@ -30,5 +33,9 @@ public class DeathData {
         List<String> names = new ArrayList<>();
         killedBy.forEach(x -> names.add(x.getName()));
         return names;
+    }
+
+    public long getKilledDateEpochSeconds() {
+        return killedAtDate.toInstant(ZoneOffset.UTC).getEpochSecond();
     }
 }

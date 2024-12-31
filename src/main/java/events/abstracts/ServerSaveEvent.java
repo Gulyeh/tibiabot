@@ -46,6 +46,8 @@ public abstract class ServerSaveEvent extends EmbeddableEvent {
 
     protected boolean isAfterSaverSave() {
         LocalDateTime now = LocalDateTime.now();
-        return now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime);
+        boolean isAfterSS = now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime);
+        if(isAfterSS) serverSaveTime = serverSaveTime.plusDays(1);
+        return isAfterSS;
     }
 }

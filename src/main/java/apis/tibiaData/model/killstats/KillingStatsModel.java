@@ -23,8 +23,8 @@ public class KillingStatsModel {
 
     public List<KillingStatsData> getEntries() {
         return entries.stream()
-                .sorted(Comparator.comparing(KillingStatsData::getSpawnExpectedTime).reversed())
-                .sorted(Comparator.comparing(KillingStatsData::getSpawnPossibility))
+                .sorted(Comparator.comparing(KillingStatsData::getSpawnExpectedTime))
+                .sorted(Comparator.comparing(KillingStatsData::getSpawnPossibility).reversed())
                 .toList();
     }
 

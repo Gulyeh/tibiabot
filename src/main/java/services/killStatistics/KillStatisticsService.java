@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Optional;
 
 public class KillStatisticsService implements Cacheable {
-    private String world;
     private Map<String, KillingStatsModel> mapCache;
     private final Logger logINFO = LoggerFactory.getLogger(KillStatisticsService.class);
     private final TibiaDataAPI api;
@@ -32,18 +31,18 @@ public class KillStatisticsService implements Cacheable {
     }
 
     public KillingStatsModel getStatistics(Snowflake guildId) {
-        world = DatabaseCacheData.getWorldCache().get(guildId);
+        String world = DatabaseCacheData.getWorldCache().get(guildId);
         if(mapCache.containsKey(world)) {
             logINFO.info("Getting Killed bosses from cache");
             return mapCache.get(world);
         }
 
-        KillingStatsModel model = getMoreInformations(api.getKillStatistics(world));
+        KillingStatsModel model = getMoreInformations(api.getKillStatistics(world), world);
         mapCache.put(world, model);
         return model;
     }
 
-    private KillingStatsModel getMoreInformations(KillingStatsModel model) {
+    private KillingStatsModel getMoreInformations(KillingStatsModel model, String world) {
         GuildStatsBosses guildStatsBosses = new GuildStatsBosses();
         List<BossModel> models = guildStatsBosses.getKilledBosses(world);
 

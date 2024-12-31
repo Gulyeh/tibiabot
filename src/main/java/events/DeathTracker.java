@@ -70,7 +70,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(60000);
+                    wait(300000);
                 }
             }
         }
@@ -131,7 +131,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
         for (DeathData death : list) {
             sendEmbeddedMessages(channel,
                     null,
-                    getTitle(death),
+                    "",
                     getDescription(death),
                     "",
                     getThumbnail(death),
@@ -147,27 +147,28 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
     private String getTitle(DeathData data) {
         String icon = data.getCharacter().getVocation().getIcon();
         String name = data.getCharacter().getName();
-        return icon + "[" + name + "]("+ data.getCharacter().getCharacterLink() + ")" + icon;
+        return "### " + icon + " [" + name + "]("+ data.getCharacter().getCharacterLink() + ") " + icon;
     }
 
     private String getDescription(DeathData data) {
         StringBuilder builder = new StringBuilder();
-        if(data.getGuild() != null) {
-            String name = data.getGuild().getName();
+        builder.append(getTitle(data)).append("\n\n");
+
+        if(data.getGuild().getName() != null) {
             builder.append(":headstone: ")
                     .append(data.getGuild().getRank())
                     .append(" of the [")
-                    .append(name)
+                    .append(data.getGuild().getName())
                     .append("](")
                     .append(data.getGuild().getGuildLink())
                     .append(")\n");
         }
         builder.append("Died ")
                 .append("<t:")
-                .append(data.getKilledAtDate().toEpochSecond(ZoneOffset.UTC))
+                .append(data.getKilledDateEpochSeconds())
                 .append(":R> at level ")
                 .append(data.getKilledAtLevel())
-                .append("\nby a **")
+                .append("\nby **")
                 .append(String.join("and", data.getKilledByNames()))
                 .append("**");
 
@@ -175,7 +176,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
     }
 
     private String getThumbnail(DeathData data) {
-        Optional<Killer> killer = data.getKilledBy().stream().filter(Killer::isPlayer).findFirst();
-        return killer.map(value -> formatWikiGifLink(value.getName())).orElseGet(Methods::getNotFoundIcon);
+        Optional<Killer> killer = data.getKilledBy().stream().filter(x -> !x.isPlayer()).findFirst();
+        return killer.map(value -> formatWikiGifLink(value.getName())).orElseGet(Methods::getPlayerIcon);
     }
 }

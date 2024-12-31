@@ -16,8 +16,8 @@ import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.houses.HousesService;
-import apis.tibiaData.model.house.HouseData;
-import apis.tibiaData.model.house.HousesModel;
+import apis.tibiaData.model.houses.HouseData;
+import apis.tibiaData.model.houses.HousesModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -154,13 +154,12 @@ public class Houses extends EmbeddableEvent implements Channelable {
     }
 
     private EmbedCreateFields.Field buildEmbedField(HouseData data, String world) {
-        String auctionLink = "[Auction](https://www.tibia.com/community/?subtopic=houses&page=view&houseid="
-        + data.getHouse_id() + "&world=" + world + ")";
+        String auctionLink = "[Auction](" + data.getHouseLink(world) + ")";
 
         return EmbedCreateFields.Field.of(data.getName() + " (" + data.getHouse_id() + ")",
-                "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n\n``Current bid: " +
-                        data.getAuction().getCurrent_bid() + " gold\nTime left: " + data.getAuction().getTime_left() +
-                        "``\n\n" + auctionLink,
+                "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n\n``Current bidder: " + data.getAuction().getCurrentBidder() +
+                        "\nCurrent bid: " + data.getAuction().getCurrent_bid() + " gold\nTime left: " + data.getAuction().getTime_left() +
+                        "``\n\n" + data.getAuction().getAuctionInfo() + "\n\n" + auctionLink,
                 true);
     }
 }

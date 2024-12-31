@@ -4,9 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import apis.tibiaData.model.worlds.WorldData;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 
 import static utils.Methods.getFormattedDate;
 
@@ -27,7 +25,7 @@ public class Prices {
     private String created_at;
 
     public String getCreated_at() {
-        LocalDateTime instanted = LocalDateTime.ofInstant(Instant.parse(created_at), ZoneOffset.UTC);
+        LocalDateTime instanted = OffsetDateTime.parse(created_at).toLocalDateTime();
         return getFormattedDate(instanted);
     }
 }

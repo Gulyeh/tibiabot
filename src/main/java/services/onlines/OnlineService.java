@@ -14,17 +14,21 @@ import java.util.*;
 public class OnlineService implements Cacheable {
     private final TibiaDataAPI tibiaDataAPI;
     private Map<String, List<OnlineModel>> onlineCache;
-    private final Map<String, List<OnlineModel>> charInfoCache;
+    private Map<String, List<OnlineModel>> charInfoCache;
 
     public OnlineService() {
         tibiaDataAPI = new TibiaDataAPI();
-        charInfoCache = new HashMap<>();
+        clearCharStorageCache();
         clearCache();
     }
 
     @Override
     public void clearCache() {
         onlineCache = new HashMap<>();
+    }
+
+    public void clearCharStorageCache() {
+        charInfoCache = new HashMap<>();
     }
 
     public List<OnlineModel> getOnlinePlayers(Snowflake guildId) {

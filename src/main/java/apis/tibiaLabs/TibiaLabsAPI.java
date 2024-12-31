@@ -12,7 +12,7 @@ public class TibiaLabsAPI extends WebClient {
     public BoostedModel getBoostedCreature() {
         String response = sendRequest(getRequest("boostedcreature"));
         BoostedModel model = new BoostedModel();
-        if(response.contains(":")) {
+        if(response.contains(":") && response.split(":").length > 0) {
             model.setName(response.split(": ")[1].trim());
             model.setBoostedTypeText(response.split(": ")[0]);
         }
@@ -22,7 +22,7 @@ public class TibiaLabsAPI extends WebClient {
     public BoostedModel getBoostedBoss() {
         String response = sendRequest(getRequest("boostedboss"));
         BoostedModel model = new BoostedModel();
-        if(response.contains(":")) {
+        if(response.contains(":") && response.split(":").length > 0) {
             model.setName(response.split(": ")[1].trim());
             model.setBoostedTypeText(response.split(": ")[0]);
         }

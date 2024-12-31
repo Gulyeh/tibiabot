@@ -1,6 +1,7 @@
 package utils;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 public final class Methods {
@@ -14,25 +15,38 @@ public final class Methods {
     }
 
     public static String getFormattedDate(LocalDateTime date) {
-        String month = date.getMonthValue() < 10 ? "0" + date.getMonthValue() : String.valueOf(date.getMonthValue());
-        return date.getDayOfMonth() + "-" + month + "-" + date.getYear() + " " + date.getHour() + ":" + date.getMinute();
+        return date.format(DateTimeFormatter.ofPattern("dd-MM-uuuu HH:mm"));
     }
 
     public static String formatWikiGifLink(String name) {
-        return "https://tibia.fandom.com/wiki/Special:Redirect/file/" + replaceWikiChars(name) + ".gif";
+        return "https://tibia.fandom.com/wiki/Special:Redirect/file/" + replaceWikiChars(convertToUpperCaseAfterSpace(name)) + ".gif";
     }
 
     public static String formatWikiLink(String name) {
-        return "https://tibia.fandom.com/wiki/" + replaceWikiChars(name);
+        return "https://tibia.fandom.com/wiki/" + replaceWikiChars(convertToUpperCaseAfterSpace(name));
     }
 
-    public static String getNotFoundIcon() {
-        return "https://static-00.iconduck.com/assets.00/image-not-found-01-icon-1024x1024-ctusxejn.png";
+    public static String getPlayerIcon() {
+        return "https://static.wikia.nocookie.net/tibia/images/2/27/Red_Skull_%28Item%29.gif/revision/latest/thumbnail/width/360/height/360?cb=20220107212229&path-prefix=en";
     }
 
     private static String replaceWikiChars(String name) {
         return name.replace(" ", "_")
                 .replace("The", "the")
                 .replace("Of", "of");
+    }
+
+    public static String convertToUpperCaseAfterSpace(String value) {
+        String[] words = value.split("\\s");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words)
+        {
+            result.append(Character.toUpperCase(word.charAt(0)))
+                    .append(word.substring(1).toLowerCase())
+                    .append(" ");
+        }
+
+        return result.toString().trim();
     }
 }

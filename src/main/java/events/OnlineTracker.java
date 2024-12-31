@@ -12,6 +12,7 @@ import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
+import events.abstracts.ServerSaveEvent;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -29,7 +30,7 @@ import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendEmbeddedMessages;
 import static java.util.UUID.randomUUID;
 
-public class OnlineTracker extends EmbeddableEvent implements Channelable {
+public class OnlineTracker extends ServerSaveEvent implements Channelable {
     private final OnlineService onlineService;
     private final String othersKey;
 
@@ -63,6 +64,7 @@ public class OnlineTracker extends EmbeddableEvent implements Channelable {
             try {
                 logINFO.info("Executing thread " + getEventName());
                 onlineService.clearCache();
+                if(isAfterSaverSave()) onlineService.clearCharStorageCache();
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
@@ -89,9 +91,18 @@ public class OnlineTracker extends EmbeddableEvent implements Channelable {
         }
 
         List<OnlineModel> list = ((List<OnlineModel>) model);
-        LinkedHashMap<String, List<OnlineModel>> map = filterAndOrderData(list);
-
         addChannelSuffix(channel, list.size());
+        if(list.isEmpty()) {
+            sendEmbeddedMessages(channel,
+                    null,
+                    "",
+                    "There are no online players",
+                    "",
+                    "",
+                    getRandomColor());
+        }
+
+        LinkedHashMap<String, List<OnlineModel>> map = filterAndOrderData(list);
         Color color = getRandomColor();
         List<String> msgs = createDescription(map);
         for(String msg : msgs) {
