@@ -16,9 +16,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class DeathTrackerService implements Cacheable {
-    private final Map<String, List<CharacterData>> mapCache;
-    private Map<String, List<DeathData>> deathsCache;
-    private final Map<String, Map<String, List<DeathResponse>>> recentDeathsCache;
+    private final Map<String, List<CharacterData>> mapCache; // data of previously online characters
+    private Map<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
+    private final Map<String, Map<String, List<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
     private final int deathRangeAllowance = 30;
     private final TibiaDataAPI api;
     private final Logger logINFO = LoggerFactory.getLogger(DeathTrackerService.class);
@@ -49,10 +49,11 @@ public class DeathTrackerService implements Cacheable {
                     .filter(x -> x.getName().equals(newCharacterData.getName()))
                     .findFirst();
 
-            if(oldCachedCharacterData.isPresent() && (oldCachedCharacterData.get().getLevel() > newCharacterData.getLevel() || oldCachedCharacterData.get().isDead())) {
-                if(!newCharacterData.isDead()) newCharacterData.setDead(true);
+            if(oldCachedCharacterData.isPresent() && oldCachedCharacterData.get().getLevel() > newCharacterData.getLevel() && !newCharacterData.isDead())
+                newCharacterData.setDead(true);
+
+            if(oldCachedCharacterData.isPresent() && oldCachedCharacterData.get().isDead())
                 deadCharacters.add(newCharacterData);
-            }
         }
 
         List<DeathData> deads = new ArrayList<>();
@@ -77,8 +78,6 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
-        List<DeathData> cachedDeaths = deathsCache.get(world);
-        if(cachedDeaths == null) cachedDeaths = new ArrayList<>();
         List<DeathData> deaths = new ArrayList<>();
 
         for(CharacterData character : chars) {
@@ -95,14 +94,14 @@ public class DeathTrackerService implements Cacheable {
                     DeathData info = new DeathData(character, death, data.getCharacter().getCharacter().getGuild());
                     deaths.add(info);
                 }
+
                 if(!actualDeaths.isEmpty()) character.setDead(false);
             } catch (Exception e) {
                logINFO.info(e.getMessage());
             }
         }
 
-        cachedDeaths.addAll(deaths);
-        deathsCache.put(world, cachedDeaths);
+        deathsCache.put(world, deaths);
         clearRecentDeathsCache(world);
         return deaths;
     }
@@ -116,25 +115,26 @@ public class DeathTrackerService implements Cacheable {
                 .toList();
     }
 
-    private List<DeathResponse> filterDeaths(CharacterData data, List<DeathResponse> deaths, String world) {
+    private List<DeathResponse> filterDeaths(CharacterData data, List<DeathResponse> characterDeaths, String world) {
         Map<String, List<DeathResponse>> worldMap = recentDeathsCache.get(world);
         if(worldMap == null) worldMap = new HashMap<>();
 
-        try {
-            List<DeathResponse> deathData = worldMap.get(data.getName());
-            List<DeathResponse> acceptedDeaths = deaths.stream().filter(x -> deathData.stream()
-                    .noneMatch(y -> y.getTimeLocal().isEqual(x.getTimeLocal()))).toList();
-            if(acceptedDeaths.isEmpty()) worldMap.remove(data.getName());
-            else worldMap.put(data.getName(), acceptedDeaths);
-            return acceptedDeaths;
-        } catch (NullPointerException ignore) {
-            worldMap.put(data.getName(), deaths);
-            return deaths;
-        } catch (Exception ignore) {
-            return List.of();
-        } finally {
+        List<DeathResponse> deathData = worldMap.get(data.getName());
+        if(deathData == null) {
+            worldMap.put(data.getName(), characterDeaths);
             recentDeathsCache.put(world, worldMap);
+            return characterDeaths;
         }
+
+        List<DeathResponse> acceptedDeaths = characterDeaths.stream().filter(x -> deathData.stream()
+                .noneMatch(y -> y.getTimeLocal().isEqual(x.getTimeLocal()))).toList();
+        deathData.addAll(acceptedDeaths);
+
+        if(deathData.isEmpty()) worldMap.remove(data.getName());
+        else worldMap.put(data.getName(), deathData);
+        recentDeathsCache.put(world, worldMap);
+
+        return acceptedDeaths;
     }
 
     private void clearRecentDeathsCache(String world) {

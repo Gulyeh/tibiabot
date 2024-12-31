@@ -64,13 +64,13 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
         while (true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
-                executeEventProcess();
                 deathTrackerService.clearCache();
+                executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(300000);
+                    wait(120000);
                 }
             }
         }
@@ -170,7 +170,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                 .append(":R> at level ")
                 .append(data.getKilledAtLevel())
                 .append("\nby **")
-                .append(String.join("and", data.getKilledByNames()))
+                .append(String.join(" and ", data.getKilledByNames()))
                 .append("**");
 
         return builder.toString();

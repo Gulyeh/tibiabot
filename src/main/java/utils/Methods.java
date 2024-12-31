@@ -27,7 +27,7 @@ public final class Methods {
     }
 
     public static String getPlayerIcon() {
-        return "https://static.wikia.nocookie.net/tibia/images/2/27/Red_Skull_%28Item%29.gif/revision/latest/thumbnail/width/360/height/360?cb=20220107212229&path-prefix=en";
+        return "https://static.wikia.nocookie.net/tibia/images/2/27/Red_Skull_%28Item%29.gif/revision/latest/thumbnail/width/64/height/64?cb=20220107212229&path-prefix=en";
     }
 
     private static String replaceWikiChars(String name) {
