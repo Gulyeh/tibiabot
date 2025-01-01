@@ -26,7 +26,6 @@ import static builders.commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class ServerStatus extends ServerSaveEvent implements Channelable {
 
@@ -93,7 +92,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, worlds);
+            processEmbeddableData(guildChannel, worlds);
         }
     }
 
@@ -102,19 +101,17 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
         return EventName.getServerStatus();
     }
 
-    @Override
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
+    private List<EmbedCreateFields.Field> createEmbedFields(WorldModel model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
 
-        for(WorldData data : ((WorldModel)model).getWorlds().getRegular_worlds()) {
+        for(WorldData data : model.getWorlds().getRegular_worlds()) {
             fields.add(buildEmbedField(data));
         }
 
         return fields;
     }
 
-    @Override
-    protected <T> void processData(GuildMessageChannel channel, T model) {
+    private void processEmbeddableData(GuildMessageChannel channel, WorldModel model) {
         deleteMessages(channel);
 
         if (model == null) {
@@ -122,14 +119,14 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
             return;
         }
 
-        addChannelSuffix(channel, ((WorldModel)model).getWorlds().getPlayers_online());
+        addChannelSuffix(channel, model.getWorlds().getPlayers_online());
 
         sendEmbeddedMessages(channel,
                 createEmbedFields(model),
                 "Servers Status",
-                "```Players online: " + ((WorldModel)model).getWorlds().getPlayers_online() +
-                        "```\n``Record online: " + ((WorldModel)model).getWorlds().getRecord_players() +
-                        "\nRecord date: " + ((WorldModel)model).getWorlds().getRecord_date() + "``",
+                "```Players online: " + model.getWorlds().getPlayers_online() +
+                        "```\n``Record online: " + model.getWorlds().getRecord_players() +
+                        "\nRecord date: " + model.getWorlds().getRecord_date() + "``",
                 "",
                 "",
                 getRandomColor());
@@ -144,7 +141,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + id.asString() + ">");
 
-        processData(channel, worldsService.getWorlds());
+        processEmbeddableData(channel, worldsService.getWorlds());
         return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
     }
 

@@ -4,6 +4,7 @@ import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
+import events.abstracts.ActivatableEvent;
 import events.abstracts.EventsMethods;
 import events.utils.EventName;
 import mongo.models.ChannelModel;
@@ -17,7 +18,7 @@ import static cache.DatabaseCacheData.isGuildCached;
 import static discord.Connector.client;
 import static mongo.DocumentActions.*;
 
-public class TrackWorld extends EventsMethods {
+public class TrackWorld extends ActivatableEvent {
 
     private WorldModel worlds;
     private final WorldsService worldsService;

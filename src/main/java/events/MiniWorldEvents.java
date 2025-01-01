@@ -21,14 +21,12 @@ import services.miniWorldEvents.models.MiniWorldEvent;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.enums.Status;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import static builders.commands.names.CommandsNames.miniWorldChangesCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 import static utils.Methods.getFormattedDate;
 
 public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
@@ -39,7 +37,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
     public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
         this.miniWorldEventsService = miniWorldEventsService;
         beforeWorldsStatus = new HashMap<>();
-        setExpectedHour(11);
+        setExpectedHour(12);
         setExpectedMinute(0);
     }
 
@@ -80,8 +78,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
         }
     }
 
-    @Override
-    protected <T> void processData(GuildMessageChannel channel, T model) {
+    private void processEmbeddableData(GuildMessageChannel channel, MiniWorldEventsModel model) {
         deleteMessages(channel);
 
         if (model == null) {
@@ -89,7 +86,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
             return;
         }
 
-        List<MiniWorldEvent> miniWorldChanges = ((MiniWorldEventsModel) model).getActive_mini_world_changes();
+        List<MiniWorldEvent> miniWorldChanges = model.getActive_mini_world_changes();
         if(miniWorldChanges.isEmpty()) {
             sendEmbeddedMessages(channel,
                     null,
@@ -124,14 +121,8 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processData(channel, miniWorldEventsService.getMiniWorldChanges(guildId));
+        processEmbeddableData(channel, miniWorldEventsService.getMiniWorldChanges(guildId));
         return event.createFollowup("Set default Mini World Changes event channel to <#" + channelId.asString() + ">");
-    }
-
-    @Override
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
-        //embed does not have any fields
-        return new ArrayList<>();
     }
 
     @Override
@@ -150,7 +141,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
+            processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
         }
 
         beforeWorldsStatus.putAll(UtilsCache.getWorldsStatus());

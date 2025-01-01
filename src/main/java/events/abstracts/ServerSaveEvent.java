@@ -5,7 +5,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 public abstract class ServerSaveEvent extends EmbeddableEvent {
-
     private LocalDateTime serverSaveTime;
 
     public ServerSaveEvent() {

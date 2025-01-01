@@ -14,11 +14,12 @@ import services.interfaces.Cacheable;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DeathTrackerService implements Cacheable {
     private final Map<String, List<CharacterData>> mapCache; // data of previously online characters
     private Map<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
-    private final Map<String, Map<String, List<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
+    private final Map<String, ConcurrentHashMap<String, List<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
     private final int deathRangeAllowance = 30;
     private final TibiaDataAPI api;
     private final Logger logINFO = LoggerFactory.getLogger(DeathTrackerService.class);
@@ -55,6 +56,11 @@ public class DeathTrackerService implements Cacheable {
             if(oldCachedCharacterData.isPresent() && oldCachedCharacterData.get().isDead())
                 deadCharacters.add(newCharacterData);
         }
+
+        deadCharacters.addAll(cachedCharacters.stream()
+                .filter(x -> onlineCharacters.stream()
+                        .noneMatch(y -> x.getName().equals(y.getName())))
+                .toList()); //adding characters that were online previously to check if they are dead
 
         List<DeathData> deads = new ArrayList<>();
         if(!deadCharacters.isEmpty()) deads = getCharactersDeathData(deadCharacters, world);
@@ -97,10 +103,11 @@ public class DeathTrackerService implements Cacheable {
 
                 if(!actualDeaths.isEmpty()) character.setDead(false);
             } catch (Exception e) {
-               logINFO.info(e.getMessage());
+               logINFO.info(e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
             }
         }
 
+        deaths.sort(Comparator.comparing(DeathData::getKilledAtDate).reversed());
         deathsCache.put(world, deaths);
         clearRecentDeathsCache(world);
         return deaths;
@@ -116,10 +123,10 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathResponse> filterDeaths(CharacterData data, List<DeathResponse> characterDeaths, String world) {
-        Map<String, List<DeathResponse>> worldMap = recentDeathsCache.get(world);
-        if(worldMap == null) worldMap = new HashMap<>();
+        ConcurrentHashMap<String, List<DeathResponse>> worldMap = recentDeathsCache.get(world);
+        if(worldMap == null) worldMap = new ConcurrentHashMap<>();
 
-        List<DeathResponse> deathData = worldMap.get(data.getName());
+        ArrayList<DeathResponse> deathData = (ArrayList<DeathResponse>) worldMap.get(data.getName());
         if(deathData == null) {
             worldMap.put(data.getName(), characterDeaths);
             recentDeathsCache.put(world, worldMap);
@@ -138,7 +145,7 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private void clearRecentDeathsCache(String world) {
-        Map<String, List<DeathResponse>> worldMap = recentDeathsCache.get(world);
+        ConcurrentHashMap<String, List<DeathResponse>> worldMap = recentDeathsCache.get(world);
         if(worldMap == null) return;
 
         worldMap.forEach((k, v) -> {

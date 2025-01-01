@@ -46,6 +46,4 @@ public abstract class DiscordEvent implements Listener {
             logINFO.info("Could not remove channel: " + e.getMessage());
         }
     }
-
-
 }

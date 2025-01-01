@@ -53,6 +53,7 @@ public class Main {
         Connector.addListener(new DeathTracker(new DeathTrackerService()));
         Connector.addListener(new OnlineTracker(new OnlineService()));
         Connector.addListener(new MinimumDeathLevel());
+        Connector.addListener(new LootSplitter());
         Connector.addListener(new RemovedChannel());
         Connector.addListener(new RemovedGuild());
     }
@@ -70,6 +71,7 @@ public class Main {
                 .setDeathsChannel()
                 .setMinimumDeathsLevel()
                 .setOnlineTracker()
+                .setSplitLoot()
                 .clearUnusedCommands()
                 .build();
     }

@@ -25,4 +25,6 @@ public final class EventName {
     private static final String minimumDeathLevel = "Minimum Death Level Event";
     @Getter
     private static final String onlineTracker = "Online Tracker Event";
+    @Getter
+    private static final String lootSplitter = "Loot Splitter Event";
 }

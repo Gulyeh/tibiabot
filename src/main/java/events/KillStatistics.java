@@ -32,7 +32,6 @@ import static builders.commands.names.CommandsNames.killingStatsCommand;
 import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class KillStatistics extends EmbeddableEvent implements Channelable {
 
@@ -112,7 +111,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, killStatisticsService.getStatistics(guildId));
+            processEmbeddableData(guildChannel, killStatisticsService.getStatistics(guildId));
         }
     }
 
@@ -134,12 +133,11 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        processData(channel, killStatisticsService.getStatistics(guildId));
+        processEmbeddableData(channel, killStatisticsService.getStatistics(guildId));
         return event.createFollowup("Set default Killing Statistics channel to <#" + channelId.asString() + ">");
     }
 
-    @Override
-    protected <T> void processData(GuildMessageChannel channel, T model) {
+    protected void processEmbeddableData(GuildMessageChannel channel, KillingStatsModel model) {
         deleteMessages(channel);
 
         if (model == null) {
@@ -147,15 +145,14 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
             return;
         }
 
-        KillingStatsModel data = (KillingStatsModel) model;
-        List<KillingStatsData> bosses = data.getEntries();
-        addChannelSuffix(channel, data.getAllLastDayKilled());
+        List<KillingStatsData> bosses = model.getEntries();
+        addChannelSuffix(channel, model.getAllLastDayKilled());
 
 
         sendEmbeddedMessages(channel, null,
                 "Killed Bosses Statistics",
-                "Last day killed: " + data.getAllLastDayKilled() + " / Last day players killed: " + data.getAllLastDayPlayersKilled() + "\nLast week killed: " +
-                        data.getAllLastWeekKilled() + " / Last week players killed: " + data.getAllLastWeekPlayersKilled() + "\n\n Killed: (last day) / (last week)",
+                "Last day killed: " + model.getAllLastDayKilled() + " / Last day players killed: " + model.getAllLastDayPlayersKilled() + "\nLast week killed: " +
+                        model.getAllLastWeekKilled() + " / Last week players killed: " + model.getAllLastWeekPlayersKilled() + "\n\n Killed: (last day) / (last week)",
                 "",
                 "",
                 getRandomColor());
@@ -172,9 +169,8 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
         }
     }
 
-    @Override
     @SuppressWarnings("unchecked")
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
+    private <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
         List<KillingStatsData> data = ((List<KillingStatsData>) model);
 

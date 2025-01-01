@@ -32,10 +32,6 @@ public class MinimumDeathLevel extends EventsMethods {
     }
 
     @Override
-    protected void activateEvent() {
-    }
-
-    @Override
     public String getEventName() {
         return EventName.getMinimumDeathLevel();
     }

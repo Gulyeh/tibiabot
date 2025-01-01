@@ -28,7 +28,6 @@ import java.util.Set;
 import static builders.commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class TibiaCoins extends EmbeddableEvent implements Channelable {
     private final TibiaCoinsService tibiaCoinsService;
@@ -95,7 +94,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, prices);
+            processEmbeddableData(guildChannel, prices);
         }
     }
 
@@ -108,13 +107,12 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + id.asString() + ">");
 
-        processData(channel, tibiaCoinsService.getPrices());
+        processEmbeddableData(channel, tibiaCoinsService.getPrices());
         return event.createFollowup("Set default Tibia Coins channel to <#" + id.asString() + ">");
     }
 
-    @Override
     @SuppressWarnings("unchecked")
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
+    private <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
         for(Prices data : (List<Prices>)model) {
             fields.add(buildEmbedField(data));
@@ -123,8 +121,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
         return fields;
     }
 
-    @Override
-    protected <T> void processData(GuildMessageChannel channel, T model) {
+    private void processEmbeddableData(GuildMessageChannel channel, PriceModel model) {
         deleteMessages(channel);
 
         if (model == null) {
@@ -132,7 +129,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
             return;
         }
 
-        List<Prices> data = ((PriceModel)model).getPrices();
+        List<Prices> data = model.getPrices();
         boolean isFirstMessage = true;
 
         for(BattleEyeType eye : BattleEyeType.values()) {

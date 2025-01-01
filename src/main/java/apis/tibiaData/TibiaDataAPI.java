@@ -14,6 +14,7 @@ import apis.tibiaData.model.charactersOnline.CharacterData;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TibiaDataAPI extends WebClient {
@@ -50,7 +51,7 @@ public class TibiaDataAPI extends WebClient {
     public List<CharacterData> getCharactersOnWorld(String world) {
         String response = sendRequest(getCustomRequest(getWorldUrl(world)));
         World model = getModel(response, World.class);
-        if(model == null) return List.of();
+        if(model.getWorld().getOnline_players() == null) return new ArrayList<>();
         return model.getWorld().getOnline_players();
     }
 

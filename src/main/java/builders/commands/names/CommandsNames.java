@@ -15,9 +15,10 @@ public final class CommandsNames {
     public final static String deathsCommand = "setdeaths";
     public final static String setMinimumDeathsLevelCommand = "setminimumlevel";
     public final static String setOnlineTrackerCommand = "setonlinetracker";
+    public final static String splitLootCommand = "splitloot";
 
     public static List<String> getCommands() {
         return Arrays.asList(worldCommand, serverStatusCommand, tibiaCoinsCommand, killingStatsCommand, houseCommand, eventsCommand, miniWorldChangesCommand,
-                boostedsCommand, deathsCommand, setMinimumDeathsLevelCommand, setOnlineTrackerCommand);
+                boostedsCommand, deathsCommand, setMinimumDeathsLevelCommand, setOnlineTrackerCommand, splitLootCommand);
     }
 }

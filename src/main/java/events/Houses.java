@@ -26,7 +26,6 @@ import java.util.Set;
 import static builders.commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class Houses extends EmbeddableEvent implements Channelable {
 
@@ -78,9 +77,7 @@ public class Houses extends EmbeddableEvent implements Channelable {
         return EventName.getHouses();
     }
 
-    @Override
-    @SuppressWarnings({"unchecked"})
-    protected <T> void processData(GuildMessageChannel channel, T model) {
+    private void processEmbeddableData(GuildMessageChannel channel, List<HousesModel> model) {
         deleteMessages(channel);
 
         if (model == null) {
@@ -88,7 +85,7 @@ public class Houses extends EmbeddableEvent implements Channelable {
             return;
         }
 
-        List<HousesModel> list = ((List<HousesModel>) model)
+        List<HousesModel> list = model
                 .stream()
                 .filter(x -> x.getHouse_list() != null &&
                         !x.getHouse_list().isEmpty())
@@ -122,7 +119,7 @@ public class Houses extends EmbeddableEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, housesService.getHouses(guildId));
+            processEmbeddableData(guildChannel, housesService.getHouses(guildId));
         }
     }
 
@@ -138,16 +135,15 @@ public class Houses extends EmbeddableEvent implements Channelable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processData(channel, housesService.getHouses(guildId));
+        processEmbeddableData(channel, housesService.getHouses(guildId));
         return event.createFollowup("Set default Houses event channel to <#" + channelId.asString() + ">");
     }
 
-    @Override
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
+    private List<EmbedCreateFields.Field> createEmbedFields(HousesModel model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
 
-        for (HouseData data : ((HousesModel) model).getHouse_list()) {
-            fields.add(buildEmbedField(data, ((HousesModel) model).getWorld()));
+        for (HouseData data : model.getHouse_list()) {
+            fields.add(buildEmbedField(data, model.getWorld()));
         }
 
         return fields;

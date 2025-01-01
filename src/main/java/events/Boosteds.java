@@ -9,7 +9,6 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.ServerSaveEvent;
 import events.interfaces.Channelable;
 import events.utils.EventName;
@@ -18,13 +17,9 @@ import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
 import apis.tibiaLabs.model.BoostedModel;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 
 public class Boosteds extends ServerSaveEvent implements Channelable {
     private final BoostedsService boostedsService;
@@ -84,36 +79,33 @@ public class Boosteds extends ServerSaveEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, boostedsService.getBoostedCreature());
-            processData(guildChannel, boostedsService.getBoostedBoss());
+            deleteMessages(guildChannel);
+            processEmbeddableData(guildChannel, boostedsService.getBoostedCreature());
+            processEmbeddableData(guildChannel, boostedsService.getBoostedBoss());
         }
     }
 
-    @Override
-    protected <T> void processData(GuildMessageChannel channel, T model) {
-        deleteMessages(channel);
-
+    private void processEmbeddableData(GuildMessageChannel channel, BoostedModel model) {
         if (model == null) {
             logINFO.warn("model is null");
             return;
         }
 
-        BoostedModel boosted = (BoostedModel) model;
-        if(boosted.getName() == null || boosted.getName().isEmpty())
+        if(model.getName() == null || model.getName().isEmpty())
             sendEmbeddedMessages(channel,
                     null,
-                    boosted.getBoostedTypeText(),
-                    "\u1CBC\u1CBC\u1CBCNo data could be found",
+                    model.getBoostedTypeText(),
+                    "No data could be found",
                     "",
                     "",
                     getRandomColor());
         else
             sendEmbeddedMessages(channel,
                     null,
-                    boosted.getBoostedTypeText(),
-                    "### \u1CBC\u1CBC\u1CBC:star: [" + boosted.getName() + "](" + boosted.getBoosted_data_link() + ")",
+                    model.getBoostedTypeText(),
+                    "###\u1CBC\u1CBC\u1CBC :star: [" + model.getName() + "](" + model.getBoosted_data_link() + ")",
                     "",
-                    boosted.getIcon_link(),
+                    model.getIcon_link(),
                     getRandomColor());
     }
 
@@ -129,18 +121,13 @@ public class Boosteds extends ServerSaveEvent implements Channelable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processData(channel, boostedsService.getBoostedCreature());
-        processData(channel, boostedsService.getBoostedBoss());
+        processEmbeddableData(channel, boostedsService.getBoostedCreature());
+        processEmbeddableData(channel, boostedsService.getBoostedBoss());
         return event.createFollowup("Set default Boosteds event channel to <#" + channelId.asString() + ">");
     }
 
     @Override
     public String getEventName() {
         return EventName.getBoosteds();
-    }
-
-    @Override
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
-        return new ArrayList<>();
     }
 }

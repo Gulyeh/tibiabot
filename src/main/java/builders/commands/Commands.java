@@ -1,6 +1,7 @@
 package builders.commands;
 
 import builders.commands.names.CommandsNames;
+import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
@@ -138,6 +139,14 @@ public class Commands {
         return this;
     }
 
+    public Commands setSplitLoot() {
+        ApplicationCommandRequest setSplitLoot =
+                requestBuilder(splitLootCommand, "Split Loot");
+
+        if(!listOfCommands.contains(setSplitLoot)) listOfCommands.add(setSplitLoot);
+        return this;
+    }
+
     private ApplicationCommandRequest requestBuilder(String name, String description, String optionDescription, ApplicationCommandOption.Type type) {
         return ApplicationCommandRequest.builder()
                 .name(name)
@@ -149,5 +158,12 @@ public class Commands {
                         .required(true)
                         .build()
                 ).build();
+    }
+
+    private ApplicationCommandRequest requestBuilder(String name, String description) {
+        return ApplicationCommandRequest.builder()
+                .name(name)
+                .description(description)
+                .build();
     }
 }

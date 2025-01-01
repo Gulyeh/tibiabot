@@ -24,10 +24,6 @@ public abstract class EventsMethods implements Listener {
 
     protected final static Logger logINFO = LoggerFactory.getLogger(EventsMethods.class);
 
-    protected EventsMethods() {
-        new Thread(this::activateEvent).start();
-    }
-
     protected Snowflake getChannelId(ChatInputInteractionEvent event) {
         Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().get(0).getValue();
         return value.map(x -> Snowflake.of(x.getRaw().replaceAll("\\D", ""))).orElse(null);
@@ -53,8 +49,6 @@ public abstract class EventsMethods implements Listener {
        if(permissions == null) return false;
        return permissions.asEnumSet().stream().anyMatch(x -> x.equals(Permission.ADMINISTRATOR));
     }
-
-    protected abstract void activateEvent();
 
     protected boolean saveSetChannel(ChatInputInteractionEvent event) {
         try {

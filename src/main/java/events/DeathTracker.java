@@ -20,16 +20,11 @@ import services.deathTracker.model.DeathData;
 import apis.tibiaData.model.deathtracker.Killer;
 import utils.Methods;
 
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
 import static cache.DatabaseCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 import static utils.Methods.formatWikiGifLink;
 
 public class DeathTracker extends EmbeddableEvent implements Channelable {
@@ -70,7 +65,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(120000);
+                    wait(300000);
                 }
             }
         }
@@ -98,7 +93,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, deathTrackerService.getDeaths(guildId));
+            processEmbeddableData(guildChannel, deathTrackerService.getDeaths(guildId));
         }
     }
 
@@ -118,17 +113,13 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
         return event.createFollowup("Set default Death Tracker event channel to <#" + channelId.asString() + ">");
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    protected <T> void processData(GuildMessageChannel channel, T model) {
+    private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {
         if (model == null) {
             logINFO.warn("model is null");
             return;
         }
 
-        List<DeathData> list = (List<DeathData>)model;
-
-        for (DeathData death : list) {
+        for (DeathData death : model) {
             sendEmbeddedMessages(channel,
                     null,
                     "",
@@ -138,11 +129,6 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                     getRandomColor(),
                     getFooter(death));
         }
-    }
-
-    @Override
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
-        return new ArrayList<>();
     }
 
     private String getTitle(DeathData data) {
@@ -182,7 +168,9 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
     }
 
     private EmbedCreateFields.Footer getFooter(DeathData data) {
-        String builder = data.getCharacter().getName() +
+        String builder;
+        if(data.getLostLevels() == 0) builder = data.getCharacter().getName() + " logged out immediately after death";
+        else builder = data.getCharacter().getName() +
                 " lost " +
                 data.getLostLevels() +
                 " level(s) and was downgraded to Level " +

@@ -27,7 +27,6 @@ import static builders.commands.names.CommandsNames.setOnlineTrackerCommand;
 import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
-import static discord.messages.SendMessages.sendEmbeddedMessages;
 import static java.util.UUID.randomUUID;
 
 public class OnlineTracker extends ServerSaveEvent implements Channelable {
@@ -81,18 +80,15 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable {
         return EventName.getOnlineTracker();
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    protected <T> void processData(GuildMessageChannel channel, T model) {
+    private void processEmbeddableData(GuildMessageChannel channel, List<OnlineModel> model) {
         deleteMessages(channel);
         if (model == null) {
             logINFO.warn("model is null");
             return;
         }
 
-        List<OnlineModel> list = ((List<OnlineModel>) model);
-        addChannelSuffix(channel, list.size());
-        if(list.isEmpty()) {
+        addChannelSuffix(channel, model.size());
+        if(model.isEmpty()) {
             sendEmbeddedMessages(channel,
                     null,
                     "",
@@ -102,7 +98,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable {
                     getRandomColor());
         }
 
-        LinkedHashMap<String, List<OnlineModel>> map = filterAndOrderData(list);
+        LinkedHashMap<String, List<OnlineModel>> map = filterAndOrderData(model);
         Color color = getRandomColor();
         List<String> msgs = createDescription(map);
         for(String msg : msgs) {
@@ -133,7 +129,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable {
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processData(guildChannel, onlineService.getOnlinePlayers(guildId));
+            processEmbeddableData(guildChannel, onlineService.getOnlinePlayers(guildId));
         }
     }
 
@@ -149,13 +145,8 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processData(channel, onlineService.getOnlinePlayers(guildId));
+        processEmbeddableData(channel, onlineService.getOnlinePlayers(guildId));
         return event.createFollowup("Set default Online players event channel to <#" + channelId.asString() + ">");
-    }
-
-    @Override
-    protected <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
-        return List.of();
     }
 
     private List<String> createDescription(LinkedHashMap<String, List<OnlineModel>> map) {
