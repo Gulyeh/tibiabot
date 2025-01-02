@@ -10,7 +10,9 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
+import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -27,7 +29,7 @@ import static cache.DatabaseCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
 import static utils.Methods.formatWikiGifLink;
 
-public class DeathTracker extends EmbeddableEvent implements Channelable {
+public class DeathTracker extends EmbeddableEvent implements Channelable, Activable {
 
     private final DeathTrackerService deathTrackerService;
 
@@ -51,10 +53,9 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         while (true) {
             try {
@@ -65,7 +66,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(300000);
+                    wait(150000);
                 }
             }
         }
@@ -126,7 +127,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable {
                     getDescription(death),
                     "",
                     getThumbnail(death),
-                    getRandomColor(),
+                    Color.DARK_GRAY,
                     getFooter(death));
         }
     }

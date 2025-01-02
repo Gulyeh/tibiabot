@@ -10,6 +10,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import events.abstracts.ServerSaveEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -21,7 +22,7 @@ import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 
-public class Boosteds extends ServerSaveEvent implements Channelable {
+public class Boosteds extends ServerSaveEvent implements Channelable, Activable {
     private final BoostedsService boostedsService;
 
     public Boosteds(BoostedsService boostedsService) {
@@ -45,10 +46,9 @@ public class Boosteds extends ServerSaveEvent implements Channelable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         while (true) {
             try {
@@ -103,7 +103,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable {
             sendEmbeddedMessages(channel,
                     null,
                     model.getBoostedTypeText(),
-                    "###\u1CBC\u1CBC\u1CBC :star: [" + model.getName() + "](" + model.getBoosted_data_link() + ")",
+                    "### \u1CBC\u1CBC\u1CBC:star: [" + model.getName() + "](" + model.getBoosted_data_link() + ")",
                     "",
                     model.getIcon_link(),
                     getRandomColor());
@@ -121,6 +121,8 @@ public class Boosteds extends ServerSaveEvent implements Channelable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
+
+        deleteMessages(channel);
         processEmbeddableData(channel, boostedsService.getBoostedCreature());
         processEmbeddableData(channel, boostedsService.getBoostedBoss());
         return event.createFollowup("Set default Boosteds event channel to <#" + channelId.asString() + ">");

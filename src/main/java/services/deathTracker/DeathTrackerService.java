@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DeathTrackerService implements Cacheable {
     private final Map<String, List<CharacterData>> mapCache; // data of previously online characters
     private Map<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
-    private final Map<String, ConcurrentHashMap<String, List<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
+    private final Map<String, ConcurrentHashMap<String, ArrayList<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
     private final int deathRangeAllowance = 30;
     private final TibiaDataAPI api;
     private final Logger logINFO = LoggerFactory.getLogger(DeathTrackerService.class);
@@ -90,10 +90,10 @@ public class DeathTrackerService implements Cacheable {
             try {
                 CharacterResponse data = api.getCharacterData(character.getName());
                 List<DeathResponse> deathsModel = data.getCharacter().getDeaths();
-                if(deathsModel == null) continue;
-                List<DeathResponse> acceptableDeaths = deathsModel.stream()
+                if(deathsModel == null || deathsModel.isEmpty()) continue;
+                ArrayList<DeathResponse> acceptableDeaths = new ArrayList<>(deathsModel.stream()
                         .filter(x -> x.getTimeLocal().isAfter(LocalDateTime.now().minusMinutes(deathRangeAllowance)))
-                        .toList();
+                        .toList());
                 List<DeathResponse> actualDeaths = filterDeaths(character, acceptableDeaths, world);
 
                 for (DeathResponse death : actualDeaths) {
@@ -103,11 +103,11 @@ public class DeathTrackerService implements Cacheable {
 
                 if(!actualDeaths.isEmpty()) character.setDead(false);
             } catch (Exception e) {
-               logINFO.info(e.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
+               logINFO.info(e.getMessage());
             }
         }
 
-        deaths.sort(Comparator.comparing(DeathData::getKilledAtDate).reversed());
+        deaths.sort(Comparator.comparing(DeathData::getKilledAtDate));
         deathsCache.put(world, deaths);
         clearRecentDeathsCache(world);
         return deaths;
@@ -122,11 +122,11 @@ public class DeathTrackerService implements Cacheable {
                 .toList();
     }
 
-    private List<DeathResponse> filterDeaths(CharacterData data, List<DeathResponse> characterDeaths, String world) {
-        ConcurrentHashMap<String, List<DeathResponse>> worldMap = recentDeathsCache.get(world);
+    private List<DeathResponse> filterDeaths(CharacterData data, ArrayList<DeathResponse> characterDeaths, String world) {
+        ConcurrentHashMap<String, ArrayList<DeathResponse>> worldMap = recentDeathsCache.get(world);
         if(worldMap == null) worldMap = new ConcurrentHashMap<>();
 
-        ArrayList<DeathResponse> deathData = (ArrayList<DeathResponse>) worldMap.get(data.getName());
+        ArrayList<DeathResponse> deathData = worldMap.get(data.getName());
         if(deathData == null) {
             worldMap.put(data.getName(), characterDeaths);
             recentDeathsCache.put(world, worldMap);
@@ -145,13 +145,13 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private void clearRecentDeathsCache(String world) {
-        ConcurrentHashMap<String, List<DeathResponse>> worldMap = recentDeathsCache.get(world);
+        ConcurrentHashMap<String, ArrayList<DeathResponse>> worldMap = recentDeathsCache.get(world);
         if(worldMap == null) return;
 
         worldMap.forEach((k, v) -> {
-           List<DeathResponse> filter = v.stream()
+            ArrayList<DeathResponse> filter = new ArrayList<>(v.stream()
                    .filter(x -> x.getTimeLocal().isAfter(LocalDateTime.now().minusMinutes(deathRangeAllowance)))
-                   .toList();
+                   .toList());
            if(filter.isEmpty()) worldMap.remove(k);
            else worldMap.put(k, filter);
         });

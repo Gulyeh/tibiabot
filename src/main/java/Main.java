@@ -1,19 +1,15 @@
 import builders.commands.CommandsBuilder;
 import cache.CacheInitializer;
 import cache.DatabaseCacheData;
-import cache.enums.EventTypes;
 import discord.Connector;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.channel.GuildChannel;
-import discord4j.core.object.entity.channel.TextChannel;
 import events.*;
 import events.guildEvents.RemovedChannel;
 import events.guildEvents.RemovedGuild;
 import lombok.extern.slf4j.Slf4j;
 import mongo.DocumentActions;
 import mongo.MongoConnector;
-import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
@@ -33,29 +29,40 @@ import static mongo.DocumentActions.*;
 @Slf4j
 public class Main {
     public static void main(String[] args) {
+        Connector.connect();
+        fillCache(new CacheInitializer());
         initializeServices();
         buildCommands();
-        fillCache(new CacheInitializer());
         client.onDisconnect().block();
     }
 
     private static void initializeServices() {
-        Connector.connect();
+        WorldsService worldsService = new WorldsService(); // singleton to hold all world data in cache and share;
 
-        Connector.addListener(new TibiaCoins(new TibiaCoinsService()));
-        Connector.addListener(new ServerStatus());
-        Connector.addListener(new TrackWorld());
-        Connector.addListener(new KillStatistics(new KillStatisticsService()));
-        Connector.addListener(new Houses(new HousesService()));
-        Connector.addListener(new EventsCalendar(new EventsService()));
-        Connector.addListener(new MiniWorldEvents(new MiniWorldEventsService()));
-        Connector.addListener(new Boosteds(new BoostedsService()));
-        Connector.addListener(new DeathTracker(new DeathTrackerService()));
-        Connector.addListener(new OnlineTracker(new OnlineService()));
-        Connector.addListener(new MinimumDeathLevel());
-        Connector.addListener(new LootSplitter());
-        Connector.addListener(new RemovedChannel());
-        Connector.addListener(new RemovedGuild());
+        TibiaCoins tc = new TibiaCoins(new TibiaCoinsService(worldsService));
+        ServerStatus serverStatus = new ServerStatus(worldsService);
+        TrackWorld trackWorld = new TrackWorld(worldsService);
+        KillStatistics ks = new KillStatistics(new KillStatisticsService());
+        Houses houses = new Houses(new HousesService());
+        EventsCalendar events = new EventsCalendar(new EventsService());
+        MiniWorldEvents miniWorldEvents = new MiniWorldEvents(new MiniWorldEventsService(worldsService));
+        Boosteds boosteds = new Boosteds(new BoostedsService());
+        DeathTracker deathTracker = new DeathTracker(new DeathTrackerService());
+        OnlineTracker onlineTracker = new OnlineTracker(new OnlineService());
+        MinimumDeathLevel minimumDeathLevel = new MinimumDeathLevel();
+        LootSplitter splitter = new LootSplitter();
+        RemovedChannel removedChannel = new RemovedChannel();
+        RemovedGuild removedGuild = new RemovedGuild();
+
+        List.of(tc, serverStatus, trackWorld, ks, houses, events, miniWorldEvents,
+                boosteds, deathTracker, onlineTracker).forEach(x -> {
+                    Connector.addListener(x);
+                    x.activate();
+        }); //list of activable events
+
+        List.of(minimumDeathLevel, splitter, removedChannel, removedGuild)
+                .forEach(Connector::addListener);
+        //list of listeners
     }
 
     private static void buildCommands() {

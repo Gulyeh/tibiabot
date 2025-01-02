@@ -10,6 +10,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import events.abstracts.ProcessEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -25,7 +26,7 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendImageMessage;
 
-public class EventsCalendar extends ProcessEvent implements Channelable {
+public class EventsCalendar extends ProcessEvent implements Channelable, Activable {
 
     private final EventsService eventsService;
 
@@ -54,10 +55,9 @@ public class EventsCalendar extends ProcessEvent implements Channelable {
         return EventName.getEvents();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         long timeLeft = 0;
 

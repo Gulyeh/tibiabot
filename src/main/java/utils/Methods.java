@@ -43,7 +43,7 @@ public final class Methods {
         for (String word : words)
         {
             result.append(Character.toUpperCase(word.charAt(0)))
-                    .append(word.substring(1).toLowerCase())
+                    .append(word.substring(1))
                     .append(" ");
         }
 

@@ -4,8 +4,8 @@ import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import events.abstracts.ActivatableEvent;
 import events.abstracts.EventsMethods;
+import events.interfaces.Activable;
 import events.utils.EventName;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
@@ -18,17 +18,16 @@ import static cache.DatabaseCacheData.isGuildCached;
 import static discord.Connector.client;
 import static mongo.DocumentActions.*;
 
-public class TrackWorld extends ActivatableEvent {
+public class TrackWorld extends EventsMethods implements Activable {
 
     private WorldModel worlds;
     private final WorldsService worldsService;
 
-    public TrackWorld() {
-        this.worldsService = new WorldsService();
+    public TrackWorld(WorldsService worldsService) {
+        this.worldsService = worldsService;
     }
 
-    @Override
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Getting available worlds for " + getEventName());
 
         try {

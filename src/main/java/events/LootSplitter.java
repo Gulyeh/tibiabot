@@ -4,18 +4,23 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.TextInput;
+import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalSpec;
+import discord4j.core.spec.MessageCreateFields;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.utils.EventName;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
 import services.lootSplitter.model.SplitLootModel;
 import services.lootSplitter.model.SplittingMember;
 import services.lootSplitter.model.TransferData;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,6 +28,7 @@ import java.util.List;
 
 import static builders.commands.names.CommandsNames.splitLootCommand;
 import static discord.Connector.client;
+import static discord.messages.GetMessages.getChannelMessages;
 
 public class LootSplitter extends EmbeddableEvent {
     private final LootSplitterService service;
@@ -66,7 +72,13 @@ public class LootSplitter extends EmbeddableEvent {
             }
 
             SplitLootModel model = service.splitLoot(analyzer, spot);
-            return event.reply().withEmbeds(createMessage(model));
+//            Flux<Message> messages = getChannelMessages(event.get)
+
+            analyzer = spot.isEmpty() ? analyzer : "Hunted on: " + spot + "\n\n" + analyzer;
+            return event.reply().withFiles(
+                    MessageCreateFields.File.of("session.txt",
+                            new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
+                    .withEmbeds(createMessage(model));
         }).subscribe();
     }
 
@@ -89,8 +101,8 @@ public class LootSplitter extends EmbeddableEvent {
     }
 
     private List<EmbedCreateFields.Field> createDescriptionFields(SplitLootModel model) {
-        String description = "Loot type: **" + model.getLootType() +
-                "**\nTotal loot: **" + model.getLoot() +
+        String description = "Type: **" + model.getLootType() +
+                "**\nLoot: **" + model.getLoot() +
                 "**\nSupplies: **" + model.getSupplies() +
                 "**\nBalance: **" + model.getBalance() +
                 "**";
@@ -184,10 +196,6 @@ public class LootSplitter extends EmbeddableEvent {
     @Override
     public String getEventName() {
         return EventName.getLootSplitter();
-    }
-
-    @Override
-    protected void activateEvent() {
     }
 
     @Override

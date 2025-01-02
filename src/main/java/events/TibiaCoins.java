@@ -11,6 +11,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -29,7 +30,7 @@ import static builders.commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 
-public class TibiaCoins extends EmbeddableEvent implements Channelable {
+public class TibiaCoins extends EmbeddableEvent implements Channelable, Activable {
     private final TibiaCoinsService tibiaCoinsService;
 
     public TibiaCoins(TibiaCoinsService tibiaCoinsService) {
@@ -57,10 +58,9 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable {
         return EventName.getTibiaCoins();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         while(true) {
             try {

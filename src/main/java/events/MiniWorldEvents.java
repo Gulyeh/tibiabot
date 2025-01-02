@@ -12,6 +12,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.ServerSaveEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -29,7 +30,7 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static utils.Methods.getFormattedDate;
 
-public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
+public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Activable {
 
     private final MiniWorldEventsService miniWorldEventsService;
     private final HashMap<String, Status> beforeWorldsStatus;
@@ -57,35 +58,35 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
-                miniWorldEventsService.clearCache();
-                if(isAfterSaverSave()) beforeWorldsStatus.clear();
+                if(isAfterSaverSave()) {
+                    miniWorldEventsService.clearCache();
+                    beforeWorldsStatus.clear();
+                }
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(300000));
+                    wait(getWaitTime(5000));
                 }
             }
         }
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, MiniWorldEventsModel model) {
-        deleteMessages(channel);
-
         if (model == null) {
             logINFO.warn("model is null");
             return;
         }
 
+        deleteMessages(channel);
         List<MiniWorldEvent> miniWorldChanges = model.getActive_mini_world_changes();
         if(miniWorldChanges.isEmpty()) {
             sendEmbeddedMessages(channel,
@@ -153,7 +154,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable {
     }
 
     private boolean serverStatusChangedForServer(Snowflake guildId) {
-        if(beforeWorldsStatus.isEmpty() || UtilsCache.getWorldsStatus().isEmpty()) return true;
+        if(beforeWorldsStatus.isEmpty()) return true;
 
         String serverName = DatabaseCacheData.getWorldCache().get(guildId);
         Status actualStatus = UtilsCache.getWorldsStatus().get(serverName);

@@ -13,6 +13,7 @@ import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.abstracts.ServerSaveEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -29,7 +30,7 @@ import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static java.util.UUID.randomUUID;
 
-public class OnlineTracker extends ServerSaveEvent implements Channelable {
+public class OnlineTracker extends ServerSaveEvent implements Channelable, Activable {
     private final OnlineService onlineService;
     private final String othersKey;
 
@@ -54,10 +55,9 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         while (true) {
             try {

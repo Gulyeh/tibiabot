@@ -12,6 +12,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.ServerSaveEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -27,12 +28,11 @@ import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 
-public class ServerStatus extends ServerSaveEvent implements Channelable {
-
+public class ServerStatus extends ServerSaveEvent implements Channelable, Activable {
     private final WorldsService worldsService;
 
-    public ServerStatus() {
-        this.worldsService = new WorldsService();
+    public ServerStatus(WorldsService worldsService) {
+        this.worldsService = worldsService;
     }
 
     @Override
@@ -51,18 +51,15 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
-        getAndCacheWorlds();
 
         while(true) {
             try {
                 logINFO.info("Executing thread " + getEventName());
                 worldsService.clearCache();
-                if(isAfterSaverSave()) UtilsCache.getWorldsStatus().clear();
                 executeEventProcess();
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
@@ -75,10 +72,9 @@ public class ServerStatus extends ServerSaveEvent implements Channelable {
     }
 
     protected void executeEventProcess() {
+        WorldModel worlds = getAndCacheWorlds();
         Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
-
-        WorldModel worlds = getAndCacheWorlds();
 
         for (Snowflake guildId : guildIds) {
             Snowflake channel = DatabaseCacheData.getChannelsCache()

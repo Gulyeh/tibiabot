@@ -11,6 +11,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -27,7 +28,7 @@ import static builders.commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 
-public class Houses extends EmbeddableEvent implements Channelable {
+public class Houses extends EmbeddableEvent implements Channelable, Activable {
 
     private final HousesService housesService;
 
@@ -52,10 +53,9 @@ public class Houses extends EmbeddableEvent implements Channelable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         while (true) {
             try {

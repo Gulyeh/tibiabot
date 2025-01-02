@@ -11,6 +11,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
+import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
@@ -33,7 +34,7 @@ import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 
-public class KillStatistics extends EmbeddableEvent implements Channelable {
+public class KillStatistics extends EmbeddableEvent implements Channelable, Activable {
 
     private final KillStatisticsService killStatisticsService;
 
@@ -57,10 +58,9 @@ public class KillStatistics extends EmbeddableEvent implements Channelable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @Override
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    protected void activateEvent() {
+    public void activatableEvent() {
         logINFO.info("Activating " + getEventName());
         long timeLeft = 0;
 

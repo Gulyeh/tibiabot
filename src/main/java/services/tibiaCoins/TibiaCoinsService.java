@@ -13,8 +13,8 @@ public class TibiaCoinsService {
     private final WorldsService worldsService;
     private final TibiaTradeAPI tibiaTradeAPI;
 
-    public TibiaCoinsService() {
-        this.worldsService = new WorldsService();
+    public TibiaCoinsService(WorldsService worldsService) {
+        this.worldsService = worldsService;
         tibiaTradeAPI = new TibiaTradeAPI();
     }
 
