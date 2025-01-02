@@ -74,7 +74,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(5000));
+                    wait(getWaitTime(300000));
                 }
             }
         }
