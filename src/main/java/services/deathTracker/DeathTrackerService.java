@@ -53,7 +53,7 @@ public class DeathTrackerService implements Cacheable {
             if(oldCachedCharacterData.isPresent() && oldCachedCharacterData.get().getLevel() > newCharacterData.getLevel() && !newCharacterData.isDead())
                 newCharacterData.setDead(true);
 
-            if(oldCachedCharacterData.isPresent() && oldCachedCharacterData.get().isDead())
+            if(oldCachedCharacterData.isPresent() && newCharacterData.isDead())
                 deadCharacters.add(newCharacterData);
         }
 
@@ -76,7 +76,7 @@ public class DeathTrackerService implements Cacheable {
 
             LocalDateTime updatedLatest = character.getUpdatedAt();
             int maxOfflineTime = 10;
-            if(ChronoUnit.MINUTES.between(LocalDateTime.now(), updatedLatest) <= maxOfflineTime)
+            if(ChronoUnit.MINUTES.between(updatedLatest, LocalDateTime.now()) <= maxOfflineTime)
                 newCharacters.add(character);
         }
 
@@ -123,6 +123,7 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathResponse> filterDeaths(CharacterData data, ArrayList<DeathResponse> characterDeaths, String world) {
+        if(characterDeaths.isEmpty()) return new ArrayList<>();
         ConcurrentHashMap<String, ArrayList<DeathResponse>> worldMap = recentDeathsCache.get(world);
         if(worldMap == null) worldMap = new ConcurrentHashMap<>();
 

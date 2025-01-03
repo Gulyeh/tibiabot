@@ -81,12 +81,12 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<OnlineModel> model) {
-        deleteMessages(channel);
         if (model == null) {
             logINFO.warn("model is null");
             return;
         }
 
+        deleteMessages(channel);
         addChannelSuffix(channel, model.size());
         if(model.isEmpty()) {
             sendEmbeddedMessages(channel,

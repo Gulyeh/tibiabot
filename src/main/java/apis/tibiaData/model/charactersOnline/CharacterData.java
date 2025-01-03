@@ -20,7 +20,7 @@ public class CharacterData implements CharacterLink {
     @Setter
     private transient LocalDateTime updatedAt;
     @Setter
-    private transient boolean isDead = false;
+    private transient boolean isDead;
 
     public Vocation getVocation() {
         return Vocation.getEnum(vocation);

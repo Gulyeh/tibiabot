@@ -15,6 +15,7 @@ public final class DeleteMessages {
         try {
             Flux<Message> messages = getChannelMessages(channel);
             channel.bulkDeleteMessages(messages).subscribe();
+            channel.bulkDeleteMessages(messages).subscribe();
             logINFO.info("Deleted " + messages.count().block() + " messages");
         } catch (Exception ignore) {
             logINFO.info("Could not delete messages");

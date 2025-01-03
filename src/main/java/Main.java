@@ -7,6 +7,7 @@ import discord4j.core.object.entity.Guild;
 import events.*;
 import events.guildEvents.RemovedChannel;
 import events.guildEvents.RemovedGuild;
+import events.lootSplitter.LootSplitter;
 import lombok.extern.slf4j.Slf4j;
 import mongo.DocumentActions;
 import mongo.MongoConnector;

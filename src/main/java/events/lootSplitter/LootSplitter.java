@@ -1,14 +1,17 @@
-package events;
+package events.lootSplitter;
 
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.component.TextInput;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.core.spec.MessageCreateFields;
+import discord4j.discordjson.json.ComponentData;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.utils.EventName;
@@ -21,10 +24,9 @@ import services.lootSplitter.model.TransferData;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static builders.commands.names.CommandsNames.splitLootCommand;
 import static discord.Connector.client;
@@ -32,16 +34,17 @@ import static discord.messages.GetMessages.getChannelMessages;
 
 public class LootSplitter extends EmbeddableEvent {
     private final LootSplitterService service;
+    private final SplitterInteractionsHandler splitterInteractionsHandler;
     private final String splitModalId = "lootSplitterModal";
     private final String spotModalId = "spotModal";
     private final String splitterModalId = "splitterModal";
 
     public LootSplitter() {
         service = new LootSplitterService();
+        splitterInteractionsHandler = new SplitterInteractionsHandler();
     }
 
-    @Override
-    public void executeEvent() {
+    private void subscribeCommandEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
                 if (!event.getCommandName().equals(splitLootCommand)) return Mono.empty();
@@ -59,7 +62,9 @@ public class LootSplitter extends EmbeddableEvent {
                 return Mono.empty();
             }
         }).subscribe();
+    }
 
+    private void subscribeModalEvent() {
         client.on(ModalSubmitInteractionEvent.class, event -> {
             if (!splitModalId.equals(event.getCustomId())) return Mono.empty();
             String spot = "", analyzer = "";
@@ -72,14 +77,20 @@ public class LootSplitter extends EmbeddableEvent {
             }
 
             SplitLootModel model = service.splitLoot(analyzer, spot);
-//            Flux<Message> messages = getChannelMessages(event.get)
-
             analyzer = spot.isEmpty() ? analyzer : "Hunted on: " + spot + "\n\n" + analyzer;
             return event.reply().withFiles(
-                    MessageCreateFields.File.of("session.txt",
-                            new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
-                    .withEmbeds(createMessage(model));
+                            MessageCreateFields.File.of("session.txt",
+                                    new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
+                    .withEmbeds(createMessage(model))
+                    .withComponents(ActionRow.of(splitterInteractionsHandler.getSplittingButtons(model)));
         }).subscribe();
+    }
+
+    @Override
+    public void executeEvent() {
+        subscribeCommandEvent();
+        subscribeModalEvent();
+        splitterInteractionsHandler.executeEvent();
     }
 
     private List<EmbedCreateSpec> createMessage(SplitLootModel model) {
