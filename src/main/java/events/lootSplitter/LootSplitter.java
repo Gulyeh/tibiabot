@@ -31,6 +31,8 @@ import java.util.regex.Pattern;
 import static builders.commands.names.CommandsNames.splitLootCommand;
 import static discord.Connector.client;
 import static discord.messages.GetMessages.getChannelMessages;
+import static utils.Emojis.getBlankEmoji;
+import static utils.Emojis.getCoinEmoji;
 
 public class LootSplitter extends EmbeddableEvent {
     private final LootSplitterService service;
@@ -113,16 +115,15 @@ public class LootSplitter extends EmbeddableEvent {
 
     private List<EmbedCreateFields.Field> createDescriptionFields(SplitLootModel model) {
         String description = "Type: **" + model.getLootType() +
-                "**\nLoot: **" + model.getLoot() +
-                "**\nSupplies: **" + model.getSupplies() +
-                "**\nBalance: **" + model.getBalance() +
-                "**";
+                "**\nLoot: **" + model.getLoot() + "**" + getCoinEmoji() +
+                "\nSupplies: **" + model.getSupplies() + "**" + getCoinEmoji()+
+                "\nBalance: **" + model.getBalance() + "**" + getCoinEmoji();
 
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
         fields.add(EmbedCreateFields.Field.of("", description, true));
 
-        description = "\u1CBC\nLoot per hour: **" + model.getLootPerHour() +
-                "**\nIndividual balance **" + model.getIndividualBalance() +"**";
+        description = getBlankEmoji() + "\nLoot per hour: **" + model.getLootPerHour() + "**" + getCoinEmoji() +
+                        "\nIndividual balance **" + model.getIndividualBalance() + "**" + getCoinEmoji();
         fields.add(EmbedCreateFields.Field.of("", description, true));
         fields.add(EmbedCreateFields.Field.of("\t", "\t", true));
         return fields;
@@ -191,11 +192,11 @@ public class LootSplitter extends EmbeddableEvent {
     }
 
     private EmbedCreateFields.Field buildEmbedField(SplittingMember data) {
-        String value = "\u1CBC\u1CBCLoot: **" + data.getLoot() + "** (" + data.getLootPercentageString() + ")" +
-                "\n\u1CBC\u1CBCSupplies: **" + data.getSupplies() + "** (" + data.getSuppliesPercentageString() + ")" +
-                "\n\u1CBC\u1CBCBalance: **" + data.getBalance() +
-                "**\n\u1CBC\u1CBCDamage: **" + data.getDamage() +
-                "**\n\u1CBC\u1CBCHealing: **" + data.getHealing() +
+        String value = getBlankEmoji() + getBlankEmoji() + "Loot: **" + data.getLoot() + "** (" + data.getLootPercentageString() + ")\n" +
+                getBlankEmoji() + getBlankEmoji() + "Supplies: **" + data.getSupplies() + "** (" + data.getSuppliesPercentageString() + ")\n" +
+                getBlankEmoji() + getBlankEmoji() + "Balance: **" + data.getBalance() + "**\n" +
+                getBlankEmoji() + getBlankEmoji() + "Damage: **" + data.getDamage() + "**\n" +
+                getBlankEmoji() + getBlankEmoji() + "Healing: **" + data.getHealing() +
                 "**";
         return EmbedCreateFields.Field.of("‣ " + data.getName(), value, true);
     }

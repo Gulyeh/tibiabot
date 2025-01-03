@@ -21,6 +21,7 @@ import apis.tibiaLabs.model.BoostedModel;
 import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
+import static utils.Emojis.getBlankEmoji;
 
 public class Boosteds extends ServerSaveEvent implements Channelable, Activable {
     private final BoostedsService boostedsService;
@@ -103,7 +104,8 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
             sendEmbeddedMessages(channel,
                     null,
                     model.getBoostedTypeText(),
-                    "### \u1CBC\u1CBC\u1CBC:star: [" + model.getName() + "](" + model.getBoosted_data_link() + ")",
+                    "### " + getBlankEmoji() + getBlankEmoji() +
+                            ":star: [" + model.getName() + "](" + model.getBoosted_data_link() + ")",
                     "",
                     model.getIcon_link(),
                     getRandomColor());

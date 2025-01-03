@@ -37,20 +37,8 @@ public class SplitterInteractionsHandler extends EventsMethods {
                     .get().get(0)
                     .components().get();
 
-            List<Button> buttons = updateButtons(interactionButtons, id, splitterName);
-
-            StringBuilder builder = new StringBuilder();
-            splitInteractionIdToTransfers(id).forEach((k, v) -> builder
-                    .append("Very well. ")
-                    .append(splitterName)
-                    .append(" has transferred ")
-                    .append(v)
-                    .append(" gold to ")
-                    .append(k)
-                    .append("\n"));
-
-            message.edit().withComponents(ActionRow.of(buttons)).subscribe();
-            return event.reply(builder.toString());
+            message.edit().withComponents(ActionRow.of(updateButtons(interactionButtons, id, splitterName))).subscribe();
+            return event.reply(buildSplittingResponse(id, splitterName));
         }).subscribe();
     }
 
@@ -108,6 +96,18 @@ public class SplitterInteractionsHandler extends EventsMethods {
         return map;
     }
 
+    private String buildSplittingResponse(String customId, String splitterName) {
+        StringBuilder builder = new StringBuilder();
+        splitInteractionIdToTransfers(customId).forEach((k, v) -> builder
+                .append("Very well. ")
+                .append(splitterName)
+                .append(" has transferred ")
+                .append(v)
+                .append(" gold to ")
+                .append(k)
+                .append("\n"));
+        return builder.toString();
+    }
 
     @Override
     public String getEventName() {
