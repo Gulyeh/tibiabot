@@ -22,6 +22,7 @@ import services.miniWorldEvents.models.MiniWorldEvent;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.enums.Status;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,12 +36,12 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
 
     private final MiniWorldEventsService miniWorldEventsService;
     private final ConcurrentHashMap<String, Status> beforeWorldsStatus;
+    private LocalDateTime customServerSaveTime;
 
     public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
         this.miniWorldEventsService = miniWorldEventsService;
         beforeWorldsStatus = new ConcurrentHashMap<>();
-        setExpectedHour(12);
-        setExpectedMinute(0);
+        customServerSaveTime = LocalDateTime.now().withHour(12).withMinute(0).withSecond(0);
     }
 
     @Override
@@ -70,7 +71,10 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
                     miniWorldEventsService.clearCache();
                     beforeWorldsStatus.clear();
                 }
-                executeEventProcess();
+                else if(isAfterSaverSave(customServerSaveTime)) {
+                    customServerSaveTime = customServerSaveTime.plusDays(1);
+                    executeEventProcess();
+                }
             } catch (Exception e) {
                 logINFO.info(e.getMessage());
             } finally {

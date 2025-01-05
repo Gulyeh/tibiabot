@@ -14,14 +14,6 @@ public abstract class ServerSaveEvent extends EmbeddableEvent {
                 .withSecond(0);
     }
 
-    protected void setExpectedHour(int value) {
-        serverSaveTime = serverSaveTime.withHour(value);
-    }
-
-    protected void setExpectedMinute(int value) {
-        serverSaveTime = serverSaveTime.withMinute(value);
-    }
-
     protected long getWaitTime(int specifiedMillis) {
         LocalDateTime now = LocalDateTime.now();
         if(now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime)) serverSaveTime = serverSaveTime.plusDays(1);
@@ -48,5 +40,10 @@ public abstract class ServerSaveEvent extends EmbeddableEvent {
         boolean isAfterSS = now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime);
         if(isAfterSS) serverSaveTime = serverSaveTime.plusDays(1);
         return isAfterSS;
+    }
+
+    protected boolean isAfterSaverSave(LocalDateTime date) {
+        LocalDateTime now = LocalDateTime.now();
+        return now.isAfter(date) || now.isEqual(date);
     }
 }
