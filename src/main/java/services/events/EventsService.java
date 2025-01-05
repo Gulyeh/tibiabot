@@ -10,11 +10,12 @@ import utils.Image;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Configurator.config;
 
 public class EventsService implements Cacheable {
-    private Map<String, String> cachedFiles;
+    private ConcurrentHashMap<String, String> cachedFiles;
     private final Logger logINFO = LoggerFactory.getLogger(EventsService.class);
 
     public EventsService() {
@@ -37,7 +38,7 @@ public class EventsService implements Cacheable {
             logINFO.info("Could not delete files");
         }
 
-        cachedFiles = new HashMap<>();
+        cachedFiles = new ConcurrentHashMap<>();
     }
 
     public String getEvents(int month, int year) {

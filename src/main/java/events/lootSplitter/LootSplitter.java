@@ -1,21 +1,20 @@
 package events.lootSplitter;
 
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.TextInput;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.core.spec.MessageCreateFields;
-import discord4j.discordjson.json.ComponentData;
+import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.utils.EventName;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
 import services.lootSplitter.model.SplitLootModel;
@@ -25,8 +24,6 @@ import services.lootSplitter.model.TransferData;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static builders.commands.names.CommandsNames.splitLootCommand;
 import static discord.Connector.client;
@@ -36,14 +33,16 @@ import static utils.Emojis.getCoinEmoji;
 
 public class LootSplitter extends EmbeddableEvent {
     private final LootSplitterService service;
-    private final SplitterInteractionsHandler splitterInteractionsHandler;
+    private final SplitterTransfersHandler splitterTransfersHandler;
+    private final SplitterComparatorHandler splitterComparatorHandler;
     private final String splitModalId = "lootSplitterModal";
     private final String spotModalId = "spotModal";
     private final String splitterModalId = "splitterModal";
 
     public LootSplitter() {
         service = new LootSplitterService();
-        splitterInteractionsHandler = new SplitterInteractionsHandler();
+        splitterTransfersHandler = new SplitterTransfersHandler();
+        splitterComparatorHandler = new SplitterComparatorHandler(service);
     }
 
     private void subscribeCommandEvent() {
@@ -80,11 +79,15 @@ public class LootSplitter extends EmbeddableEvent {
 
             SplitLootModel model = service.splitLoot(analyzer, spot);
             analyzer = spot.isEmpty() ? analyzer : "Hunted on: " + spot + "\n\n" + analyzer;
+            List<Button> buttons = splitterTransfersHandler.getSplittingButtons(model);
+
+            if(isComparableData(event, model))
+                buttons.add(Button.primary(splitterComparatorHandler.getButtonId(), "Compare"));
             return event.reply().withFiles(
                             MessageCreateFields.File.of("session.txt",
                                     new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
                     .withEmbeds(createMessage(model))
-                    .withComponents(ActionRow.of(splitterInteractionsHandler.getSplittingButtons(model)));
+                    .withComponents(ActionRow.of(buttons));
         }).subscribe();
     }
 
@@ -92,7 +95,8 @@ public class LootSplitter extends EmbeddableEvent {
     public void executeEvent() {
         subscribeCommandEvent();
         subscribeModalEvent();
-        splitterInteractionsHandler.executeEvent();
+        splitterTransfersHandler.executeEvent();
+        splitterComparatorHandler.executeEvent();
     }
 
     private List<EmbedCreateSpec> createMessage(SplitLootModel model) {
@@ -168,7 +172,8 @@ public class LootSplitter extends EmbeddableEvent {
 
         int iterations = 1;
         for(SplittingMember member : model.getMembers()) {
-            fields.add(buildEmbedField(member));
+            if(model.getMembers().size() <= 8)
+                fields.add(buildEmbedField(member));
             if(iterations % 2 == 0) fields.add(emptyField(true));
             iterations++;
             if(member.getTransfers().isEmpty()) continue;
@@ -177,13 +182,14 @@ public class LootSplitter extends EmbeddableEvent {
                     .append(member.getName())
                     .append("**\n");
             for(TransferData transfer : member.getTransfers()) {
-                splitting.append("``")
+                splitting.append("```")
                         .append("transfer ")
                         .append(transfer.getTransferAmount())
                         .append(" to ")
                         .append(transfer.getTransferTo())
-                        .append("``\n");
+                        .append("```");
             }
+            splitting.append("\n");
         }
 
         fields.add(emptyField(false));
@@ -201,8 +207,25 @@ public class LootSplitter extends EmbeddableEvent {
         return EmbedCreateFields.Field.of("‣ " + data.getName(), value, true);
     }
 
-    private EmbedCreateFields.Field emptyField(boolean inline) {
-        return EmbedCreateFields.Field.of("\t", "\t", inline);
+    private boolean isComparableData(ModalSubmitInteractionEvent event, SplitLootModel model) {
+        if(model.getSpotName().isEmpty()) return false;
+        List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block())
+                .collectList()
+                .block();
+        if(msgs == null || msgs.isEmpty()) return false;
+
+        List<Message> embeddedMsgs = msgs.stream().filter(x -> x.getEmbeds().size() == 1 &&
+                x.getAttachments().size() == 1).toList();
+        return embeddedMsgs.stream().anyMatch(x -> {
+            EmbedData embed = x.getData().embeds().get(0);
+            String title = embed.title().get();
+            return title.contains(model.getSpotName()) &&
+                    title.split("\n")[0].contains(String.valueOf(model.getMembers().size())) &&
+                    model.getMembers().stream().allMatch(y -> embed.fields()
+                                    .get()
+                                    .stream()
+                                    .anyMatch(z -> z.value().contains(y.getName())));
+        });
     }
 
     @Override

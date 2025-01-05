@@ -48,6 +48,10 @@ public abstract class EmbeddableEvent extends ProcessEvent {
         return new ArrayList<>(splitEmbeddedMessage(fields, template));
     }
 
+    protected EmbedCreateFields.Field emptyField(boolean inline) {
+        return EmbedCreateFields.Field.of("\t", "\t", inline);
+    }
+
 
     private List<EmbedCreateSpec> splitEmbeddedMessage(List<EmbedCreateFields.Field> fields, EmbedCreateSpec embedData) {
         List<EmbedCreateSpec> listOfMessages = new ArrayList<>();

@@ -10,11 +10,12 @@ import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class OnlineService implements Cacheable {
     private final TibiaDataAPI tibiaDataAPI;
-    private Map<String, List<OnlineModel>> onlineCache;
-    private Map<String, List<OnlineModel>> charInfoCache;
+    private ConcurrentHashMap<String, List<OnlineModel>> onlineCache;
+    private ConcurrentHashMap<String, List<OnlineModel>> charInfoCache;
 
     public OnlineService() {
         tibiaDataAPI = new TibiaDataAPI();
@@ -24,11 +25,11 @@ public class OnlineService implements Cacheable {
 
     @Override
     public void clearCache() {
-        onlineCache = new HashMap<>();
+        onlineCache = new ConcurrentHashMap<>();
     }
 
     public void clearCharStorageCache() {
-        charInfoCache = new HashMap<>();
+        charInfoCache = new ConcurrentHashMap<>();
     }
 
     public List<OnlineModel> getOnlinePlayers(Snowflake guildId) {

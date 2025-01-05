@@ -3,17 +3,17 @@ package cache;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import lombok.Getter;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Methods.getKey;
 
 public final class DatabaseCacheData {
     @Getter
-    private static HashMap<Snowflake, String> worldCache = new HashMap<>();
+    private static ConcurrentHashMap<Snowflake, String> worldCache = new ConcurrentHashMap<>();
     @Getter
-    private static HashMap<Snowflake, HashMap<EventTypes, Snowflake>> channelsCache = new HashMap<>();
+    private static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
     @Getter
-    private static HashMap<Snowflake, Integer> minimumDeathLevelCache = new HashMap<>();
+    private static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
 
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
@@ -28,10 +28,10 @@ public final class DatabaseCacheData {
 
     public static void addToChannelsCache(Snowflake guildId, Snowflake channelId, EventTypes eventType) {
         if(guildId == null || channelId == null || eventType == null) return;
-        HashMap<EventTypes, Snowflake> eventChannels;
+        ConcurrentHashMap<EventTypes, Snowflake> eventChannels;
 
         if(channelsCache.containsKey(guildId)) eventChannels = channelsCache.get(guildId);
-        else eventChannels = new HashMap<>();
+        else eventChannels = new ConcurrentHashMap<>();
 
         eventChannels.put(eventType, channelId);
         channelsCache.put(guildId, eventChannels);
@@ -51,9 +51,9 @@ public final class DatabaseCacheData {
     }
 
     public static void resetCache() {
-        worldCache = new HashMap<>();
-        channelsCache = new HashMap<>();
-        minimumDeathLevelCache = new HashMap<>();
+        worldCache = new ConcurrentHashMap<>();
+        channelsCache = new ConcurrentHashMap<>();
+        minimumDeathLevelCache = new ConcurrentHashMap<>();
     }
 
     public static boolean isGuildCached(Snowflake guildId) {

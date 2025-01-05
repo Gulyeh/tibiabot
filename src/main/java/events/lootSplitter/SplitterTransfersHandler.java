@@ -5,13 +5,16 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ComponentData;
-import events.abstracts.EventsMethods;
-import lombok.Getter;
+import events.abstracts.InteractionEvent;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.model.SplitLootModel;
 import services.lootSplitter.model.SplittingMember;
 import services.lootSplitter.model.TransferData;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,24 +24,28 @@ import java.util.regex.Pattern;
 
 import static discord.Connector.client;
 
-@Getter
-public class SplitterInteractionsHandler extends EventsMethods {
-    private final String splittingButtonId = "transfer";
+public class SplitterTransfersHandler extends InteractionEvent {
+    private final int interactionTimeoutDays = 2;
+
+    protected SplitterTransfersHandler() {
+        super("transfer");
+    }
 
     @Override
     public void executeEvent() {
         client.on(ButtonInteractionEvent.class, event -> {
-            if (!event.getCustomId().contains(splittingButtonId)) return Mono.empty();
-            String id = event.getCustomId();
+            if (!event.getCustomId().contains(getButtonId())) return Mono.empty();
+            Message message = getMessage(event);
+            String id = getId(event);
             String splitterName = id.split("_")[1];
-            Message message = event.getInteraction().getMessage().get();
-            List<ComponentData> interactionButtons = message.getData()
-                    .components()
-                    .get().get(0)
-                    .components().get();
 
-            message.edit().withComponents(ActionRow.of(updateButtons(interactionButtons, id, splitterName))).subscribe();
-            return event.reply(buildSplittingResponse(id, splitterName));
+            List<ComponentData> interactionButtons = getInteractionButtons(message);
+            boolean isTimeout = isTimeout(event);
+            message.edit()
+                    .withComponents(ActionRow.of(updateButtons(interactionButtons, id, splitterName, isTimeout)))
+                    .subscribe();
+            return isTimeout ? event.reply("You cannot send transfer data after " + interactionTimeoutDays + " day(s) from hunt date").withEphemeral(true) :
+                    event.reply(buildSplittingResponse(id, splitterName));
         }).subscribe();
     }
 
@@ -61,22 +68,19 @@ public class SplitterInteractionsHandler extends EventsMethods {
                     .append(data.getTransferAmount())
                     .append("]");
         }
-        return getSplittingButtonId() + "_" + buttonId;
+        return getButtonId() + "_" + buttonId;
     }
 
-
-    private List<Button> updateButtons(List<ComponentData> interactionButtons, String customId, String splitterName) {
+    private List<Button> updateButtons(List<ComponentData> interactionButtons, String customId, String splitterName, boolean isTimeout) {
         List<Button> buttons = new ArrayList<>();
         for (ComponentData data : interactionButtons) {
             if(data.customId().get().equals(customId)) {
-                buttons.add(Button.primary(data.customId().get(), splitterName + " sent transfers").disabled());
+                String text = splitterName + (isTimeout ? " transfer(s) timed out" : " sent transfers");
+                buttons.add(Button.primary(data.customId().get(), text).disabled());
                 continue;
             }
 
-            Button btn = Button.primary(data.customId().get(), data.label().get());
-            if(!data.disabled().isAbsent() && data.disabled().get())
-                btn = btn.disabled();
-            buttons.add(btn);
+            buttons.add((Button) Button.fromData(data));
         }
 
         return buttons;
@@ -109,8 +113,19 @@ public class SplitterInteractionsHandler extends EventsMethods {
         return builder.toString();
     }
 
+    private boolean isTimeout(ButtonInteractionEvent event) {
+        Instant msgDate = event.getMessage().get().getTimestamp();
+        return msgDate.plus(Duration.ofDays(interactionTimeoutDays))
+                .isBefore(LocalDateTime.now().toInstant(ZoneOffset.UTC));
+    }
+
     @Override
     public String getEventName() {
-        return "Splitter Interactions Handler";
+        return "";
+    }
+
+    @Override
+    protected void executeEventProcess() {
+
     }
 }

@@ -8,7 +8,7 @@ import apis.tibiaData.enums.Vocation;
 import java.time.LocalDateTime;
 
 @Getter
-public class CharacterData implements CharacterLink {
+public class CharacterData implements CharacterLink, Cloneable {
     public CharacterData() {
         updatedAt = LocalDateTime.now();
     }
@@ -24,5 +24,14 @@ public class CharacterData implements CharacterLink {
 
     public Vocation getVocation() {
         return Vocation.getEnum(vocation);
+    }
+
+    @Override
+    public CharacterData clone() {
+        try {
+            return (CharacterData) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }

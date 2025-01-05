@@ -9,12 +9,12 @@ import java.util.List;
 @Getter
 @Setter
 public class SplitLootModel {
-    private String spotName;
-    private String individualBalance;
-    private String balance;
-    private String supplies;
     private String loot;
+    private String supplies;
+    private String balance;
     private String lootPerHour;
+    private String individualBalance;
+    private String spotName;
     private String huntTime;
     private String huntFrom;
     private String huntTo;

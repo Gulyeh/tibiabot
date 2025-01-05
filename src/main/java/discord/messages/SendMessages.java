@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SendMessages {
-    private static final Logger logINFO = LoggerFactory.getLogger(SendMessages.class);
-
     @SneakyThrows
     public static void sendImageMessage(Channel channel, String imageSrc) {
         BufferedImage buffer = ImageIO.read(new File(imageSrc));

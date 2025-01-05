@@ -15,9 +15,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class KillStatisticsService implements Cacheable {
-    private Map<String, KillingStatsModel> mapCache;
+    private ConcurrentHashMap<String, KillingStatsModel> mapCache;
     private final Logger logINFO = LoggerFactory.getLogger(KillStatisticsService.class);
     private final TibiaDataAPI api;
 
@@ -27,7 +28,7 @@ public class KillStatisticsService implements Cacheable {
     }
 
     public void clearCache() {
-        mapCache = new HashMap<>();
+        mapCache = new ConcurrentHashMap<>();
     }
 
     public KillingStatsModel getStatistics(Snowflake guildId) {

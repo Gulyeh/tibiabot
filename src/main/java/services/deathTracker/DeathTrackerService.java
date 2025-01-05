@@ -17,23 +17,23 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DeathTrackerService implements Cacheable {
-    private final Map<String, List<CharacterData>> mapCache; // data of previously online characters
-    private Map<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
-    private final Map<String, ConcurrentHashMap<String, ArrayList<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
+    private final ConcurrentHashMap<String, List<CharacterData>> mapCache; // data of previously online characters
+    private ConcurrentHashMap<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
+    private final ConcurrentHashMap<String, ConcurrentHashMap<String, ArrayList<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
     private final int deathRangeAllowance = 30;
     private final TibiaDataAPI api;
     private final Logger logINFO = LoggerFactory.getLogger(DeathTrackerService.class);
 
     public DeathTrackerService() {
-        mapCache = new HashMap<>();
-        deathsCache = new HashMap<>();
-        recentDeathsCache = new HashMap<>();
+        mapCache = new ConcurrentHashMap<>();
+        deathsCache = new ConcurrentHashMap<>();
+        recentDeathsCache = new ConcurrentHashMap<>();
         api = new TibiaDataAPI();
     }
 
     @Override
     public void clearCache() {
-        deathsCache = new HashMap<>();
+        deathsCache = new ConcurrentHashMap<>();
     }
 
     public List<DeathData> getDeaths(Snowflake guildId) {
@@ -96,7 +96,16 @@ public class DeathTrackerService implements Cacheable {
                         .toList());
                 List<DeathResponse> actualDeaths = filterDeaths(character, acceptableDeaths, world);
 
-                for (DeathResponse death : actualDeaths) {
+                int deathsSize = actualDeaths.size();
+                for (int i = 0; i < deathsSize; i++) {
+                    DeathResponse death = actualDeaths.get(i);
+                    if(actualDeaths.size() > 1 && i < deathsSize - 1)
+                        character.setLevel(actualDeaths.get(i + 1).getLevel());
+                    else {
+                        Integer deadCharLevel = data.getCharacter().getCharacter().getLevel();
+                        if (character.getLevel() > data.getCharacter().getCharacter().getLevel())
+                            character.setLevel(deadCharLevel);
+                    }
                     DeathData info = new DeathData(character, death, data.getCharacter().getCharacter().getGuild());
                     deaths.add(info);
                 }

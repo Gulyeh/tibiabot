@@ -15,9 +15,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HousesService implements Cacheable {
-    private Map<String, List<HousesModel>> housesCache;
+    private ConcurrentHashMap<String, List<HousesModel>> housesCache;
     private final TibiaDataAPI api;
     private final Logger logINFO = LoggerFactory.getLogger(HousesService.class);
 
@@ -27,7 +28,7 @@ public class HousesService implements Cacheable {
     }
 
     public void clearCache() {
-        housesCache = new HashMap<>();
+        housesCache = new ConcurrentHashMap<>();
     }
 
     public List<HousesModel> getHouses(Snowflake guildId) {

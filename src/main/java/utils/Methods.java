@@ -31,7 +31,10 @@ public final class Methods {
     }
 
     private static String replaceWikiChars(String name) {
-        return name.replace(" ", "_")
+        if(name.startsWith("a "))
+            name = name.replace("a ", "");
+        return name
+                .replace(" ", "_")
                 .replace("The", "the")
                 .replace("Of", "of");
     }
@@ -42,6 +45,11 @@ public final class Methods {
 
         for (String word : words)
         {
+            if(word.length() == 1) {
+                result.append(word)
+                        .append(" ");
+                continue;
+            }
             result.append(Character.toUpperCase(word.charAt(0)))
                     .append(word.substring(1))
                     .append(" ");

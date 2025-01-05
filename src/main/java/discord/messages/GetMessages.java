@@ -21,8 +21,12 @@ public final class GetMessages {
     private static final Logger logINFO = LoggerFactory.getLogger(SendMessages.class);
 
     public static Flux<Message> getChannelMessages(GuildMessageChannel channel) {
+        return getChannelMessages(channel, Instant.now());
+    }
+
+    public static Flux<Message> getChannelMessages(GuildMessageChannel channel, Instant from) {
         try {
-            Snowflake now = Snowflake.of(Instant.now());
+            Snowflake now = Snowflake.of(from);
             return channel.getMessagesBefore(now)
                     .filter(x -> {
                         Optional<User> user = x.getAuthor();

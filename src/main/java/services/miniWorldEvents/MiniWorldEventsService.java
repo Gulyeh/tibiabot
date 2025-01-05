@@ -10,13 +10,13 @@ import services.interfaces.Cacheable;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.WorldsService;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MiniWorldEventsService implements Cacheable {
 
-    private Map<String, MiniWorldEventsModel> miniWorldEventsCache;
+    private ConcurrentHashMap<String, MiniWorldEventsModel> miniWorldEventsCache;
     private final Logger logINFO = LoggerFactory.getLogger(MiniWorldEventsService.class);
     private final WorldsService worldsService;
     private final TibiaTradeAPI tibiaTradeAPI;
@@ -29,7 +29,7 @@ public class MiniWorldEventsService implements Cacheable {
 
     @Override
     public void clearCache() {
-        miniWorldEventsCache = new HashMap<>();
+        miniWorldEventsCache = new ConcurrentHashMap<>();
     }
 
     public MiniWorldEventsModel getMiniWorldChanges(Snowflake guildId) {

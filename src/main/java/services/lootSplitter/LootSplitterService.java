@@ -1,15 +1,17 @@
 package services.lootSplitter;
 
+import apis.WebClient;
 import com.google.common.util.concurrent.AtomicDouble;
-import services.lootSplitter.model.SplitLootModel;
-import services.lootSplitter.model.SplittingMember;
-import services.lootSplitter.model.TransferData;
+import discord4j.discordjson.json.ComponentData;
+import services.lootSplitter.model.*;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class LootSplitterService {
+public class LootSplitterService extends WebClient {
     private final String splitter = ":";
 
     public SplitLootModel splitLoot(String session, String spot) {
@@ -26,10 +28,38 @@ public class LootSplitterService {
         return model.validateModel() ? model : null;
     }
 
+    public String getHuntSession(String url) {
+        return sendRequest(getCustomRequest(url));
+    }
+
+    public HuntComparatorModel compareHunts(SplitLootModel currentHunt, List<SplitLootModel> previousHunts) {
+        HuntComparatorModel comparatorModel = new HuntComparatorModel();
+        int totalLoot = 0, totalSupplies = 0;
+        double totalTime = 0, currentHuntTime = calculateTotalHours(currentHunt);
+        ConcurrentHashMap<String, List<SplittingMember>> membersMap = new ConcurrentHashMap<>();
+
+        for(SplitLootModel model : previousHunts) {
+            totalLoot += parseInteger(model.getLoot());
+            totalSupplies += parseInteger(model.getSupplies());
+            totalTime += calculateTotalHours(model);
+            model.getMembers().forEach(x -> {
+                List<SplittingMember> memberList = membersMap.get(x.getName());
+                if(memberList == null) memberList = new ArrayList<>();
+                memberList.add(x);
+                membersMap.put(x.getName(), memberList);
+            });
+        }
+
+        setCompareHuntData(comparatorModel, currentHunt, totalLoot, totalSupplies, totalTime, currentHuntTime);
+        comparatorModel.setComparedMembers(compareMembers(membersMap, currentHunt, totalTime, currentHuntTime));
+
+        return comparatorModel;
+    }
+
     private List<SplittingMember> splitMembers(String[] session) {
         List<SplittingMember> members = new ArrayList<>();
         for(int i = 0; i < session.length; i++) {
-            if (session[i].contains(":")) continue;
+            if (session[i].contains(":") || session[i].isEmpty()) continue;
             SplittingMember member = new SplittingMember();
             try {
                 member.setName(session[i].replace("(Leader)", "").trim());
@@ -71,13 +101,17 @@ public class LootSplitterService {
     }
 
     private void calculateLootPerHour(SplitLootModel model) {
+        double totalHours = calculateTotalHours(model);
+        double lootPerHour = parseInteger(model.getLoot()) / totalHours;
+        int value = cutDoubleDecimals(lootPerHour);
+        model.setLootPerHour(formatToSessionBalance(value));
+    }
+
+    private double calculateTotalHours(SplitLootModel model) {
         String[] timeParts = model.getHuntTime().split("[:h]");
         int hours = Integer.parseInt(timeParts[0]);
         int minutes = Integer.parseInt(timeParts[1]);
-        double totalHours = hours + (minutes / 60.0);
-        double lootPerHour = parseInteger(model.getLoot()) / totalHours;
-        int value = (int) lootPerHour;
-        model.setLootPerHour(formatToSessionBalance(value));
+        return hours + (minutes / 60.0);
     }
 
     private String formatToSessionBalance(int balance) {
@@ -142,7 +176,106 @@ public class LootSplitterService {
         }
     }
 
+
+    private List<ComparatorMember> compareMembers(ConcurrentHashMap<String, List<SplittingMember>> membersMap, SplitLootModel currentHunt,
+                                                  double totalHuntTime, double currentHuntTime) {
+        List<ComparatorMember> members = new ArrayList<>();
+
+        membersMap.forEach((k, v) -> {
+            ComparatorMember member = new ComparatorMember();
+            SplittingMember currentHuntMember = currentHunt.getMembers().stream().filter(x -> x.getName().equals(k)).findFirst().get();
+
+            member.setName(k);
+            AtomicInteger totalHealing = new AtomicInteger(),
+                    totalDamage = new AtomicInteger(),
+                    totalLoot = new AtomicInteger(),
+                    totalSupplies = new AtomicInteger();
+
+            v.forEach(x -> {
+                totalHealing.addAndGet(parseInteger(x.getHealing()));
+                totalDamage.addAndGet(parseInteger(x.getDamage()));
+                totalLoot.addAndGet(parseInteger(x.getLoot()));
+                totalSupplies.addAndGet(parseInteger(x.getSupplies()));
+            });
+
+            int avgLootPerHour = cutDoubleDecimals(totalLoot.get() / totalHuntTime),
+                    avgSuppliesPerHour = cutDoubleDecimals(totalSupplies.get() / totalHuntTime),
+                    avgDamagePerHour = cutDoubleDecimals(totalDamage.get() / totalHuntTime),
+                    avgHealingPerHour = cutDoubleDecimals(totalHealing.get() / totalHuntTime),
+                    lootPerHour = cutDoubleDecimals(parseInteger(currentHuntMember.getLoot()) / currentHuntTime),
+                    suppliesPerHour = cutDoubleDecimals(parseInteger(currentHuntMember.getSupplies()) / currentHuntTime),
+                    damagePerHour = cutDoubleDecimals(parseInteger(currentHuntMember.getDamage()) / currentHuntTime),
+                    healingPerHour = cutDoubleDecimals(parseInteger(currentHuntMember.getHealing()) / currentHuntTime);
+
+            member.setAvgLootPerHour(formatToSessionBalance(avgLootPerHour));
+            member.setAvgSuppliesPerHour(formatToSessionBalance(avgSuppliesPerHour));
+            member.setAvgDamagePerHour(formatToSessionBalance(avgDamagePerHour));
+            member.setAvgHealingPerHour(formatToSessionBalance(avgHealingPerHour));
+
+            member.setLootPerHour(formatToSessionBalance(lootPerHour));
+            member.setSuppliesPerHour(formatToSessionBalance(suppliesPerHour));
+            member.setDamagePerHour(formatToSessionBalance(damagePerHour));
+            member.setHealingPerHour(formatToSessionBalance(healingPerHour));
+
+            member.setDamageDifference(formatToSessionBalance(damagePerHour - avgDamagePerHour));
+            member.setHealingDifference(formatToSessionBalance(healingPerHour - avgHealingPerHour));
+            member.setLootDifference(formatToSessionBalance(lootPerHour - avgLootPerHour));
+            member.setSuppliesDifference(formatToSessionBalance(suppliesPerHour - avgSuppliesPerHour));
+
+            member.setDamageDifferencePercentage(((double) damagePerHour / avgDamagePerHour) * 100 - 100);
+            member.setHealingDifferencePercentage(((double) healingPerHour / avgHealingPerHour) * 100 - 100);
+            member.setLootDifferencePercentage(((double) lootPerHour / avgLootPerHour) * 100 - 100);
+            member.setSuppliesDifferencePercentage(((double) suppliesPerHour / avgSuppliesPerHour) * 100 - 100);
+
+            members.add(member);
+        });
+
+        return members;
+    }
+
+    private void setCompareHuntData(HuntComparatorModel comparatorModel, SplitLootModel currentHunt, int totalLoot, int totalSupplies,
+                                    double totalTime, double currentHuntTime) {
+        int avgLootPerHour = cutDoubleDecimals(totalLoot / totalTime),
+                avgSuppliesPerHour = cutDoubleDecimals(totalSupplies / totalTime),
+                avgBalancePerHour = avgLootPerHour - avgSuppliesPerHour,
+                avgIndividualBalancePerHour = avgBalancePerHour / currentHunt.getMembers().size(),
+                lootPerHour = parseInteger(currentHunt.getLootPerHour()),
+                suppliesPerHour = cutDoubleDecimals(parseInteger(currentHunt.getSupplies()) / currentHuntTime),
+                balancePerHour = cutDoubleDecimals(parseInteger(currentHunt.getBalance()) / currentHuntTime),
+                individualBalancePerHour = balancePerHour / currentHunt.getMembers().size();
+
+        comparatorModel.setAvgLootPerHour(formatToSessionBalance(avgLootPerHour));
+        comparatorModel.setAvgSuppliesPerHour(formatToSessionBalance(avgSuppliesPerHour));
+        comparatorModel.setAvgBalancePerHour(formatToSessionBalance(avgBalancePerHour));
+        comparatorModel.setAvgIndividualBalancePerHour(formatToSessionBalance(avgIndividualBalancePerHour));
+
+        comparatorModel.setLootPerHour(formatToSessionBalance(lootPerHour));
+        comparatorModel.setSuppliesPerHour(formatToSessionBalance(suppliesPerHour));
+        comparatorModel.setBalancePerHour(formatToSessionBalance(balancePerHour));
+        comparatorModel.setIndividualBalancePerHour(formatToSessionBalance(individualBalancePerHour));
+
+        comparatorModel.setLootPerHourDifference(formatToSessionBalance(lootPerHour - avgLootPerHour));
+        comparatorModel.setBalancePerHourDifference(formatToSessionBalance(balancePerHour - avgBalancePerHour));
+        comparatorModel.setSuppliesPerHourDifference(formatToSessionBalance(suppliesPerHour - avgSuppliesPerHour));
+        comparatorModel.setIndividualBalancePerHourDifference(formatToSessionBalance(individualBalancePerHour - avgIndividualBalancePerHour));
+
+        comparatorModel.setLootPerHourDifferencePercentage(((double) lootPerHour / avgLootPerHour) * 100 - 100);
+        comparatorModel.setBalancePerHourDifferencePercentage(((double) balancePerHour / avgBalancePerHour) * 100 - 100);
+        comparatorModel.setSuppliesPerHourDifferencePercentage(((double) suppliesPerHour / avgSuppliesPerHour) * 100 - 100);
+        comparatorModel.setIndividualBalancePerHourDifferencePercentage(((double) individualBalancePerHour / avgIndividualBalancePerHour) * 100 - 100);
+    }
+
     private Integer parseInteger(String data) {
         return Integer.parseInt(data.replace(",", ""));
+    }
+
+    private Integer cutDoubleDecimals(double value) {
+        DecimalFormat decimalFormat = new DecimalFormat("#");
+        return Integer.parseInt(decimalFormat.format(Math.round(value)));
+    }
+
+    @Override
+    protected String getUrl() {
+        return null;
     }
 }

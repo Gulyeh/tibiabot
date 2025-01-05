@@ -5,12 +5,10 @@ import apis.tibiaLabs.TibiaLabsAPI;
 import services.boosteds.enums.Boosteds;
 import apis.tibiaLabs.model.BoostedModel;
 import services.interfaces.Cacheable;
-
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BoostedsService extends WebClient implements Cacheable {
-    private final Map<Boosteds, BoostedModel> boostedCache = new HashMap<>();
+    private final ConcurrentHashMap<Boosteds, BoostedModel> boostedCache = new ConcurrentHashMap<>();
     private final TibiaLabsAPI api;
 
     public BoostedsService() {

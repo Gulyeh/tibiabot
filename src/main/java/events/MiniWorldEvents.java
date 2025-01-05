@@ -24,6 +24,7 @@ import services.worlds.enums.Status;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static builders.commands.names.CommandsNames.miniWorldChangesCommand;
 import static discord.Connector.client;
@@ -33,11 +34,11 @@ import static utils.Methods.getFormattedDate;
 public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Activable {
 
     private final MiniWorldEventsService miniWorldEventsService;
-    private final HashMap<String, Status> beforeWorldsStatus;
+    private final ConcurrentHashMap<String, Status> beforeWorldsStatus;
 
     public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
         this.miniWorldEventsService = miniWorldEventsService;
-        beforeWorldsStatus = new HashMap<>();
+        beforeWorldsStatus = new ConcurrentHashMap<>();
         setExpectedHour(12);
         setExpectedMinute(0);
     }

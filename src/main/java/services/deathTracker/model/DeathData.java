@@ -23,7 +23,7 @@ public class DeathData {
     private final GuildData guild;
 
     public DeathData(CharacterData character, DeathResponse death, GuildData guild) {
-        this.character = character;
+        this.character = character.clone();
         killedBy = death.getKillers();
         killedAtLevel = death.getLevel();
         killedAtDate = death.getTimeUTC();
