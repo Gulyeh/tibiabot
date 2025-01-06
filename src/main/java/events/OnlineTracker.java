@@ -69,7 +69,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(3000);
+                    wait(300000);
                 }
             }
         }
