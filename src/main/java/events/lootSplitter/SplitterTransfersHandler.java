@@ -1,11 +1,11 @@
 package events.lootSplitter;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ComponentData;
 import events.abstracts.InteractionEvent;
+import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.model.SplitLootModel;
 import services.lootSplitter.model.SplittingMember;
@@ -27,25 +27,42 @@ import static discord.Connector.client;
 public class SplitterTransfersHandler extends InteractionEvent {
     private final int interactionTimeoutDays = 2;
 
-    protected SplitterTransfersHandler() {
-        super("transfer");
+    protected SplitterTransfersHandler(InteractionObserver observer) {
+        super("transfer", observer);
     }
 
     @Override
     public void executeEvent() {
         client.on(ButtonInteractionEvent.class, event -> {
-            if (!event.getCustomId().contains(getButtonId())) return Mono.empty();
+            if (!event.getCustomId().contains(getButtonId()) || !observer.add(getMessage(event).getId())) return Mono.empty();
             Message message = getMessage(event);
-            String id = getId(event);
-            String splitterName = id.split("_")[1];
 
             List<ComponentData> interactionButtons = getInteractionButtons(message);
-            boolean isTimeout = isTimeout(event);
-            message.edit()
-                    .withComponentsOrNull(splitActionRows(updateButtons(interactionButtons, id, splitterName, isTimeout)))
+            message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(interactionButtons, true)))
                     .subscribe();
-            return isTimeout ? event.reply("You cannot send transfer data after " + interactionTimeoutDays + " day(s) from hunt date").withEphemeral(true) :
-                    event.reply(buildSplittingResponse(id, splitterName));
+
+            try {
+                String id = getId(event),
+                        splitterName = id.split("_")[1];
+                boolean isTimeout = isTimeout(event);
+                String response = buildSplittingResponse(id, splitterName);
+
+                message.edit()
+                        .withComponentsOrNull(splitActionRows(updateButtons(interactionButtons, id, splitterName, isTimeout)))
+                        .subscribe();
+
+                return isTimeout ?
+                        event.reply("You cannot send transfer data after " + interactionTimeoutDays + " day(s) from hunt date")
+                                .withEphemeral(true) :
+                        event.reply(response);
+            } catch (Exception ignore) {
+                message.edit()
+                        .withComponentsOrNull(splitActionRows(toggleLockButton(interactionButtons, false)))
+                        .subscribe();
+                return Mono.empty();
+            } finally {
+                observer.remove(message.getId());
+            }
         }).subscribe();
     }
 

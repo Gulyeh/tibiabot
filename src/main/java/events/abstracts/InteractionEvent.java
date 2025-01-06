@@ -6,20 +6,25 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.GuildMessageChannel;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.discordjson.json.ComponentData;
 import lombok.Getter;
+import observers.InteractionObserver;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+@Getter
 public abstract class InteractionEvent extends EmbeddableEvent {
-    @Getter
     protected final String buttonId;
+    protected final InteractionObserver observer;
 
-    protected InteractionEvent(String buttonId) {
+    protected InteractionEvent(String buttonId, InteractionObserver observer) {
         this.buttonId = buttonId;
+        this.observer = observer;
     }
 
     protected List<ComponentData> getInteractionButtons(Message message) {
@@ -39,8 +44,27 @@ public abstract class InteractionEvent extends EmbeddableEvent {
         return rows;
     }
 
+    protected List<Button> toggleLockButton(List<ComponentData> buttons, boolean lock) {
+        List<Button> buttonsList = new ArrayList<>();
+        for(ComponentData component : buttons) {
+            if(!component.customId().get().contains(getButtonId())) {
+                buttonsList.add((Button) Button.fromData(component));
+                continue;
+            }
+
+            Button btn = (Button) Button.fromData(component);
+            btn = lock ? btn.disabled() : btn.disabled(false);
+            buttonsList.add(btn);
+        }
+        return buttonsList;
+    }
+
     protected String getId(ButtonInteractionEvent event) {
         return event.getCustomId();
+    }
+
+    protected GuildMessageChannel getChannel(ButtonInteractionEvent event) {
+        return (GuildMessageChannel) event.getInteraction().getChannel().block();
     }
 
     protected Message getMessage(ButtonInteractionEvent event) {

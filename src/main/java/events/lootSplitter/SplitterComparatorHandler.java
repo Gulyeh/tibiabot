@@ -11,6 +11,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.rest.util.Color;
 import events.abstracts.InteractionEvent;
+import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
 import services.lootSplitter.model.ComparatorMember;
@@ -28,20 +29,22 @@ import static utils.Emojis.getBlankEmoji;
 public class SplitterComparatorHandler extends InteractionEvent {
     private final LootSplitterService lootSplitterService;
 
-    protected SplitterComparatorHandler(LootSplitterService lootSplitterService) {
-        super("compare");
+    protected SplitterComparatorHandler(LootSplitterService lootSplitterService, InteractionObserver observer) {
+        super("comparePreviousHunts", observer);
         this.lootSplitterService = lootSplitterService;
     }
 
     @Override
     public void executeEvent() {
         client.on(ButtonInteractionEvent.class, event -> {
-            if (!event.getCustomId().contains(getButtonId())) return Mono.empty();
-            event.deferReply().subscribe();
+            if (!event.getCustomId().contains(getButtonId()) || !observer.add(getMessage(event).getId())) return Mono.empty();
+
             Message message = getMessage(event);
+            event.deferReply().subscribe();
             List<ComponentData> buttons = getInteractionButtons(message);
             message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(buttons, true)))
                     .subscribe();
+
             try {
                 List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block(), message.getTimestamp())
                         .collectList()
@@ -65,6 +68,8 @@ public class SplitterComparatorHandler extends InteractionEvent {
                 message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(buttons, false)))
                         .subscribe();
                 return event.createFollowup("Something went wrong").withEphemeral(true);
+            } finally {
+                observer.remove(message.getId());
             }
         }).subscribe();
     }
@@ -79,21 +84,6 @@ public class SplitterComparatorHandler extends InteractionEvent {
 
             Button btn = Button.primary(component.customId().get(), isValid ? "Compared"  : "No data to compare");
             btn = btn.disabled();
-            buttonsList.add(btn);
-        }
-        return buttonsList;
-    }
-
-    private List<Button> toggleLockButton(List<ComponentData> buttons, boolean lock) {
-        List<Button> buttonsList = new ArrayList<>();
-        for(ComponentData component : buttons) {
-            if(!component.customId().get().equals(getButtonId())) {
-                buttonsList.add((Button) Button.fromData(component));
-                continue;
-            }
-
-            Button btn = (Button) Button.fromData(component);
-            btn = lock ? btn.disabled() : btn.disabled(false);
             buttonsList.add(btn);
         }
         return buttonsList;

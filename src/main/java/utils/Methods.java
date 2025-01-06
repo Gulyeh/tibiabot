@@ -35,12 +35,12 @@ public final class Methods {
             name = name.replace("a ", "");
         return name
                 .replace(" ", "_")
-                .replace("The", "the")
-                .replace("Of", "of");
+                .replace(" The ", " the ")
+                .replace(" Of ", " of ");
     }
 
     public static String convertToUpperCaseAfterSpace(String value) {
-        String[] words = value.split("\\s");
+        String[] words = value.split("(\\w+-)|\\s+");
         StringBuilder result = new StringBuilder();
 
         for (String word : words)

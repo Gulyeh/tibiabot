@@ -97,14 +97,14 @@ public class DeathTrackerService implements Cacheable {
                 List<DeathResponse> actualDeaths = filterDeaths(character, acceptableDeaths, world);
 
                 int deathsSize = actualDeaths.size();
+                int initialCharLevel = character.getLevel();
                 for (int i = 0; i < deathsSize; i++) {
                     DeathResponse death = actualDeaths.get(i);
-                    if(actualDeaths.size() > 1 && i < deathsSize - 1)
-                        character.setLevel(actualDeaths.get(i + 1).getLevel());
-                    else {
-                        Integer deadCharLevel = data.getCharacter().getCharacter().getLevel();
-                        if (character.getLevel() > data.getCharacter().getCharacter().getLevel())
-                            character.setLevel(deadCharLevel);
+                    if(deathsSize > 1) {
+                        if(i < deathsSize - 1) 
+                            character.setLevel(actualDeaths.get(i + 1).getLevel());
+                        else if(character.getLevel() > initialCharLevel)
+                            character.setLevel(initialCharLevel);
                     }
                     DeathData info = new DeathData(character, death, data.getCharacter().getCharacter().getGuild());
                     deaths.add(info);

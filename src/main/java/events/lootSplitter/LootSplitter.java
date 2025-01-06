@@ -16,6 +16,7 @@ import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
 import events.abstracts.InteractionEvent;
 import events.utils.EventName;
+import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
 import services.lootSplitter.model.SplitLootModel;
@@ -36,15 +37,13 @@ public class LootSplitter extends InteractionEvent {
     private final LootSplitterService service;
     private final SplitterTransfersHandler splitterTransfersHandler;
     private final SplitterComparatorHandler splitterComparatorHandler;
-    private final String splitModalId = "lootSplitterModal";
-    private final String spotModalId = "spotModal";
-    private final String splitterModalId = "splitterModal";
+    private final String splitModalId = "lootSplitterModal", spotModalId = "spotModal", splitterModalId = "splitterModal";
 
     public LootSplitter() {
-        super("");
+        super("", new InteractionObserver());
         service = new LootSplitterService();
-        splitterTransfersHandler = new SplitterTransfersHandler();
-        splitterComparatorHandler = new SplitterComparatorHandler(service);
+        splitterTransfersHandler = new SplitterTransfersHandler(observer);
+        splitterComparatorHandler = new SplitterComparatorHandler(service, observer);
     }
 
     private void subscribeCommandEvent() {
