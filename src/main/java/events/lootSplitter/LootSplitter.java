@@ -14,6 +14,7 @@ import discord4j.core.spec.MessageCreateFields;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import events.abstracts.EmbeddableEvent;
+import events.abstracts.InteractionEvent;
 import events.utils.EventName;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
@@ -31,7 +32,7 @@ import static discord.messages.GetMessages.getChannelMessages;
 import static utils.Emojis.getBlankEmoji;
 import static utils.Emojis.getCoinEmoji;
 
-public class LootSplitter extends EmbeddableEvent {
+public class LootSplitter extends InteractionEvent {
     private final LootSplitterService service;
     private final SplitterTransfersHandler splitterTransfersHandler;
     private final SplitterComparatorHandler splitterComparatorHandler;
@@ -40,6 +41,7 @@ public class LootSplitter extends EmbeddableEvent {
     private final String splitterModalId = "splitterModal";
 
     public LootSplitter() {
+        super("");
         service = new LootSplitterService();
         splitterTransfersHandler = new SplitterTransfersHandler();
         splitterComparatorHandler = new SplitterComparatorHandler(service);
@@ -68,6 +70,7 @@ public class LootSplitter extends EmbeddableEvent {
     private void subscribeModalEvent() {
         client.on(ModalSubmitInteractionEvent.class, event -> {
             if (!splitModalId.equals(event.getCustomId())) return Mono.empty();
+            event.deferReply().subscribe();
             String spot = "", analyzer = "";
 
             for (TextInput component : event.getComponents(TextInput.class)) {
@@ -83,11 +86,12 @@ public class LootSplitter extends EmbeddableEvent {
 
             if(isComparableData(event, model))
                 buttons.add(Button.primary(splitterComparatorHandler.getButtonId(), "Compare"));
-            return event.reply().withFiles(
+
+            return event.createFollowup().withFiles(
                             MessageCreateFields.File.of("session.txt",
                                     new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
                     .withEmbeds(createMessage(model))
-                    .withComponents(ActionRow.of(buttons));
+                    .withComponents(splitActionRows(buttons));
         }).subscribe();
     }
 

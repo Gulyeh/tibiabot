@@ -1,5 +1,6 @@
 package events.lootSplitter;
 
+import com.google.common.collect.Iterables;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
@@ -17,6 +18,7 @@ import services.lootSplitter.model.HuntComparatorModel;
 import services.lootSplitter.model.SplitLootModel;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import static discord.Connector.client;
@@ -35,26 +37,35 @@ public class SplitterComparatorHandler extends InteractionEvent {
     public void executeEvent() {
         client.on(ButtonInteractionEvent.class, event -> {
             if (!event.getCustomId().contains(getButtonId())) return Mono.empty();
+            event.deferReply().subscribe();
             Message message = getMessage(event);
-            List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block(), message.getTimestamp())
-                    .collectList()
-                    .block();
             List<ComponentData> buttons = getInteractionButtons(message);
-            if(msgs == null) return Mono.empty();
-
-            List<Message> embeddedMsgs = msgs.stream().filter(x -> x.getEmbeds().size() == 1 &&
-                    x.getAttachments().size() == 1 &&
-                            x.getEmbeds().get(0).getTitle().get().equals(message.getEmbeds().get(0).getTitle().get()))
-                    .limit(5)
-                    .toList();
-
-            List<EmbedCreateSpec> comparedMessages = buildCompareData(message, embeddedMsgs);
-            message.edit().withComponents(ActionRow.of(updateButtons(buttons, !embeddedMsgs.isEmpty())))
+            message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(buttons, true)))
                     .subscribe();
-            if(embeddedMsgs.isEmpty())
-                return event.reply().withEphemeral(true)
-                        .withContent("There is no previous data to compare with");
-            return event.reply().withEmbeds(comparedMessages);
+            try {
+                List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block(), message.getTimestamp())
+                        .collectList()
+                        .block();
+                if (msgs == null) throw new Exception();
+
+                List<Message> embeddedMsgs = msgs.stream().filter(x -> x.getEmbeds().size() == 1 &&
+                                x.getAttachments().size() == 1 &&
+                                x.getEmbeds().get(0).getTitle().get().equals(message.getEmbeds().get(0).getTitle().get()))
+                        .limit(5)
+                        .toList();
+
+                List<EmbedCreateSpec> comparedMessages = buildCompareData(message, embeddedMsgs);
+                message.edit().withComponentsOrNull(splitActionRows(updateButtons(buttons, !embeddedMsgs.isEmpty())))
+                        .subscribe();
+                if (embeddedMsgs.isEmpty())
+                    return event.createFollowup().withEphemeral(true)
+                            .withContent("There is no previous data to compare with");
+                return event.createFollowup().withEmbeds(comparedMessages);
+            } catch (Exception ignore) {
+                message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(buttons, false)))
+                        .subscribe();
+                return event.createFollowup("Something went wrong").withEphemeral(true);
+            }
         }).subscribe();
     }
 
@@ -66,9 +77,23 @@ public class SplitterComparatorHandler extends InteractionEvent {
                 continue;
             }
 
-            Button btn;
-            btn = Button.primary(component.customId().get(), isValid ? "Compared"  : "No data to compare");
+            Button btn = Button.primary(component.customId().get(), isValid ? "Compared"  : "No data to compare");
             btn = btn.disabled();
+            buttonsList.add(btn);
+        }
+        return buttonsList;
+    }
+
+    private List<Button> toggleLockButton(List<ComponentData> buttons, boolean lock) {
+        List<Button> buttonsList = new ArrayList<>();
+        for(ComponentData component : buttons) {
+            if(!component.customId().get().equals(getButtonId())) {
+                buttonsList.add((Button) Button.fromData(component));
+                continue;
+            }
+
+            Button btn = (Button) Button.fromData(component);
+            btn = lock ? btn.disabled() : btn.disabled(false);
             buttonsList.add(btn);
         }
         return buttonsList;

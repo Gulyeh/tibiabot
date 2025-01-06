@@ -42,7 +42,7 @@ public class SplitterTransfersHandler extends InteractionEvent {
             List<ComponentData> interactionButtons = getInteractionButtons(message);
             boolean isTimeout = isTimeout(event);
             message.edit()
-                    .withComponents(ActionRow.of(updateButtons(interactionButtons, id, splitterName, isTimeout)))
+                    .withComponentsOrNull(splitActionRows(updateButtons(interactionButtons, id, splitterName, isTimeout)))
                     .subscribe();
             return isTimeout ? event.reply("You cannot send transfer data after " + interactionTimeoutDays + " day(s) from hunt date").withEphemeral(true) :
                     event.reply(buildSplittingResponse(id, splitterName));

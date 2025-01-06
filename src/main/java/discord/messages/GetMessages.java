@@ -2,19 +2,17 @@ package discord.messages;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.discordjson.json.MessageData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static discord.Connector.client;
 import static discord.Connector.getId;
 
 public final class GetMessages {
@@ -27,17 +25,29 @@ public final class GetMessages {
     public static Flux<Message> getChannelMessages(GuildMessageChannel channel, Instant from) {
         try {
             Snowflake now = Snowflake.of(from);
-            return channel.getMessagesBefore(now)
-                    .filter(x -> {
-                        Optional<User> user = x.getAuthor();
-                        return user.map(value -> value.getId().equals(Snowflake.of(getId())))
-                                .orElse(false);
+            AtomicInteger collectedMsgs = new AtomicInteger(0);
+            int maxMsgs = 100;
 
+            return fetchMessages(channel, now)
+                    .expand(lastBatch -> {
+                        if (lastBatch.isEmpty() || collectedMsgs.get() >= maxMsgs) return Flux.empty();
+                        collectedMsgs.addAndGet(lastBatch.size());
+                        Snowflake lastMessageId = lastBatch.get(lastBatch.size() - 1).getId();
+                        return fetchMessages(channel, lastMessageId);
                     })
-                    .take(100);
+                    .flatMap(Flux::fromIterable)
+                    .filter(message -> message.getAuthor()
+                            .map(user -> user.getId().equals(Snowflake.of(getId())))
+                            .orElse(false));
         } catch (Exception ignore) {
             logINFO.info("Could not get messages from channel");
             return Flux.empty();
         }
+    }
+
+    private static Mono<List<Message>> fetchMessages(GuildMessageChannel channel, Snowflake before) {
+        return channel.getMessagesBefore(before)
+                .take(20)
+                .collectList();
     }
 }

@@ -11,6 +11,9 @@ import services.onlines.model.OnlineModel;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class OnlineService implements Cacheable {
     private final TibiaDataAPI tibiaDataAPI;
@@ -39,29 +42,29 @@ public class OnlineService implements Cacheable {
         List<OnlineModel> onlineCacheData = charInfoCache.get(world) == null ? new ArrayList<>() : charInfoCache.get(world);
 
         List<CharacterData> onlines = tibiaDataAPI.getCharactersOnWorld(world);
+        List<CharacterData> notOnlinePreviously = new ArrayList<>();
+
         for (CharacterData character : onlines) {
             try {
                 Optional<OnlineModel> lastOnline = onlineCacheData
                         .stream()
                         .filter(x -> x.getName().equals(character.getName()))
                         .findFirst();
-                OnlineModel model;
 
                 if(lastOnline.isEmpty()) {
-                    CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(character.getName())
-                            .getCharacter()
-                            .getCharacter();
-                    model = new OnlineModel(characterInfo);
-                } else {
-                    model = lastOnline.get().clone();
-                    model.setLevel(character.getLevel());
-                    setLeveledInfo(model, world);
+                    notOnlinePreviously.add(character);
+                    continue;
                 }
+
+                OnlineModel model = lastOnline.get().clone();
+                model.setLevel(character.getLevel());
+                setLeveledInfo(model, world);
                 online.add(model);
             } catch (Exception ignored) {
             }
         }
 
+        online.addAll(fetchNotOnlinePreviouslyConcurrent(notOnlinePreviously));
         onlineCache.put(world, online);
         charInfoCache.put(world, online);
         return online;
@@ -79,5 +82,33 @@ public class OnlineService implements Cacheable {
         int levelCached = cached.get().getLevel();
         if(levelCached < model.getLevel()) model.setLeveled(Leveled.UP);
         else if(levelCached > model.getLevel()) model.setLeveled(Leveled.DOWN);
+    }
+
+    private List<OnlineModel> fetchNotOnlinePreviouslyConcurrent(List<CharacterData> notOnlinePreviously) {
+        if(notOnlinePreviously.isEmpty()) return new ArrayList<>();
+        List<OnlineModel> online = new ArrayList<>();
+
+        ExecutorService executor = Executors.newFixedThreadPool(notOnlinePreviously.size());
+        try {
+            for (CharacterData data : notOnlinePreviously) {
+                executor.submit(() -> {
+                    try {
+                        CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(data.getName())
+                                .getCharacter()
+                                .getCharacter();
+                        online.add(new OnlineModel(characterInfo));
+                    } catch (Exception ignore) {}
+                });
+            }
+
+            executor.shutdown();
+            if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
+                System.out.println("Some tasks did not finish within the timeout.");
+            }
+        } catch (InterruptedException ignore) {
+            Thread.currentThread().interrupt();
+        }
+
+        return online;
     }
 }
