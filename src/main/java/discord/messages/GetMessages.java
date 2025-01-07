@@ -10,6 +10,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static discord.Connector.getId;
@@ -24,17 +25,8 @@ public final class GetMessages {
     public static Flux<Message> getChannelMessages(GuildMessageChannel channel, Instant from) {
         try {
             Snowflake now = Snowflake.of(from);
-            AtomicInteger collectedMsgs = new AtomicInteger(0);
-            int maxMsgs = 100;
-
-            return fetchMessages(channel, now)
-                    .expand(lastBatch -> {
-                        if (lastBatch.isEmpty() || collectedMsgs.get() >= maxMsgs) return Flux.empty();
-                        collectedMsgs.addAndGet(lastBatch.size());
-                        Snowflake lastMessageId = lastBatch.get(lastBatch.size() - 1).getId();
-                        return fetchMessages(channel, lastMessageId);
-                    })
-                    .flatMap(Flux::fromIterable)
+            return channel.getMessagesBefore(now)
+                    .take(100)
                     .filter(message -> message.getAuthor()
                             .map(user -> user.getId().equals(Snowflake.of(getId())))
                             .orElse(false));
@@ -42,11 +34,5 @@ public final class GetMessages {
             logINFO.info("Could not get messages from channel");
             return Flux.empty();
         }
-    }
-
-    private static Mono<List<Message>> fetchMessages(GuildMessageChannel channel, Snowflake before) {
-        return channel.getMessagesBefore(before)
-                .take(20)
-                .collectList();
     }
 }

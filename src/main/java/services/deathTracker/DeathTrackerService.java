@@ -106,6 +106,7 @@ public class DeathTrackerService implements Cacheable {
                         else if(character.getLevel() > initialCharLevel)
                             character.setLevel(initialCharLevel);
                     }
+                    logINFO.info(character.getName() + " died at level " + death.getLevel() + " and now has level " + character.getLevel());
                     DeathData info = new DeathData(character, death, data.getCharacter().getCharacter().getGuild());
                     deaths.add(info);
                 }

@@ -69,28 +69,33 @@ public class LootSplitter extends InteractionEvent {
     private void subscribeModalEvent() {
         client.on(ModalSubmitInteractionEvent.class, event -> {
             if (!splitModalId.equals(event.getCustomId())) return Mono.empty();
-            event.deferReply().subscribe();
-            String spot = "", analyzer = "";
 
-            for (TextInput component : event.getComponents(TextInput.class)) {
-                if (spotModalId.equals(component.getCustomId()))
-                    spot = component.getValue().orElse("");
-                else if (splitterModalId.equals(component.getCustomId()))
-                    analyzer = component.getValue().orElse("");
+            try {
+                event.deferReply().subscribe();
+                String spot = "", analyzer = "";
+
+                for (TextInput component : event.getComponents(TextInput.class)) {
+                    if (spotModalId.equals(component.getCustomId()))
+                        spot = component.getValue().orElse("");
+                    else if (splitterModalId.equals(component.getCustomId()))
+                        analyzer = component.getValue().orElse("");
+                }
+
+                SplitLootModel model = service.splitLoot(analyzer, spot);
+                analyzer = spot.isEmpty() ? analyzer : "Hunted on: " + spot + "\n\n" + analyzer;
+                List<Button> buttons = splitterTransfersHandler.getSplittingButtons(model);
+
+                if (isComparableData(event, model))
+                    buttons.add(Button.primary(splitterComparatorHandler.getButtonId(), "Compare"));
+
+                return event.createFollowup().withFiles(
+                                MessageCreateFields.File.of("session.txt",
+                                        new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
+                        .withEmbeds(createMessage(model))
+                        .withComponents(splitActionRows(buttons));
+            } catch (Exception ignore) {
+                return event.createFollowup("Wrong parsing data");
             }
-
-            SplitLootModel model = service.splitLoot(analyzer, spot);
-            analyzer = spot.isEmpty() ? analyzer : "Hunted on: " + spot + "\n\n" + analyzer;
-            List<Button> buttons = splitterTransfersHandler.getSplittingButtons(model);
-
-            if(isComparableData(event, model))
-                buttons.add(Button.primary(splitterComparatorHandler.getButtonId(), "Compare"));
-
-            return event.createFollowup().withFiles(
-                            MessageCreateFields.File.of("session.txt",
-                                    new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
-                    .withEmbeds(createMessage(model))
-                    .withComponents(splitActionRows(buttons));
         }).subscribe();
     }
 
