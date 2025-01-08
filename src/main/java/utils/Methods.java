@@ -34,9 +34,9 @@ public final class Methods {
         if(name.startsWith("a "))
             name = name.replace("a ", "");
         return name
-                .replace(" ", "_")
                 .replace(" The ", " the ")
-                .replace(" Of ", " of ");
+                .replace(" Of ", " of ")
+                .replace(" ", "_");
     }
 
     public static String convertToUpperCaseAfterSpace(String value) {

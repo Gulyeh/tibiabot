@@ -2,7 +2,6 @@ package services.lootSplitter;
 
 import apis.WebClient;
 import com.google.common.util.concurrent.AtomicDouble;
-import discord4j.discordjson.json.ComponentData;
 import services.lootSplitter.model.*;
 
 import java.text.DecimalFormat;
@@ -96,10 +95,6 @@ public class LootSplitterService extends WebClient {
         return model;
     }
 
-    private String[] splitSession(String session) {
-        return session.split("\n");
-    }
-
     private void calculateLootPerHour(SplitLootModel model) {
         double totalHours = calculateTotalHours(model);
         double lootPerHour = parseInteger(model.getLoot()) / totalHours;
@@ -112,11 +107,6 @@ public class LootSplitterService extends WebClient {
         int hours = Integer.parseInt(timeParts[0]);
         int minutes = Integer.parseInt(timeParts[1]);
         return hours + (minutes / 60.0);
-    }
-
-    private String formatToSessionBalance(int balance) {
-        DecimalFormat formatter = new DecimalFormat("#,###", new DecimalFormatSymbols(Locale.US));
-        return formatter.format(balance);
     }
 
     private void calculatePercentage(SplitLootModel model) {
@@ -272,6 +262,15 @@ public class LootSplitterService extends WebClient {
     private Integer cutDoubleDecimals(double value) {
         DecimalFormat decimalFormat = new DecimalFormat("#");
         return Integer.parseInt(decimalFormat.format(Math.round(value)));
+    }
+
+    private String[] splitSession(String session) {
+        return session.split("\n");
+    }
+
+    private String formatToSessionBalance(int balance) {
+        DecimalFormat formatter = new DecimalFormat("#,###", new DecimalFormatSymbols(Locale.US));
+        return formatter.format(balance);
     }
 
     @Override

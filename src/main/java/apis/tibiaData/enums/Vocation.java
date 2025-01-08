@@ -9,17 +9,18 @@ import java.util.Optional;
 @Getter
 @AllArgsConstructor
 public enum Vocation {
-    RP("Royal Paladin", ":bow_and_arrow:"),
-    MS("Master Sorcerer", ":fire:"),
-    ED("Elder Druid", ":snowflake:"),
-    EK("Elite Knight", ":shield:"),
-    K("Knight", ":shield:"),
-    P("Paladin", ":bow_and_arrow:"),
-    D("Druid", ":snowflake:"),
-    S("Sorcerer", ":fire:"),
-    NONE("None", ":no_entry_sign:");
+    RP("Royal Paladin", true, ":bow_and_arrow:"),
+    MS("Master Sorcerer", true, ":fire:"),
+    ED("Elder Druid", true, ":snowflake:"),
+    EK("Elite Knight", true, ":shield:"),
+    K("Knight", false, ":shield:"),
+    P("Paladin", false, ":bow_and_arrow:"),
+    D("Druid", false, ":snowflake:"),
+    S("Sorcerer", false, ":fire:"),
+    NONE("None", false, ":no_entry_sign:");
 
     private final String name;
+    private final boolean promotion;
     private final String icon;
 
     public static Vocation getEnum(String value) {

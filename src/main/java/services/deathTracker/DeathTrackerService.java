@@ -8,6 +8,7 @@ import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterResponse;
 import apis.tibiaData.model.deathtracker.DeathResponse;
+import services.deathTracker.decorator.ExperienceLostDecorator;
 import services.deathTracker.model.DeathData;
 import services.interfaces.Cacheable;
 
@@ -91,23 +92,27 @@ public class DeathTrackerService implements Cacheable {
                 CharacterResponse data = api.getCharacterData(character.getName());
                 List<DeathResponse> deathsModel = data.getCharacter().getDeaths();
                 if(deathsModel == null || deathsModel.isEmpty()) continue;
+
+                if(character.getLevel() > data.getCharacter().getCharacter().getLevel())
+                    character.setLevel(data.getCharacter().getCharacter().getLevel());
+
                 ArrayList<DeathResponse> acceptableDeaths = new ArrayList<>(deathsModel.stream()
                         .filter(x -> x.getTimeLocal().isAfter(LocalDateTime.now().minusMinutes(deathRangeAllowance)))
                         .toList());
                 List<DeathResponse> actualDeaths = filterDeaths(character, acceptableDeaths, world);
 
                 int deathsSize = actualDeaths.size();
-                int initialCharLevel = character.getLevel();
+                int defaultCharLevel = character.getLevel();
                 for (int i = 0; i < deathsSize; i++) {
                     DeathResponse death = actualDeaths.get(i);
                     if(deathsSize > 1) {
-                        if(i < deathsSize - 1) 
+                        if(i < deathsSize - 1)
                             character.setLevel(actualDeaths.get(i + 1).getLevel());
-                        else if(character.getLevel() > initialCharLevel)
-                            character.setLevel(initialCharLevel);
+                        else if(character.getLevel() > defaultCharLevel)
+                            character.setLevel(defaultCharLevel);
                     }
-                    logINFO.info(character.getName() + " died at level " + death.getLevel() + " and now has level " + character.getLevel());
                     DeathData info = new DeathData(character, death, data.getCharacter().getCharacter().getGuild());
+                    new ExperienceLostDecorator(info, world).decorate();
                     deaths.add(info);
                 }
 

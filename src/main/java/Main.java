@@ -38,7 +38,7 @@ public class Main {
     }
 
     private static void initializeServices() {
-        WorldsService worldsService = new WorldsService(); // singleton to hold all world data in cache and share;
+        WorldsService worldsService = WorldsService.getInstance();
 
         TibiaCoins tc = new TibiaCoins(new TibiaCoinsService(worldsService));
         ServerStatus serverStatus = new ServerStatus(worldsService);

@@ -12,17 +12,28 @@ import services.interfaces.Cacheable;
 
 import java.util.Optional;
 
-public class WorldsService implements Cacheable {
+public final class WorldsService implements Cacheable {
     private WorldModel worldsData;
     private TibiaTradeWorldsModel worldsCache;
     private final TibiaDataAPI tibiaDataAPI;
     private final TibiaTradeAPI tibiaTradeAPI;
+    private static volatile WorldsService instance;
+    private static final Object mutex = new Object();
     private final Logger logINFO = LoggerFactory.getLogger(WorldsService.class);
 
-    public WorldsService() {
+    private WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
         tibiaTradeAPI = new TibiaTradeAPI();
         clearCache();
+    }
+
+    public static WorldsService getInstance() {
+        if (instance == null) {
+            synchronized (mutex) {
+                instance = new WorldsService();
+            }
+        }
+        return instance;
     }
 
     @Override

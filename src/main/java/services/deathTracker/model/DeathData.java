@@ -5,11 +5,10 @@ import lombok.Getter;
 import apis.tibiaData.model.deathtracker.DeathResponse;
 import apis.tibiaData.model.deathtracker.GuildData;
 import apis.tibiaData.model.deathtracker.Killer;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +18,8 @@ public class DeathData {
     private final List<Killer> killedBy;
     private final int killedAtLevel;
     private final int lostLevels;
+    @Setter
+    private long lostExperience;
     private final LocalDateTime killedAtDate;
     private final GuildData guild;
 
@@ -29,6 +30,7 @@ public class DeathData {
         killedAtDate = death.getTimeUTC();
         lostLevels = death.getLevel() - character.getLevel();
         this.guild = guild;
+        lostExperience = 0;
     }
 
     public List<String> getKilledByNames() {
