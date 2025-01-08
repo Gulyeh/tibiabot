@@ -29,6 +29,8 @@ import static mongo.DocumentActions.*;
 
 @Slf4j
 public class Main {
+    private static final int CACHE_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+
     public static void main(String[] args) {
         Connector.connect();
         fillCache(new CacheInitializer());
@@ -40,30 +42,25 @@ public class Main {
     private static void initializeServices() {
         WorldsService worldsService = WorldsService.getInstance();
 
-        TibiaCoins tc = new TibiaCoins(new TibiaCoinsService(worldsService));
-        ServerStatus serverStatus = new ServerStatus(worldsService);
-        TrackWorld trackWorld = new TrackWorld(worldsService);
-        KillStatistics ks = new KillStatistics(new KillStatisticsService());
-        Houses houses = new Houses(new HousesService());
-        EventsCalendar events = new EventsCalendar(new EventsService());
-        MiniWorldEvents miniWorldEvents = new MiniWorldEvents(new MiniWorldEventsService(worldsService));
-        Boosteds boosteds = new Boosteds(new BoostedsService());
-        DeathTracker deathTracker = new DeathTracker(new DeathTrackerService());
-        OnlineTracker onlineTracker = new OnlineTracker(new OnlineService());
-        MinimumDeathLevel minimumDeathLevel = new MinimumDeathLevel();
-        LootSplitter splitter = new LootSplitter();
-        RemovedChannel removedChannel = new RemovedChannel();
-        RemovedGuild removedGuild = new RemovedGuild();
+        List.of(
+                new TibiaCoins(new TibiaCoinsService(worldsService)),
+                new ServerStatus(worldsService),
+                new TrackWorld(worldsService),
+                new KillStatistics(new KillStatisticsService()),
+                new Houses(new HousesService()),
+                new EventsCalendar(new EventsService()),
+                new MiniWorldEvents(new MiniWorldEventsService(worldsService)),
+                new Boosteds(new BoostedsService()),
+                new DeathTracker(new DeathTrackerService()),
+                new OnlineTracker(new OnlineService())
+        ).forEach(x -> {
+            Connector.addListener(x);
+            x.activate();
+        });
 
-        List.of(tc, serverStatus, trackWorld, ks, houses, events, miniWorldEvents,
-                boosteds, deathTracker, onlineTracker).forEach(x -> {
-                    Connector.addListener(x);
-                    x.activate();
-        }); //list of activable events
-
-        List.of(minimumDeathLevel, splitter, removedChannel, removedGuild)
+        // Add listeners for specific events
+        List.of(new MinimumDeathLevel(), new LootSplitter(), new RemovedChannel(), new RemovedGuild())
                 .forEach(Connector::addListener);
-        //list of listeners
     }
 
     private static void buildCommands() {
@@ -88,39 +85,74 @@ public class Main {
         new Thread(() -> {
             MongoConnector.connect();
 
-            while(true) {
+            while (true) {
                 try {
-                    List<Guild> guilds = client.getGuilds().collectList().block();
-                    if(guilds == null) throw new RuntimeException("Bot has no guilds");
-                    log.info("Bot is in " + guilds.size() + " server(s)");
-
-                    log.info("Caching data from db");
-                    List<GuildModel> models = DocumentActions.getDocuments(GuildModel.class);
-                    DatabaseCacheData.resetCache();
-
-                    for (GuildModel model : models) {
-                        initializer.removeUnusedChannels(model);
-
-                        if(guilds.stream().anyMatch(x -> x.getId().asString().equals(model.getGuildId()))) {
-                            initializer.addToWorldCache(model);
-                            initializer.addToChannelsCache(model);
-                            initializer.addToDeathsCache(model);
-                        } else {
-                            deleteDocument(getDocument(Snowflake.of(model.getGuildId())));
-                        }
-                    }
-
+                    cacheGuildData(initializer);
                 } catch (Exception e) {
-                    log.info("Cannot cache data: " + e.getMessage());
-                } finally {
-                    log.info("Waiting 30 minutes for next caching");
-                    synchronized (Main.class) {
-                        try {
-                            Main.class.wait(1800000);
-                        } catch (Exception ignore) {}
-                    }
+                    log.error("Error while caching data: ", e);
                 }
+
+                log.info("Waiting for the next cache refresh...");
+                sleepUntilNextRefresh();
             }
         }).start();
+    }
+
+    private static void cacheGuildData(CacheInitializer initializer) {
+        List<Guild> guilds = fetchGuilds();
+        if (guilds == null) return;
+
+        log.info("Bot is in {} server(s)", guilds.size());
+        List<GuildModel> models = fetchGuildModels();
+        DatabaseCacheData.resetCache();
+
+        for (GuildModel model : models) {
+            initializer.removeUnusedChannels(model);
+
+            if (isGuildPresentInBot(guilds, model))
+                addToCache(initializer, model);
+            else removeGuildDocument(model);
+        }
+    }
+
+    private static List<Guild> fetchGuilds() {
+        try {
+            return client.getGuilds().collectList().block();
+        } catch (Exception e) {
+            log.error("Failed to fetch guilds", e);
+            return List.of();
+        }
+    }
+
+    private static List<GuildModel> fetchGuildModels() {
+        try {
+            return DocumentActions.getDocuments(GuildModel.class);
+        } catch (Exception e) {
+            log.error("Failed to fetch guild models", e);
+            return List.of();
+        }
+    }
+
+    private static boolean isGuildPresentInBot(List<Guild> guilds, GuildModel model) {
+        return guilds.stream()
+                .anyMatch(guild -> guild.getId().asString().equals(model.getGuildId()));
+    }
+
+    private static void addToCache(CacheInitializer initializer, GuildModel model) {
+        initializer.addToWorldCache(model);
+        initializer.addToChannelsCache(model);
+        initializer.addToDeathsCache(model);
+    }
+
+    private static void removeGuildDocument(GuildModel model) {
+        deleteDocument(getDocument(Snowflake.of(model.getGuildId())));
+    }
+
+    private static void sleepUntilNextRefresh() {
+        try {
+            Thread.sleep(CACHE_REFRESH_INTERVAL_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

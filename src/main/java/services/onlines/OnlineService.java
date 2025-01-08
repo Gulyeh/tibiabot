@@ -5,7 +5,7 @@ import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
 import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
-import services.interfaces.Cacheable;
+import interfaces.Cacheable;
 import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
 

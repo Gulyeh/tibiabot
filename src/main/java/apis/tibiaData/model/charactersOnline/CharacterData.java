@@ -11,12 +11,15 @@ import java.time.LocalDateTime;
 public class CharacterData implements CharacterLink, Cloneable {
     public CharacterData() {
         updatedAt = LocalDateTime.now();
+        isOnline = true;
     }
 
     private String name;
     @Setter
     private int level;
     private String vocation;
+    @Setter
+    private boolean isOnline;
     @Setter
     private transient LocalDateTime updatedAt;
     @Setter

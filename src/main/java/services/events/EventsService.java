@@ -1,15 +1,13 @@
 package services.events;
 
 import services.events.pageObjects.TibiaEventsCalendar;
-import services.interfaces.Cacheable;
+import interfaces.Cacheable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.Configurator;
 import utils.Image;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Configurator.config;

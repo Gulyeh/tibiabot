@@ -27,7 +27,7 @@ public class CacheInitializer {
     }
 
     public void addToDeathsCache(GuildModel model) {
-        if(model.getWorld() == null || model.getDeathMinimumLevel() < 1) {
+        if(model.getWorld() == null || model.getDeathMinimumLevel() < 8) {
             log.info("Could not add minimum level to cache");
             return;
         }

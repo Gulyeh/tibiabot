@@ -5,15 +5,13 @@ import discord4j.common.util.Snowflake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import apis.tibiaData.TibiaDataAPI;
-import services.interfaces.Cacheable;
+import interfaces.Cacheable;
 import services.killStatistics.models.BossModel;
 import apis.tibiaData.model.killstats.KillingStatsData;
 import apis.tibiaData.model.killstats.KillingStatsModel;
 import services.killStatistics.pageObjects.GuildStatsBosses;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 

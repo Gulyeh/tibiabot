@@ -6,11 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import apis.tibiaData.model.worlds.WorldData;
 import apis.tibiaTrade.TibiaTradeAPI;
-import services.interfaces.Cacheable;
+import interfaces.Cacheable;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.WorldsService;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 

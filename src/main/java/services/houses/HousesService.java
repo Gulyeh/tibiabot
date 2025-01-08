@@ -7,14 +7,12 @@ import discord4j.common.util.Snowflake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import apis.tibiaData.TibiaDataAPI;
-import services.interfaces.Cacheable;
+import interfaces.Cacheable;
 import services.houses.enums.Towns;
 import apis.tibiaData.model.houses.HousesModel;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class HousesService implements Cacheable {

@@ -8,7 +8,7 @@ import apis.tibiaData.model.worlds.WorldModel;
 import apis.tibiaTrade.TibiaTradeAPI;
 import apis.tibiaTrade.model.world.TibiaTradeWorld;
 import apis.tibiaTrade.model.world.TibiaTradeWorldsModel;
-import services.interfaces.Cacheable;
+import interfaces.Cacheable;
 
 import java.util.Optional;
 
