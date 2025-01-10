@@ -4,6 +4,7 @@ import apis.tibiaData.model.house.HouseInfo;
 import apis.tibiaData.model.houses.HouseData;
 import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import apis.tibiaData.TibiaDataAPI;
@@ -15,10 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class HousesService implements Cacheable {
     private ConcurrentHashMap<String, List<HousesModel>> housesCache;
     private final TibiaDataAPI api;
-    private final Logger logINFO = LoggerFactory.getLogger(HousesService.class);
 
     public HousesService() {
         api = new TibiaDataAPI();
@@ -34,7 +35,7 @@ public class HousesService implements Cacheable {
         List<HousesModel> list = new ArrayList<>();
 
         if(housesCache.containsKey(world)) {
-            logINFO.info("Getting Houses from cache");
+            log.info("Getting Houses from cache");
             list = housesCache.get(world);
         }
         else {

@@ -22,8 +22,6 @@ public class CharacterData implements CharacterLink, Cloneable {
     private boolean isOnline;
     @Setter
     private transient LocalDateTime updatedAt;
-    @Setter
-    private transient boolean isDead;
 
     public Vocation getVocation() {
         return Vocation.getEnum(vocation);

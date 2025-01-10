@@ -1,5 +1,6 @@
 package discord;
 
+import lombok.extern.slf4j.Slf4j;
 import utils.Configurator;
 import discord.enums.Statuses;
 import discord4j.core.DiscordClient;
@@ -12,11 +13,11 @@ import events.interfaces.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 public final class Connector {
 
     public static GatewayDiscordClient client;
     private final static String status = "Hello giga mates";
-    private final static Logger logINFO = LoggerFactory.getLogger(Connector.class);
     private final static String key = Configurator.config.get(Configurator.ConfigPaths.BOT_KEY.getName());
 
     public static void connect() {
@@ -29,18 +30,18 @@ public final class Connector {
                     .setAwaitConnections(true)
                     .setSharding(ShardingStrategy.recommended())
                     .login()
-                    .doOnError(e -> logINFO.error("Failed to authenticate with Discord", e))
-                    .doOnSuccess(result -> logINFO.info("Connected to Discord"))
+                    .doOnError(e -> log.error("Failed to authenticate with Discord", e))
+                    .doOnSuccess(result -> log.info("Connected to Discord"))
                     .block();
 
             assert client != null;
         } catch (Exception e) {
-            logINFO.info(e.getMessage());
+            log.info(e.getMessage());
         }
     }
 
     public static void addListener(Listener event) {
-        logINFO.info("Listening to: " + event.getEventName());
+        log.info("Listening to: " + event.getEventName());
         event.executeEvent();
     }
 

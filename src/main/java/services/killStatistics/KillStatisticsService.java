@@ -2,6 +2,7 @@ package services.killStatistics;
 
 import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import apis.tibiaData.TibiaDataAPI;
@@ -15,9 +16,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class KillStatisticsService implements Cacheable {
     private ConcurrentHashMap<String, KillingStatsModel> mapCache;
-    private final Logger logINFO = LoggerFactory.getLogger(KillStatisticsService.class);
     private final TibiaDataAPI api;
 
     public KillStatisticsService() {
@@ -32,7 +33,7 @@ public class KillStatisticsService implements Cacheable {
     public KillingStatsModel getStatistics(Snowflake guildId) {
         String world = DatabaseCacheData.getWorldCache().get(guildId);
         if(mapCache.containsKey(world)) {
-            logINFO.info("Getting Killed bosses from cache");
+            log.info("Getting Killed bosses from cache");
             return mapCache.get(world);
         }
 

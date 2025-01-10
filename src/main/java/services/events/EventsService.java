@@ -1,5 +1,6 @@
 package services.events;
 
+import lombok.extern.slf4j.Slf4j;
 import services.events.pageObjects.TibiaEventsCalendar;
 import interfaces.Cacheable;
 import org.slf4j.Logger;
@@ -12,9 +13,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Configurator.config;
 
+@Slf4j
 public class EventsService implements Cacheable {
     private ConcurrentHashMap<String, String> cachedFiles;
-    private final Logger logINFO = LoggerFactory.getLogger(EventsService.class);
 
     public EventsService() {
         clearCache();
@@ -33,7 +34,7 @@ public class EventsService implements Cacheable {
                 }
             }
         } catch (Exception e) {
-            logINFO.info("Could not delete files");
+            log.info("Could not delete files");
         }
 
         cachedFiles = new ConcurrentHashMap<>();
@@ -42,7 +43,7 @@ public class EventsService implements Cacheable {
     public String getEvents(int month, int year) {
         String key = month + "-" + year + ".png";
         if(cachedFiles.containsKey(key)) {
-            logINFO.info("Getting Events from cache");
+            log.info("Getting Events from cache");
             return cachedFiles.get(key);
         }
 

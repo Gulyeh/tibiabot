@@ -3,6 +3,7 @@ package discord.messages;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -15,8 +16,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static discord.Connector.getId;
 
+@Slf4j
 public final class GetMessages {
-    private static final Logger logINFO = LoggerFactory.getLogger(SendMessages.class);
 
     public static Flux<Message> getChannelMessages(GuildMessageChannel channel) {
         return getChannelMessages(channel, Instant.now());
@@ -31,7 +32,7 @@ public final class GetMessages {
                             .map(user -> user.getId().equals(Snowflake.of(getId())))
                             .orElse(false));
         } catch (Exception ignore) {
-            logINFO.info("Could not get messages from channel");
+            log.info("Could not get messages from channel");
             return Flux.empty();
         }
     }

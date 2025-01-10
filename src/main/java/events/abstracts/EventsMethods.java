@@ -11,6 +11,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import events.interfaces.Listener;
+import lombok.extern.slf4j.Slf4j;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import org.slf4j.Logger;
@@ -22,9 +23,10 @@ import static cache.DatabaseCacheData.isGuildCached;
 import static discord.Connector.client;
 import static mongo.DocumentActions.*;
 
+@Slf4j
 public abstract class EventsMethods implements Listener {
 
-    protected final static Logger logINFO = LoggerFactory.getLogger(EventsMethods.class);
+    protected final Logger logINFO = log;
 
     protected Snowflake getChannelId(ChatInputInteractionEvent event) {
         Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().get(0).getValue();

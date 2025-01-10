@@ -1,6 +1,7 @@
 package apis;
 
 import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
@@ -10,9 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+@Slf4j
 public abstract class WebClient {
     private final HttpClient httpClient;
-    protected Logger logINFO = LoggerFactory.getLogger(WebClient.class);
 
     public WebClient() {
         httpClient = HttpClients.createDefault();
@@ -25,7 +26,7 @@ public abstract class WebClient {
         try {
              response = httpClient.execute(request, responseHandler);
         } catch (Exception e) {
-            logINFO.info(e.getMessage());
+            log.info(e.getMessage());
         }
 
         return response;
@@ -51,7 +52,7 @@ public abstract class WebClient {
             Gson g = new Gson();
             return g.fromJson(response, classType);
         } catch (Exception e) {
-            logINFO.info("Could not parse json data - " + e.getMessage());
+            log.info("Could not parse json data - " + e.getMessage());
             return null;
         }
     }

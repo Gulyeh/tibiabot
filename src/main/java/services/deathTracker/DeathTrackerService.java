@@ -3,6 +3,7 @@ package services.deathTracker;
 import apis.tibiaData.model.deathtracker.GuildData;
 import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import apis.tibiaData.TibiaDataAPI;
@@ -17,15 +18,18 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class DeathTrackerService implements Cacheable {
     private final ConcurrentHashMap<String, List<CharacterData>> mapCache; // data of previously online characters
     private ConcurrentHashMap<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, ArrayList<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
-    private final int deathRangeAllowance = 30;
+    private final int deathRangeAllowance = 15;
     private final TibiaDataAPI api;
-    private final Logger logINFO = LoggerFactory.getLogger(DeathTrackerService.class);
 
     public DeathTrackerService() {
         mapCache = new ConcurrentHashMap<>();
@@ -45,35 +49,15 @@ public class DeathTrackerService implements Cacheable {
 
         List<CharacterData> onlineCharacters = getCharacters(guildId, world);
         List<CharacterData> cachedCharacters = mapCache.getOrDefault(world, new ArrayList<>());
-        Map<String, CharacterData> cachedCharacterMap = cachedCharacters.stream()
-                .collect(Collectors.toMap(CharacterData::getName, character -> character));
+        updateOfflineCharacters(cachedCharacters, onlineCharacters);
 
-        List<CharacterData> deadCharacters = processOnlineCharacters(onlineCharacters, cachedCharacterMap);
-        updateOfflineCharacters(cachedCharacters, onlineCharacters, deadCharacters);
-
-        List<DeathData> deads = deadCharacters.isEmpty() ? new ArrayList<>() : getCharactersDeathData(deadCharacters, world);
+        List<DeathData> deads = getCharactersDeathData(onlineCharacters, world);
         updateCachedData(onlineCharacters, cachedCharacters, world);
         return deads;
     }
 
-    private List<CharacterData> processOnlineCharacters(List<CharacterData> onlineCharacters,
-                                                        Map<String, CharacterData> cachedCharacterMap) {
-        List<CharacterData> deadCharacters = new ArrayList<>();
-        for (CharacterData newCharacterData : onlineCharacters) {
-            CharacterData oldCachedCharacterData = cachedCharacterMap.get(newCharacterData.getName());
-            if (oldCachedCharacterData == null) continue;
-
-            if (oldCachedCharacterData.getLevel() > newCharacterData.getLevel() && !newCharacterData.isDead())
-                newCharacterData.setDead(true);
-            if (newCharacterData.isDead())
-                deadCharacters.add(newCharacterData);
-        }
-        return deadCharacters;
-    }
-
     private void updateOfflineCharacters(List<CharacterData> cachedCharacters,
-                                         List<CharacterData> onlineCharacters,
-                                         List<CharacterData> deadCharacters) {
+                                         List<CharacterData> onlineCharacters) {
         Set<String> onlineCharacterNames = onlineCharacters.stream()
                 .map(CharacterData::getName)
                 .collect(Collectors.toSet());
@@ -82,7 +66,7 @@ public class DeathTrackerService implements Cacheable {
                 .filter(x -> !onlineCharacterNames.contains(x.getName()))
                 .forEach(x -> {
                     x.setOnline(false);
-                    deadCharacters.add(x);
+                    onlineCharacters.add(x);
                 });
     }
 
@@ -103,24 +87,15 @@ public class DeathTrackerService implements Cacheable {
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
         List<DeathData> deaths = new ArrayList<>();
 
-        for(CharacterData character : chars) {
-            try {
-                CharacterResponse data = api.getCharacterData(character.getName());
-                List<DeathResponse> deathsModel = data.getCharacter().getDeaths();
-                if(deathsModel == null || deathsModel.isEmpty()) continue;
+        ExecutorService executor = Executors.newFixedThreadPool(chars.size());
+        chars.forEach(x -> executor.submit(() -> processCharacter(x, world, deaths)));
 
-                int currentLevel = data.getCharacter().getCharacter().getLevel();
-                if (!character.isOnline() && character.getLevel() > currentLevel)
-                    character.setLevel(currentLevel);
-
-                ArrayList<DeathResponse> acceptableDeaths = new ArrayList<>(deathsModel.stream()
-                        .filter(x -> x.getTimeLocal().isAfter(LocalDateTime.now().minusMinutes(deathRangeAllowance)))
-                        .toList());
-                List<DeathResponse> actualDeaths = filterDeaths(character, acceptableDeaths, world);
-                processDeaths(character, actualDeaths, data.getCharacter().getCharacter().getGuild(), deaths, world);
-            } catch (Exception e) {
-               logINFO.info(e.getMessage());
-            }
+        try {
+            executor.shutdown();
+            if (!executor.awaitTermination(1, TimeUnit.MINUTES))
+                System.out.println("Some tasks did not finish within the timeout.");
+        } catch (InterruptedException ignore) {
+            Thread.currentThread().interrupt();
         }
 
         deaths.sort(Comparator.comparing(DeathData::getKilledAtDate));
@@ -129,13 +104,31 @@ public class DeathTrackerService implements Cacheable {
         return deaths;
     }
 
+    private void processCharacter(CharacterData character, String world, List<DeathData> deaths) {
+        try {
+            CharacterResponse data = api.getCharacterData(character.getName());
+            List<DeathResponse> deathsModel = data.getCharacter().getDeaths();
+            if (deathsModel == null || deathsModel.isEmpty()) return;
+
+            int currentLevel = data.getCharacter().getCharacter().getLevel();
+            if (!character.isOnline() && character.getLevel() > currentLevel)
+                character.setLevel(currentLevel);
+
+            ArrayList<DeathResponse> acceptableDeaths = new ArrayList<>(deathsModel.stream()
+                    .filter(x -> x.getTimeLocal().isAfter(LocalDateTime.now().minusMinutes(deathRangeAllowance)))
+                    .toList());
+            List<DeathResponse> actualDeaths = filterDeaths(character, acceptableDeaths, world);
+            processDeaths(character, actualDeaths, data.getCharacter().getCharacter().getGuild(), deaths, world);
+        } catch (Exception ignore) {}
+    }
+
     private List<CharacterData> getCharacters(Snowflake guildId, String world) {
         int minimumLevel = DatabaseCacheData.getMinimumDeathLevelCache().get(guildId);
         List<CharacterData> players = api.getCharactersOnWorld(world);
-        return players
+        return new ArrayList<>(players
                 .stream()
                 .filter(x -> x.getLevel() >= minimumLevel)
-                .toList();
+                .toList());
     }
 
     private void processDeaths(CharacterData character, List<DeathResponse> actualDeaths,
@@ -157,8 +150,6 @@ public class DeathTrackerService implements Cacheable {
             new ExperienceLostDecorator(info, world).decorate();
             deaths.add(info);
         }
-
-        character.setDead(false);
     }
 
     private List<DeathResponse> filterDeaths(CharacterData data, ArrayList<DeathResponse> characterDeaths, String world) {

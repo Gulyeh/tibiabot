@@ -19,12 +19,11 @@ public class ExperienceLostDecorator {
     }
 
     public void decorate() {
-        if(character.getKilledAtLevel() < 24 || character.getKilledBy().get(0).isPlayer()) return;
         WorldModel data = service.getWorlds();
-        if(data == null) return;
+        if(character.getKilledAtLevel() < 24 || data == null) return;
         Optional<WorldData> model = data.getWorlds().getRegular_worlds()
                 .stream().filter(x -> x.getName().equals(world)).findFirst();
-        if(model.isEmpty()) return;
+        if(model.isEmpty() || (character.getKilledBy().get(0).isPlayer() && !model.get().getPvp_type().equals("Optional PvP"))) return;
         long lostExp = calculateCharacterLostExperience(model.get().getPvp_type().equals("Retro Hardcore PvP"));
         character.setLostExperience(lostExp);
     }

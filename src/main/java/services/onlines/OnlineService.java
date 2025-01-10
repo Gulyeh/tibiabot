@@ -102,9 +102,7 @@ public class OnlineService implements Cacheable {
             }
 
             executor.shutdown();
-            if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
-                System.out.println("Some tasks did not finish within the timeout.");
-            }
+            executor.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException ignore) {
             Thread.currentThread().interrupt();
         }

@@ -2,6 +2,7 @@ package services.miniWorldEvents;
 
 import cache.DatabaseCacheData;
 import discord4j.common.util.Snowflake;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import apis.tibiaData.model.worlds.WorldData;
@@ -13,10 +14,10 @@ import services.worlds.WorldsService;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class MiniWorldEventsService implements Cacheable {
 
     private ConcurrentHashMap<String, MiniWorldEventsModel> miniWorldEventsCache;
-    private final Logger logINFO = LoggerFactory.getLogger(MiniWorldEventsService.class);
     private final WorldsService worldsService;
     private final TibiaTradeAPI tibiaTradeAPI;
 
@@ -34,7 +35,7 @@ public class MiniWorldEventsService implements Cacheable {
     public MiniWorldEventsModel getMiniWorldChanges(Snowflake guildId) {
         String world = DatabaseCacheData.getWorldCache().get(guildId);
         if(miniWorldEventsCache.containsKey(world)) {
-            logINFO.info("Getting Mini world events from cache");
+            log.info("Getting Mini world events from cache");
             return miniWorldEventsCache.get(world);
         }
 

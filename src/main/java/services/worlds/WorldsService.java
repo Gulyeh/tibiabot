@@ -1,7 +1,6 @@
 package services.worlds;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.worlds.WorldData;
 import apis.tibiaData.model.worlds.WorldModel;
@@ -12,6 +11,7 @@ import interfaces.Cacheable;
 
 import java.util.Optional;
 
+@Slf4j
 public final class WorldsService implements Cacheable {
     private WorldModel worldsData;
     private TibiaTradeWorldsModel worldsCache;
@@ -19,7 +19,6 @@ public final class WorldsService implements Cacheable {
     private final TibiaTradeAPI tibiaTradeAPI;
     private static volatile WorldsService instance;
     private static final Object mutex = new Object();
-    private final Logger logINFO = LoggerFactory.getLogger(WorldsService.class);
 
     private WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
@@ -51,7 +50,7 @@ public final class WorldsService implements Cacheable {
             setWorldsIds();
             return worldsData;
         } catch (Exception e) {
-            logINFO.warn(e.getMessage());
+            log.warn(e.getMessage());
         }
 
         return null;
@@ -68,7 +67,7 @@ public final class WorldsService implements Cacheable {
         TibiaTradeWorldsModel model = tibiaTradeAPI.getWorlds();
 
         if(model.getWorlds().isEmpty()) {
-            logINFO.info("Could not get worlds data");
+            log.info("Could not get worlds data");
             return 0;
         }
 
@@ -83,7 +82,7 @@ public final class WorldsService implements Cacheable {
                 .findFirst();
 
         if(world.isPresent()) return world.get().getId();
-        logINFO.info("Could not find world " + worldName);
+        log.info("Could not find world " + worldName);
         return 0;
     }
 }
