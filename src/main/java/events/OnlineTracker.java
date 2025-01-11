@@ -1,6 +1,6 @@
 package events;
 
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -9,9 +9,7 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
-import events.abstracts.EmbeddableEvent;
 import events.abstracts.ServerSaveEvent;
 import events.interfaces.Activable;
 import events.interfaces.Channelable;
@@ -114,11 +112,11 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = DatabaseCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.ONLINE_TRACKER);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -139,7 +137,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();

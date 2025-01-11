@@ -1,6 +1,6 @@
 package events;
 
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -24,7 +24,6 @@ import apis.tibiaData.model.killstats.KillingStatsModel;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -96,11 +95,11 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = DatabaseCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.KILLED_BOSSES);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -126,7 +125,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();

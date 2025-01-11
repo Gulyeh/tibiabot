@@ -1,7 +1,7 @@
 package events;
 
-import cache.DatabaseCacheData;
-import cache.UtilsCache;
+import cache.guilds.GuildCacheData;
+import cache.worlds.WorldsCache;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -10,7 +10,6 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.ServerSaveEvent;
 import events.interfaces.Activable;
 import events.interfaces.Channelable;
@@ -23,7 +22,6 @@ import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.enums.Status;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -121,7 +119,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
@@ -133,10 +131,10 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
 
     @Override
     protected void executeEventProcess() {
-        for (Snowflake guildId : DatabaseCacheData.getChannelsCache().keySet()) {
+        for (Snowflake guildId : GuildCacheData.getChannelsCache().keySet()) {
             if(!serverStatusChangedForServer(guildId)) continue;
 
-            Snowflake channel = DatabaseCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.MINI_WORLD_CHANGES);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -150,7 +148,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
             processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
         }
 
-        beforeWorldsStatus.putAll(UtilsCache.getWorldsStatus());
+        beforeWorldsStatus.putAll(WorldsCache.getWorldsStatus());
     }
 
     @Override
@@ -161,8 +159,8 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     private boolean serverStatusChangedForServer(Snowflake guildId) {
         if(beforeWorldsStatus.isEmpty()) return true;
 
-        String serverName = DatabaseCacheData.getWorldCache().get(guildId);
-        Status actualStatus = UtilsCache.getWorldsStatus().get(serverName);
+        String serverName = GuildCacheData.getWorldCache().get(guildId);
+        Status actualStatus = WorldsCache.getWorldsStatus().get(serverName);
         Status beforeStatus = beforeWorldsStatus.get(serverName);
 
         return beforeStatus.equals(Status.OFFLINE) && actualStatus.equals(Status.ONLINE);

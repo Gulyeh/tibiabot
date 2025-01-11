@@ -3,7 +3,7 @@ package services.onlines;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import interfaces.Cacheable;
 import services.onlines.enums.Leveled;
@@ -36,7 +36,7 @@ public class OnlineService implements Cacheable {
     }
 
     public List<OnlineModel> getOnlinePlayers(Snowflake guildId) {
-        String world = DatabaseCacheData.getWorldCache().get(guildId);
+        String world = GuildCacheData.getWorldCache().get(guildId);
         if(onlineCache.get(world) != null) return onlineCache.get(world);
         List<OnlineModel> online = new ArrayList<>();
         List<OnlineModel> onlineCacheData = charInfoCache.get(world) == null ? new ArrayList<>() : charInfoCache.get(world);

@@ -1,13 +1,11 @@
 package events.abstracts;
 
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Member;
-import discord4j.core.object.entity.Message;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import events.interfaces.Listener;
@@ -15,13 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-import static cache.DatabaseCacheData.isGuildCached;
+import static cache.guilds.GuildCacheData.isGuildCached;
 import static discord.Connector.client;
-import static mongo.DocumentActions.*;
+import static mongo.GuildDocumentActions.*;
 
 @Slf4j
 public abstract class EventsMethods implements Listener {
@@ -73,7 +70,7 @@ public abstract class EventsMethods implements Listener {
                 if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
             }
 
-            DatabaseCacheData.addToChannelsCache(guildId, channelId, eventType);
+            GuildCacheData.addToChannelsCache(guildId, channelId, eventType);
             logINFO.info("Saved channel");
             return true;
         } catch (Exception e) {

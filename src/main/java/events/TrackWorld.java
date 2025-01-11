@@ -1,6 +1,6 @@
 package events;
 
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
@@ -14,9 +14,9 @@ import apis.tibiaData.model.worlds.WorldModel;
 import services.worlds.WorldsService;
 
 import static builders.commands.names.CommandsNames.worldCommand;
-import static cache.DatabaseCacheData.isGuildCached;
+import static cache.guilds.GuildCacheData.isGuildCached;
 import static discord.Connector.client;
-import static mongo.DocumentActions.*;
+import static mongo.GuildDocumentActions.*;
 
 public class TrackWorld extends EventsMethods implements Activable {
 
@@ -95,7 +95,7 @@ public class TrackWorld extends EventsMethods implements Activable {
                 if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
             }
 
-            DatabaseCacheData.addToWorldsCache(guildId, serverName);
+            GuildCacheData.addToWorldsCache(guildId, serverName);
             logINFO.info("Saved server world");
             return true;
         } catch (Exception e) {

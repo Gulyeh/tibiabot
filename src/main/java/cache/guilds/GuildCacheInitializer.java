@@ -1,4 +1,4 @@
-package cache;
+package cache.guilds;
 
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
@@ -11,11 +11,11 @@ import mongo.models.GuildModel;
 import java.util.List;
 
 import static discord.Connector.client;
-import static mongo.DocumentActions.createDocument;
-import static mongo.DocumentActions.replaceDocument;
+import static mongo.GuildDocumentActions.createDocument;
+import static mongo.GuildDocumentActions.replaceDocument;
 
 @Slf4j
-public class CacheInitializer {
+public class GuildCacheInitializer {
     public void addToWorldCache(GuildModel model) {
         if(model.getWorld() == null || model.getWorld().isEmpty() || model.getGuildId().isEmpty()) {
             log.info("Could not add world to cache");
@@ -23,17 +23,17 @@ public class CacheInitializer {
         }
 
         Snowflake guildId = Snowflake.of(model.getGuildId());
-        DatabaseCacheData.addToWorldsCache(guildId, model.getWorld());
+        GuildCacheData.addToWorldsCache(guildId, model.getWorld());
     }
 
-    public void addToDeathsCache(GuildModel model) {
+    public void addToMinimumDeathsLevelCache(GuildModel model) {
         if(model.getWorld() == null || model.getDeathMinimumLevel() < 8) {
             log.info("Could not add minimum level to cache");
             return;
         }
 
         Snowflake guildId = Snowflake.of(model.getGuildId());
-        DatabaseCacheData.addMinimumDeathLevelCache(guildId, model.getDeathMinimumLevel());
+        GuildCacheData.addMinimumDeathLevelCache(guildId, model.getDeathMinimumLevel());
     }
 
     public void addToChannelsCache(GuildModel model) {
@@ -85,7 +85,7 @@ public class CacheInitializer {
                 }
             };
 
-            DatabaseCacheData.addToChannelsCache(guildId, channelId, eventType);
+            GuildCacheData.addToChannelsCache(guildId, channelId, eventType);
         }
     }
 
@@ -97,7 +97,6 @@ public class CacheInitializer {
                     .block();
 
             if (channels == null) throw new Exception("Could not find channels for guild " + model.getGuildId());
-
             int removed = model.getChannels().removeChannelsExcept(channels);
 
             if (removed > 0) {

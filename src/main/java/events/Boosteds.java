@@ -1,6 +1,6 @@
 package events;
 
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -68,8 +68,8 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
 
     @Override
     protected void executeEventProcess() {
-        for (Snowflake guildId : DatabaseCacheData.getChannelsCache().keySet()) {
-            Snowflake channel = DatabaseCacheData.getChannelsCache()
+        for (Snowflake guildId : GuildCacheData.getChannelsCache().keySet()) {
+            Snowflake channel = GuildCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.BOOSTEDS);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -117,7 +117,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();

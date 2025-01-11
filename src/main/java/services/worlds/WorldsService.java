@@ -1,5 +1,6 @@
 package services.worlds;
 
+import abstracts.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.worlds.WorldData;
@@ -12,13 +13,11 @@ import interfaces.Cacheable;
 import java.util.Optional;
 
 @Slf4j
-public final class WorldsService implements Cacheable {
+public final class WorldsService extends Singleton implements Cacheable {
     private WorldModel worldsData;
     private TibiaTradeWorldsModel worldsCache;
     private final TibiaDataAPI tibiaDataAPI;
     private final TibiaTradeAPI tibiaTradeAPI;
-    private static volatile WorldsService instance;
-    private static final Object mutex = new Object();
 
     private WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
@@ -27,12 +26,7 @@ public final class WorldsService implements Cacheable {
     }
 
     public static WorldsService getInstance() {
-        if (instance == null) {
-            synchronized (mutex) {
-                instance = new WorldsService();
-            }
-        }
-        return instance;
+        return getInstance(WorldsService.class);
     }
 
     @Override
@@ -48,12 +42,11 @@ public final class WorldsService implements Cacheable {
         try {
             worldsData = tibiaDataAPI.getWorlds();
             setWorldsIds();
-            return worldsData;
         } catch (Exception e) {
             log.warn(e.getMessage());
         }
 
-        return null;
+        return worldsData;
     }
 
     private void setWorldsIds() {

@@ -1,6 +1,6 @@
 package events;
 
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -25,7 +25,7 @@ import utils.Methods;
 import java.util.*;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
-import static cache.DatabaseCacheData.addMinimumDeathLevelCache;
+import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
 import static utils.Methods.formatWikiGifLink;
 
@@ -66,7 +66,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
                 logINFO.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(150000);
+                    wait(300000);
                 }
             }
         }
@@ -79,11 +79,11 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = DatabaseCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.DEATH_TRACKER);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -104,7 +104,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!DatabaseCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.getWorldCache().containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         if(!saveSetChannel((ChatInputInteractionEvent) event))

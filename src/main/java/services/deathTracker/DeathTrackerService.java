@@ -1,11 +1,9 @@
 package services.deathTracker;
 
 import apis.tibiaData.model.deathtracker.GuildData;
-import cache.DatabaseCacheData;
+import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterResponse;
@@ -44,7 +42,7 @@ public class DeathTrackerService implements Cacheable {
     }
 
     public List<DeathData> getDeaths(Snowflake guildId) {
-        String world = DatabaseCacheData.getWorldCache().get(guildId);
+        String world = GuildCacheData.getWorldCache().get(guildId);
         if(deathsCache.containsKey(world)) return deathsCache.get(world);
 
         List<CharacterData> onlineCharacters = getCharacters(guildId, world);
@@ -123,7 +121,7 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<CharacterData> getCharacters(Snowflake guildId, String world) {
-        int minimumLevel = DatabaseCacheData.getMinimumDeathLevelCache().get(guildId);
+        int minimumLevel = GuildCacheData.getMinimumDeathLevelCache().get(guildId);
         List<CharacterData> players = api.getCharactersOnWorld(world);
         return new ArrayList<>(players
                 .stream()

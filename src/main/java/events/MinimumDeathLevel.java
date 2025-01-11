@@ -8,10 +8,10 @@ import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
 
 import static builders.commands.names.CommandsNames.setMinimumDeathsLevelCommand;
-import static cache.DatabaseCacheData.addMinimumDeathLevelCache;
+import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
-import static mongo.DocumentActions.createDocument;
-import static mongo.DocumentActions.replaceDocument;
+import static mongo.GuildDocumentActions.createDocument;
+import static mongo.GuildDocumentActions.replaceDocument;
 
 public class MinimumDeathLevel extends EventsMethods {
 
@@ -22,7 +22,6 @@ public class MinimumDeathLevel extends EventsMethods {
                 if (!event.getCommandName().equals(setMinimumDeathsLevelCommand)) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
-
                 return setLevel(event);
             } catch (Exception e) {
                 logINFO.error(e.getMessage());

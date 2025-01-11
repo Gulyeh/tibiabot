@@ -1,7 +1,7 @@
 package events;
 
-import cache.DatabaseCacheData;
-import cache.UtilsCache;
+import cache.guilds.GuildCacheData;
+import cache.worlds.WorldsCache;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
@@ -73,11 +73,11 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     protected void executeEventProcess() {
         WorldModel worlds = getAndCacheWorlds();
-        Set<Snowflake> guildIds = DatabaseCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = DatabaseCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.getChannelsCache()
                     .get(guildId)
                     .get(EventTypes.SERVER_STATUS);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -141,7 +141,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     private WorldModel getAndCacheWorlds() {
         WorldModel worlds = worldsService.getWorlds();
-        UtilsCache.setWorldsStatus(worlds);
+        WorldsCache.setWorldsStatus(worlds);
         return worlds;
     }
 

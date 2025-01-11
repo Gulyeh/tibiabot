@@ -1,19 +1,21 @@
-package cache;
+package cache.guilds;
 
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import lombok.Getter;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Methods.getKey;
 
-public final class DatabaseCacheData {
+public final class GuildCacheData {
     @Getter
     private static ConcurrentHashMap<Snowflake, String> worldCache = new ConcurrentHashMap<>();
     @Getter
     private static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
     @Getter
     private static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
+
 
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
@@ -28,13 +30,12 @@ public final class DatabaseCacheData {
 
     public static void addToChannelsCache(Snowflake guildId, Snowflake channelId, EventTypes eventType) {
         if(guildId == null || channelId == null || eventType == null) return;
-        ConcurrentHashMap<EventTypes, Snowflake> eventChannels;
-
-        if(channelsCache.containsKey(guildId)) eventChannels = channelsCache.get(guildId);
-        else eventChannels = new ConcurrentHashMap<>();
-
-        eventChannels.put(eventType, channelId);
-        channelsCache.put(guildId, eventChannels);
+        channelsCache.compute(guildId, (key, eventChannels) -> {
+            if (eventChannels == null)
+                eventChannels = new ConcurrentHashMap<>();
+            eventChannels.put(eventType, channelId);
+            return eventChannels;
+        });
     }
 
     public static void removeGuild(Snowflake guildId) {
@@ -51,9 +52,9 @@ public final class DatabaseCacheData {
     }
 
     public static void resetCache() {
-        worldCache = new ConcurrentHashMap<>();
-        channelsCache = new ConcurrentHashMap<>();
-        minimumDeathLevelCache = new ConcurrentHashMap<>();
+        worldCache.clear();
+        channelsCache.clear();
+        minimumDeathLevelCache.clear();
     }
 
     public static boolean isGuildCached(Snowflake guildId) {

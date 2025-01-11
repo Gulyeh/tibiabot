@@ -6,6 +6,7 @@ import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.discordjson.json.ApplicationCommandData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,10 +17,10 @@ import java.util.Objects;
 import static builders.commands.names.CommandsNames.*;
 import static discord.Connector.client;
 
+@Slf4j
 public class Commands {
     private final List<ApplicationCommandRequest> listOfCommands = new ArrayList<>();
-    private final Logger logINFO = LoggerFactory.getLogger(Commands.class);
-
+    
     public void build() {
         long appId = Objects.requireNonNull(client.getRestClient().getApplicationId().block());
 
@@ -29,7 +30,7 @@ public class Commands {
                     .subscribe();
         }
 
-        logINFO.info("Subscribed to commands");
+        log.info("Subscribed to commands");
     }
 
     public Commands clearUnusedCommands() {
@@ -47,7 +48,7 @@ public class Commands {
             iterator++;
         }
 
-        logINFO.info("Unsubscribed "+ iterator + " command(s)");
+        log.info("Unsubscribed "+ iterator + " command(s)");
         return this;
     }
 
@@ -144,6 +145,14 @@ public class Commands {
                 requestBuilder(splitLootCommand, "Split Loot");
 
         if(!listOfCommands.contains(setSplitLoot)) listOfCommands.add(setSplitLoot);
+        return this;
+    }
+
+    public Commands setRegistration() {
+        ApplicationCommandRequest setRegCmd =
+                requestBuilder(registerCommand, "Register character to discord user", "Character name", ApplicationCommandOption.Type.STRING);
+
+        if(!listOfCommands.contains(setRegCmd)) listOfCommands.add(setRegCmd);
         return this;
     }
 
