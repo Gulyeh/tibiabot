@@ -6,7 +6,6 @@ import com.google.gson.JsonDeserializer;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
-import discord4j.common.util.Snowflake;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.codecs.pojo.PojoCodecProvider;

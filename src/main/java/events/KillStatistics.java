@@ -1,7 +1,9 @@
 package events;
 
-import cache.guilds.GuildCacheData;
+import apis.tibiaData.model.killstats.KillingStatsData;
+import apis.tibiaData.model.killstats.KillingStatsModel;
 import cache.enums.EventTypes;
+import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -18,8 +20,6 @@ import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.killStatistics.KillStatisticsService;
 import services.killStatistics.models.BossType;
-import apis.tibiaData.model.killstats.KillingStatsData;
-import apis.tibiaData.model.killstats.KillingStatsModel;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -95,11 +95,11 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.channelsCache
                     .get(guildId)
                     .get(EventTypes.KILLED_BOSSES);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -125,7 +125,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!GuildCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.worldCache.containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();

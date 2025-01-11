@@ -2,7 +2,6 @@ package apis.tibiaTrade;
 
 import apis.WebClient;
 import apis.tibiaTrade.model.prices.PriceModel;
-import apis.tibiaTrade.model.prices.Prices;
 import apis.tibiaTrade.model.world.TibiaTradeWorldsModel;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
 

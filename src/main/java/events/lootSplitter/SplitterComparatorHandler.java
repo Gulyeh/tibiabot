@@ -1,8 +1,6 @@
 package events.lootSplitter;
 
-import com.google.common.collect.Iterables;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -19,7 +17,6 @@ import services.lootSplitter.model.HuntComparatorModel;
 import services.lootSplitter.model.SplitLootModel;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import static discord.Connector.client;

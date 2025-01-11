@@ -19,7 +19,7 @@ import static mongo.GuildDocumentActions.getDocument;
 public final class GuildCaching extends Singleton implements Cachable {
     private final GuildCacheInitializer initializer;
 
-    private GuildCaching() {
+    public GuildCaching() {
         initializer = new GuildCacheInitializer();
     }
 

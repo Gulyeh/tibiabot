@@ -1,7 +1,9 @@
 package events;
 
-import cache.guilds.GuildCacheData;
+import apis.tibiaTrade.model.prices.PriceModel;
+import apis.tibiaTrade.model.prices.Prices;
 import cache.enums.EventTypes;
+import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -17,8 +19,6 @@ import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
-import apis.tibiaTrade.model.prices.PriceModel;
-import apis.tibiaTrade.model.prices.Prices;
 import services.worlds.enums.BattleEyeType;
 
 import java.util.ArrayList;
@@ -77,13 +77,13 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
     }
 
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if(guildIds.isEmpty()) return;
 
         PriceModel prices = tibiaCoinsService.getPrices();
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.channelsCache
                     .get(guildId)
                     .get(EventTypes.TIBIA_COINS);
             if(channel == null || channel.asString().isEmpty()) continue;

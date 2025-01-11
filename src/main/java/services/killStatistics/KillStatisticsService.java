@@ -1,13 +1,13 @@
 package services.killStatistics;
 
-import cache.guilds.GuildCacheData;
-import discord4j.common.util.Snowflake;
-import lombok.extern.slf4j.Slf4j;
 import apis.tibiaData.TibiaDataAPI;
-import interfaces.Cacheable;
-import services.killStatistics.models.BossModel;
 import apis.tibiaData.model.killstats.KillingStatsData;
 import apis.tibiaData.model.killstats.KillingStatsModel;
+import cache.guilds.GuildCacheData;
+import discord4j.common.util.Snowflake;
+import interfaces.Cacheable;
+import lombok.extern.slf4j.Slf4j;
+import services.killStatistics.models.BossModel;
 import services.killStatistics.pageObjects.GuildStatsBosses;
 
 import java.util.List;
@@ -29,7 +29,7 @@ public class KillStatisticsService implements Cacheable {
     }
 
     public KillingStatsModel getStatistics(Snowflake guildId) {
-        String world = GuildCacheData.getWorldCache().get(guildId);
+        String world = GuildCacheData.worldCache.get(guildId);
         if(mapCache.containsKey(world)) {
             log.info("Getting Killed bosses from cache");
             return mapCache.get(world);

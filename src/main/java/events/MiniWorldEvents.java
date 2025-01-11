@@ -1,8 +1,8 @@
 package events;
 
+import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
 import cache.worlds.WorldsCache;
-import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -119,7 +119,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!GuildCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.worldCache.containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
@@ -131,10 +131,10 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
 
     @Override
     protected void executeEventProcess() {
-        for (Snowflake guildId : GuildCacheData.getChannelsCache().keySet()) {
+        for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
             if(!serverStatusChangedForServer(guildId)) continue;
 
-            Snowflake channel = GuildCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.channelsCache
                     .get(guildId)
                     .get(EventTypes.MINI_WORLD_CHANGES);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -159,7 +159,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     private boolean serverStatusChangedForServer(Snowflake guildId) {
         if(beforeWorldsStatus.isEmpty()) return true;
 
-        String serverName = GuildCacheData.getWorldCache().get(guildId);
+        String serverName = GuildCacheData.worldCache.get(guildId);
         Status actualStatus = WorldsCache.getWorldsStatus().get(serverName);
         Status beforeStatus = beforeWorldsStatus.get(serverName);
 

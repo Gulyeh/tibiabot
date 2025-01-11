@@ -1,14 +1,14 @@
 package services.houses;
 
+import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.house.HouseInfo;
 import apis.tibiaData.model.houses.HouseData;
+import apis.tibiaData.model.houses.HousesModel;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
-import lombok.extern.slf4j.Slf4j;
-import apis.tibiaData.TibiaDataAPI;
 import interfaces.Cacheable;
+import lombok.extern.slf4j.Slf4j;
 import services.houses.enums.Towns;
-import apis.tibiaData.model.houses.HousesModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +29,7 @@ public class HousesService implements Cacheable {
     }
 
     public List<HousesModel> getHouses(Snowflake guildId) {
-        String world = GuildCacheData.getWorldCache().get(guildId);
+        String world = GuildCacheData.worldCache.get(guildId);
         List<HousesModel> list = new ArrayList<>();
 
         if(housesCache.containsKey(world)) {

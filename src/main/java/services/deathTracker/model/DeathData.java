@@ -1,10 +1,10 @@
 package services.deathTracker.model;
 
 import apis.tibiaData.model.charactersOnline.CharacterData;
-import lombok.Getter;
 import apis.tibiaData.model.deathtracker.DeathResponse;
 import apis.tibiaData.model.deathtracker.GuildData;
 import apis.tibiaData.model.deathtracker.Killer;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;

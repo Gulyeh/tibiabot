@@ -1,10 +1,8 @@
 package services.events;
 
+import interfaces.Cacheable;
 import lombok.extern.slf4j.Slf4j;
 import services.events.pageObjects.TibiaEventsCalendar;
-import interfaces.Cacheable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.Configurator;
 import utils.Image;
 

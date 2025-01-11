@@ -1,7 +1,5 @@
 package discord;
 
-import lombok.extern.slf4j.Slf4j;
-import utils.Configurator;
 import discord.enums.Statuses;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
@@ -10,8 +8,8 @@ import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.discordjson.Id;
 import events.interfaces.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import utils.Configurator;
 
 @Slf4j
 public final class Connector {

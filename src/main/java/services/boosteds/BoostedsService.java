@@ -2,9 +2,10 @@ package services.boosteds;
 
 import apis.WebClient;
 import apis.tibiaLabs.TibiaLabsAPI;
-import services.boosteds.enums.Boosteds;
 import apis.tibiaLabs.model.BoostedModel;
 import interfaces.Cacheable;
+import services.boosteds.enums.Boosteds;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BoostedsService extends WebClient implements Cacheable {

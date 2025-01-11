@@ -1,7 +1,6 @@
 package services.worlds;
 
 import abstracts.Singleton;
-import lombok.extern.slf4j.Slf4j;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.worlds.WorldData;
 import apis.tibiaData.model.worlds.WorldModel;
@@ -9,6 +8,7 @@ import apis.tibiaTrade.TibiaTradeAPI;
 import apis.tibiaTrade.model.world.TibiaTradeWorld;
 import apis.tibiaTrade.model.world.TibiaTradeWorldsModel;
 import interfaces.Cacheable;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
@@ -19,7 +19,7 @@ public final class WorldsService extends Singleton implements Cacheable {
     private final TibiaDataAPI tibiaDataAPI;
     private final TibiaTradeAPI tibiaTradeAPI;
 
-    private WorldsService() {
+    public WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
         tibiaTradeAPI = new TibiaTradeAPI();
         clearCache();

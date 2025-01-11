@@ -2,7 +2,6 @@ package apis.tibiaData.model.deathtracker;
 
 import lombok.Getter;
 
-import java.beans.Encoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 

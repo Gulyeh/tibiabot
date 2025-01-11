@@ -1,8 +1,10 @@
 package events;
 
+import apis.tibiaData.model.worlds.WorldData;
+import apis.tibiaData.model.worlds.WorldModel;
+import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
 import cache.worlds.WorldsCache;
-import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -17,11 +19,11 @@ import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
-import apis.tibiaData.model.worlds.WorldData;
-import apis.tibiaData.model.worlds.WorldModel;
 import services.worlds.WorldsService;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
@@ -73,11 +75,11 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     protected void executeEventProcess() {
         WorldModel worlds = getAndCacheWorlds();
-        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.channelsCache
                     .get(guildId)
                     .get(EventTypes.SERVER_STATUS);
             if(channel == null || channel.asString().isEmpty()) continue;

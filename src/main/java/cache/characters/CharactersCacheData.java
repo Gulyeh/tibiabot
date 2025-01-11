@@ -10,8 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public final class CharactersCacheData {
-    @Getter
-    private static ConcurrentHashMap<String, Snowflake> registeredCharacters = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, Snowflake> registeredCharacters = new ConcurrentHashMap<>();
 
     public static void addRegisteredCharacter(Snowflake userId, String characterName) {
         if(characterName.isEmpty() || userId == null ) return;

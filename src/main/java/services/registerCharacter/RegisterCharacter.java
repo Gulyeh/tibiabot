@@ -4,7 +4,7 @@ import discord4j.common.util.Snowflake;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import static cache.characters.CharactersCacheData.addRegisteredCharacter;
-import static cache.characters.CharactersCacheData.getRegisteredCharacters;
+import static cache.characters.CharactersCacheData.registeredCharacters;
 
 public class RegisterCharacter {
 
@@ -13,7 +13,7 @@ public class RegisterCharacter {
     }
 
     public boolean isCharacterRegistered(String name) {
-        return getRegisteredCharacters().get(name) != null;
+        return registeredCharacters.get(name) != null;
     }
 
     public String generateRewriteKey(String name, Snowflake userId) throws Exception {

@@ -9,7 +9,9 @@ import interfaces.Cacheable;
 import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +38,7 @@ public class OnlineService implements Cacheable {
     }
 
     public List<OnlineModel> getOnlinePlayers(Snowflake guildId) {
-        String world = GuildCacheData.getWorldCache().get(guildId);
+        String world = GuildCacheData.worldCache.get(guildId);
         if(onlineCache.get(world) != null) return onlineCache.get(world);
         List<OnlineModel> online = new ArrayList<>();
         List<OnlineModel> onlineCacheData = charInfoCache.get(world) == null ? new ArrayList<>() : charInfoCache.get(world);

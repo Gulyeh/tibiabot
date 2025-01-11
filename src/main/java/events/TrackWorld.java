@@ -1,5 +1,6 @@
 package events;
 
+import apis.tibiaData.model.worlds.WorldModel;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -10,7 +11,6 @@ import events.utils.EventName;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
-import apis.tibiaData.model.worlds.WorldModel;
 import services.worlds.WorldsService;
 
 import static builders.commands.names.CommandsNames.worldCommand;

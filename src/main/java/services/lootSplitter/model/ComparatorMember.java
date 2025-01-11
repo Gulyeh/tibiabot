@@ -2,7 +2,6 @@ package services.lootSplitter.model;
 
 import lombok.Getter;
 import lombok.Setter;
-import utils.Emojis;
 
 @Getter
 @Setter

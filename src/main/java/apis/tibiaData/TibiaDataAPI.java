@@ -1,16 +1,16 @@
 package apis.tibiaData;
 
 import apis.WebClient;
+import apis.tibiaData.model.charactersOnline.CharacterData;
+import apis.tibiaData.model.charactersOnline.World;
 import apis.tibiaData.model.deathtracker.CharacterResponse;
 import apis.tibiaData.model.house.HouseBaseInfo;
 import apis.tibiaData.model.house.HouseInfo;
 import apis.tibiaData.model.houses.HouseBase;
 import apis.tibiaData.model.houses.HousesModel;
-import apis.tibiaData.model.charactersOnline.World;
 import apis.tibiaData.model.killstats.KillingStatsBase;
 import apis.tibiaData.model.killstats.KillingStatsModel;
 import apis.tibiaData.model.worlds.WorldModel;
-import apis.tibiaData.model.charactersOnline.CharacterData;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;

@@ -7,8 +7,6 @@ import discord4j.core.object.component.Button;
 import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.object.entity.channel.MessageChannel;
-import discord4j.core.spec.EmbedCreateFields;
 import discord4j.discordjson.json.ComponentData;
 import lombok.Getter;
 import observers.InteractionObserver;

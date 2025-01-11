@@ -2,21 +2,15 @@ package cache.guilds;
 
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
-import lombok.Getter;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Methods.getKey;
 
 public final class GuildCacheData {
-    @Getter
-    private static ConcurrentHashMap<Snowflake, String> worldCache = new ConcurrentHashMap<>();
-    @Getter
-    private static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
-    @Getter
-    private static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
-
-
+    public static ConcurrentHashMap<Snowflake, String> worldCache = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
         if(guildId == null || worldName.isEmpty()) return;

@@ -8,8 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.lang.Character.isUpperCase;
-
 @Getter
 @Setter
 public class KillingStatsModel {

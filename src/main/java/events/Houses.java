@@ -1,7 +1,9 @@
 package events;
 
-import cache.guilds.GuildCacheData;
+import apis.tibiaData.model.houses.HouseData;
+import apis.tibiaData.model.houses.HousesModel;
 import cache.enums.EventTypes;
+import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -17,8 +19,6 @@ import events.utils.EventName;
 import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import services.houses.HousesService;
-import apis.tibiaData.model.houses.HouseData;
-import apis.tibiaData.model.houses.HousesModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,11 +103,11 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.getChannelsCache().keySet();
+        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.getChannelsCache()
+            Snowflake channel = GuildCacheData.channelsCache
                     .get(guildId)
                     .get(EventTypes.HOUSES);
             if(channel == null || channel.asString().isEmpty()) continue;
@@ -128,7 +128,7 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
         Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
-        if (!GuildCacheData.getWorldCache().containsKey(guildId))
+        if (!GuildCacheData.worldCache.containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();

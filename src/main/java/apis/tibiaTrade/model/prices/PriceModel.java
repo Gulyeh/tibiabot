@@ -1,6 +1,7 @@
 package apis.tibiaTrade.model.prices;
 
 import lombok.Getter;
+
 import java.util.List;
 
 @Getter

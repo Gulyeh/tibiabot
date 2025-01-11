@@ -2,7 +2,8 @@ package apis.tibiaData.model.deathtracker;
 
 import lombok.Getter;
 
-import java.time.*;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Getter

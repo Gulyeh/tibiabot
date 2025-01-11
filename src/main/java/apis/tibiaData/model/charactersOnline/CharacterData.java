@@ -1,9 +1,9 @@
 package apis.tibiaData.model.charactersOnline;
 
+import apis.tibiaData.enums.Vocation;
 import interfaces.CharacterLink;
 import lombok.Getter;
 import lombok.Setter;
-import apis.tibiaData.enums.Vocation;
 
 import java.time.LocalDateTime;
 

@@ -13,7 +13,6 @@ import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
-import events.abstracts.EmbeddableEvent;
 import events.abstracts.InteractionEvent;
 import events.utils.EventName;
 import observers.InteractionObserver;
@@ -25,7 +24,10 @@ import services.lootSplitter.model.TransferData;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import static builders.commands.names.CommandsNames.splitLootCommand;
 import static discord.Connector.client;
