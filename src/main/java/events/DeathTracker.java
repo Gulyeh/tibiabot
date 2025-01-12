@@ -17,6 +17,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
@@ -29,8 +30,10 @@ import java.util.Set;
 import static builders.commands.names.CommandsNames.deathsCommand;
 import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
+import static utils.Methods.formatToDiscordLink;
 import static utils.Methods.formatWikiGifLink;
 
+@Slf4j
 public class DeathTracker extends EmbeddableEvent implements Channelable, Activable {
 
     private final DeathTrackerService deathTrackerService;
@@ -49,7 +52,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -58,14 +61,14 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         while (true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
                 deathTrackerService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
                 synchronized (this) {
                     wait(300000);
@@ -76,7 +79,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
     @Override
     public String getEventName() {
-        return EventName.getDeathTracker();
+        return EventName.deathTracker;
     }
 
     @Override
@@ -118,7 +121,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
     private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
 
@@ -137,7 +140,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
     private String getTitle(DeathData data) {
         String icon = data.getCharacter().getVocation().getIcon();
         String name = data.getCharacter().getName();
-        return "### " + icon + " [" + name + "]("+ data.getCharacter().getCharacterLink() + ") " + icon;
+        return "### " + icon + " " + formatToDiscordLink(name, data.getCharacter().getCharacterLink()) + " " + icon;
     }
 
     private String getDescription(DeathData data) {
@@ -147,11 +150,9 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         if(data.getGuild().getName() != null) {
             builder.append(":headstone: ")
                     .append(data.getGuild().getRank())
-                    .append(" of the [")
-                    .append(data.getGuild().getName())
-                    .append("](")
-                    .append(data.getGuild().getGuildLink())
-                    .append(")\n");
+                    .append(" of the ")
+                    .append(formatToDiscordLink(data.getGuild().getName(), data.getGuild().getGuildLink()))
+                    .append("\n");
         }
         builder.append("Died ")
                 .append("<t:")

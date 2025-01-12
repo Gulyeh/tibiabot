@@ -7,15 +7,15 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum EventTypes {
-    TIBIA_COINS(EventName.getTibiaCoins()),
-    KILLED_BOSSES(EventName.getKillStatistics()),
-    HOUSES(EventName.getHouses()),
-    SERVER_STATUS(EventName.getServerStatus()),
-    MINI_WORLD_CHANGES(EventName.getMiniWorldChanges()),
-    EVENTS_CALENDAR(EventName.getEvents()),
-    DEATH_TRACKER(EventName.getDeathTracker()),
-    ONLINE_TRACKER(EventName.getOnlineTracker()),
-    BOOSTEDS(EventName.getBoosteds());
+    TIBIA_COINS(EventName.tibiaCoins),
+    KILLED_BOSSES(EventName.killStatistics),
+    HOUSES(EventName.houses),
+    SERVER_STATUS(EventName.serverStatus),
+    MINI_WORLD_CHANGES(EventName.miniWorldChanges),
+    EVENTS_CALENDAR(EventName.events),
+    DEATH_TRACKER(EventName.deathTracker),
+    ONLINE_TRACKER(EventName.onlineTracker),
+    BOOSTEDS(EventName.boosteds);
 
     private final String name;
 

@@ -8,6 +8,7 @@ import discord4j.core.object.entity.Message;
 import events.abstracts.EventsMethods;
 import events.interfaces.Activable;
 import events.utils.EventName;
+import lombok.extern.slf4j.Slf4j;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
@@ -18,6 +19,7 @@ import static cache.guilds.GuildCacheData.isGuildCached;
 import static discord.Connector.client;
 import static mongo.GuildDocumentActions.*;
 
+@Slf4j
 public class TrackWorld extends EventsMethods implements Activable {
 
     private WorldModel worlds;
@@ -28,12 +30,12 @@ public class TrackWorld extends EventsMethods implements Activable {
     }
 
     public void activatableEvent() {
-        logINFO.info("Getting available worlds for " + getEventName());
+        log.info("Getting available worlds for " + getEventName());
 
         try {
             worlds = worldsService.getWorlds();
         } catch (Exception e) {
-            logINFO.warn("Error while getting worlds: " + e.getMessage());
+            log.warn("Error while getting worlds: " + e.getMessage());
         }
     }
 
@@ -47,7 +49,7 @@ public class TrackWorld extends EventsMethods implements Activable {
 
                 return setWorld(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).subscribe();
@@ -55,7 +57,7 @@ public class TrackWorld extends EventsMethods implements Activable {
 
     @Override
     public String getEventName() {
-        return EventName.getTrackWorld();
+        return EventName.trackWorld;
     }
 
     private Mono<Message> setWorld(ChatInputInteractionEvent event) {
@@ -88,18 +90,20 @@ public class TrackWorld extends EventsMethods implements Activable {
                 model.setChannels(new ChannelModel());
                 model.setGuildId(guildId.asString());
                 model.setWorld(serverName);
-                if(!insertDocuments(createDocument(model))) throw new Exception("Could not save model to database");
+                if(!guildDocumentActions.insertDocuments(guildDocumentActions.createDocument(model)))
+                    throw new Exception("Could not save model to database");
             } else {
                 GuildModel model = getGuild(guildId);
                 model.setWorld(serverName);
-                if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
+                if(!guildDocumentActions.replaceDocument(guildDocumentActions.createDocument(model)))
+                    throw new Exception("Could not update model in database");
             }
 
             GuildCacheData.addToWorldsCache(guildId, serverName);
-            logINFO.info("Saved server world");
+            log.info("Saved server world");
             return true;
         } catch (Exception e) {
-            logINFO.info("Could not save world: " + e.getMessage());
+            log.info("Could not save world: " + e.getMessage());
             return false;
         }
     }

@@ -4,15 +4,15 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import events.abstracts.EventsMethods;
 import events.utils.EventName;
+import lombok.extern.slf4j.Slf4j;
 import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
 
 import static builders.commands.names.CommandsNames.setMinimumDeathsLevelCommand;
 import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
-import static mongo.GuildDocumentActions.createDocument;
-import static mongo.GuildDocumentActions.replaceDocument;
 
+@Slf4j
 public class MinimumDeathLevel extends EventsMethods {
 
     @Override
@@ -24,7 +24,7 @@ public class MinimumDeathLevel extends EventsMethods {
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
                 return setLevel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).subscribe();
@@ -32,7 +32,7 @@ public class MinimumDeathLevel extends EventsMethods {
 
     @Override
     public String getEventName() {
-        return EventName.getMinimumDeathLevel();
+        return EventName.minimumDeathLevel;
     }
 
     private Mono<Message> setLevel(ChatInputInteractionEvent event) throws Exception {
@@ -43,7 +43,8 @@ public class MinimumDeathLevel extends EventsMethods {
         if(level < 8) return event.createFollowup("Level cannot be lower than 8");
 
         model.setDeathMinimumLevel(level);
-        if(!replaceDocument(createDocument(model))) throw new Exception("Could not update model in database");
+        if(!guildDocumentActions.replaceDocument(guildDocumentActions.createDocument(model)))
+            throw new Exception("Could not update model in database");
 
         addMinimumDeathLevelCache(getGuildId(event), level);
         return event.createFollowup("Set minimum death level to " + level);

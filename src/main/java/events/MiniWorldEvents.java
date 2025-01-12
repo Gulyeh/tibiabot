@@ -15,6 +15,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.miniWorldEvents.MiniWorldEventsService;
 import services.miniWorldEvents.models.MiniWorldEvent;
@@ -30,6 +31,7 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static utils.Methods.getFormattedDate;
 
+@Slf4j
 public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Activable {
 
     private final MiniWorldEventsService miniWorldEventsService;
@@ -52,7 +54,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -61,10 +63,10 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         while(true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
                 if(isAfterSaverSave()) {
                     miniWorldEventsService.clearCache();
                     beforeWorldsStatus.clear();
@@ -74,7 +76,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
                     executeEventProcess();
                 }
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
                 synchronized (this) {
                     wait(getWaitTime(300000));
@@ -85,7 +87,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
 
     private void processEmbeddableData(GuildMessageChannel channel, MiniWorldEventsModel model) {
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
 
@@ -153,7 +155,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
 
     @Override
     public String getEventName() {
-        return EventName.getMiniWorldChanges();
+        return EventName.miniWorldChanges;
     }
 
     private boolean serverStatusChangedForServer(Snowflake guildId) {

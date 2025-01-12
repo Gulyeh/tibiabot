@@ -1,12 +1,15 @@
 package events.lootSplitter;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ComponentData;
 import events.abstracts.InteractionEvent;
 import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 import services.lootSplitter.model.SplitLootModel;
 import services.lootSplitter.model.SplittingMember;
 import services.lootSplitter.model.TransferData;
@@ -22,6 +25,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static cache.characters.CharactersCacheData.getRegisteredCharacterUser;
+import static cache.characters.CharactersCacheData.isCharacterRegisteredToUser;
 import static discord.Connector.client;
 
 public class SplitterTransfersHandler extends InteractionEvent {
@@ -34,16 +39,21 @@ public class SplitterTransfersHandler extends InteractionEvent {
     @Override
     public void executeEvent() {
         client.on(ButtonInteractionEvent.class, event -> {
-            if (!event.getCustomId().contains(getButtonId()) || !observer.add(getMessage(event).getId())) return Mono.empty();
-            Message message = getMessage(event);
+            if (!event.getCustomId().contains(getButtonId())) return Mono.empty();
 
+            String id = getId(event),
+                    splitterName = id.split("_")[1];
+            if (!isCharacterRegisteredToUser(splitterName, getUserId(event)))
+                return event.reply("User who is registered to character **" + splitterName + "** can click this button only")
+                        .withEphemeral(true);
+
+            Message message = getMessage(event);
+            if(!observer.add(message.getId())) return Mono.empty();
             List<ComponentData> interactionButtons = getInteractionButtons(message);
             message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(interactionButtons, true)))
                     .subscribe();
 
             try {
-                String id = getId(event),
-                        splitterName = id.split("_")[1];
                 boolean isTimeout = isTimeout(event);
                 String response = buildSplittingResponse(id, splitterName);
 
@@ -66,10 +76,10 @@ public class SplitterTransfersHandler extends InteractionEvent {
         }).subscribe();
     }
 
-    public List<Button> getSplittingButtons(SplitLootModel model) {
+    public List<Button> getSplittingButtons(SplitLootModel model, Snowflake guildId) {
         List<Button> buttons = new ArrayList<>();
         for(SplittingMember member : model.getMembers()) {
-            if(member.getTransfers().isEmpty()) continue;
+            if(member.getTransfers().isEmpty() || !isRegisteredCharacterInGuild(member.getName(), guildId)) continue;
             buttons.add(Button.primary(createButtonId(member),
                     member.getName() + " has " + member.getTransfers().size() + " transfer(s) pending"));
         }
@@ -106,12 +116,13 @@ public class SplitterTransfersHandler extends InteractionEvent {
     private Map<String, String> splitInteractionIdToTransfers(String customId) {
         Map<String, String> map = new HashMap<>();
 
-        Pattern pattern = Pattern.compile("\\[(\\w+_\\d+)]");
+        Pattern pattern = Pattern.compile("\\[(.+?)_(\\d+)]");
         Matcher matcher = pattern.matcher(customId);
 
         while (matcher.find()) {
-            String[] transfer = matcher.group(1).split("_");
-            map.put(transfer[0], transfer[1]);
+            String transfer = matcher.group(1);
+            String value = matcher.group(2);
+            map.put(transfer, value);
         }
 
         return map;
@@ -134,6 +145,12 @@ public class SplitterTransfersHandler extends InteractionEvent {
         Instant msgDate = event.getMessage().get().getTimestamp();
         return msgDate.plus(Duration.ofDays(interactionTimeoutDays))
                 .isBefore(LocalDateTime.now().toInstant(ZoneOffset.UTC));
+    }
+
+    private boolean isRegisteredCharacterInGuild(String name, Snowflake guildId) {
+        Tuple2<String, Snowflake> id = getRegisteredCharacterUser(name);
+        if(id == null) return false;
+        return userExistsInGuild(id.getT2(), guildId);
     }
 
     @Override

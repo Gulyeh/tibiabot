@@ -1,32 +1,18 @@
 package events.utils;
 
-import lombok.Getter;
-
 public final class EventName {
-    @Getter
-    private static final String tibiaCoins = "Tibia Coins Event";
-    @Getter
-    private static final String houses = "Houses Event";
-    @Getter
-    private static final String serverStatus = "Server Status Event";
-    @Getter
-    private static final String events = "Events Calendar Event";
-    @Getter
-    private static final String killStatistics = "Kill Statistics Event";
-    @Getter
-    private static final String trackWorld = "Track World Event";
-    @Getter
-    private static final String miniWorldChanges = "Mini World Changes Event";
-    @Getter
-    private static final String boosteds = "Boosteds Event";
-    @Getter
-    private static final String deathTracker = "Death Tracker Event";
-    @Getter
-    private static final String minimumDeathLevel = "Minimum Death Level Event";
-    @Getter
-    private static final String onlineTracker = "Online Tracker Event";
-    @Getter
-    private static final String lootSplitter = "Loot Splitter Event";
-    @Getter
-    private static final String registerCharacter = "Register Character Event";
+    public static final String tibiaCoins = "Tibia Coins Event";
+    public static final String houses = "Houses Event";
+    public static final String serverStatus = "Server Status Event";
+    public static final String events = "Events Calendar Event";
+    public static final String killStatistics = "Kill Statistics Event";
+    public static final String trackWorld = "Track World Event";
+    public static final String miniWorldChanges = "Mini World Changes Event";
+    public static final String boosteds = "Boosteds Event";
+    public static final String deathTracker = "Death Tracker Event";
+    public static final String minimumDeathLevel = "Minimum Death Level Event";
+    public static final String onlineTracker = "Online Tracker Event";
+    public static final String lootSplitter = "Loot Splitter Event";
+    public static final String registerCharacter = "Register Character Event";
+    public static final String unregisterCharacter = "Unregister Character Event";
 }

@@ -7,6 +7,9 @@ import events.*;
 import events.guildEvents.RemovedChannel;
 import events.guildEvents.RemovedGuild;
 import events.lootSplitter.LootSplitter;
+import events.registration.CharacterRegistration;
+import events.registration.CharacterUnregistration;
+import mongo.MongoConnector;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
 import services.events.EventsService;
@@ -24,6 +27,7 @@ import static discord.Connector.client;
 public class Main {
     public static void main(String[] args) {
         Connector.connect();
+        MongoConnector.connect();
         initializeCache();
         initializeServices();
         buildCommands();
@@ -51,7 +55,7 @@ public class Main {
 
         // Add listeners for specific events
         List.of(new MinimumDeathLevel(), new LootSplitter(), new RemovedChannel(), new RemovedGuild(),
-                        new CharacterRegistration())
+                        new CharacterRegistration(), new CharacterUnregistration())
                 .forEach(Connector::addListener);
     }
 
@@ -70,6 +74,7 @@ public class Main {
                 .setOnlineTracker()
                 .setSplitLoot()
                 .setRegistration()
+                .setUnregistration()
                 .clearUnusedCommands()
                 .build();
     }

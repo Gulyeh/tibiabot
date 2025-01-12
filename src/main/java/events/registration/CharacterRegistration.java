@@ -1,21 +1,28 @@
-package events;
+package events.registration;
 
+import apis.tibiaData.TibiaDataAPI;
+import apis.tibiaData.model.deathtracker.CharacterInfo;
+import apis.tibiaData.model.deathtracker.CharacterResponse;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import events.abstracts.EventsMethods;
 import events.utils.EventName;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import services.registerCharacter.RegisterCharacter;
+import services.registration.RegisterCharacter;
 
 import static builders.commands.names.CommandsNames.registerCommand;
 import static discord.Connector.client;
 
+@Slf4j
 public class CharacterRegistration extends EventsMethods {
     private final RegisterCharacter registerService;
+    private final TibiaDataAPI api;
 
     public CharacterRegistration() {
         registerService = new RegisterCharacter();
+        api = new TibiaDataAPI();
     }
 
     @Override
@@ -26,7 +33,7 @@ public class CharacterRegistration extends EventsMethods {
                 event.deferReply().withEphemeral(true).subscribe();
                 return registerCharacter(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).subscribe();
@@ -35,23 +42,28 @@ public class CharacterRegistration extends EventsMethods {
     private Mono<Message> registerCharacter(ChatInputInteractionEvent event) throws Exception {
         String characterName = getTextParameter(event);
         Snowflake userId = getUserId(event);
-        if(!registerService.checkCharacterExists(characterName))
-            return event.createFollowup("**" + characterName + "** does not exist");
+        CharacterResponse character = api.getCharacterData(characterName);
+
+        if(character.getCharacter() == null)
+            return event.createFollowup("Character **" + characterName + "** does not exist");
+
+        CharacterInfo charInfo = character.getCharacter().getCharacter();
+        characterName = charInfo.getName();
 
         boolean isRegistered = registerService.isCharacterRegistered(characterName);
-        boolean keyExists = registerService.checkRewriteKey(characterName, userId);
+        boolean keyExists = registerService.checkRewriteKey(characterName, userId, charInfo);
         if(isRegistered && !keyExists) {
             String key = registerService.generateRewriteKey(characterName, userId);
             return event.createFollowup("Character **" + characterName + "** has been already registered.\nIf you want to re-register character, " +
                     "add ``" + key + "`` to character comment section");
         }
 
-        registerService.registerCharacter(characterName, userId);
+        registerService.registerCharacter(charInfo, userId);
         return event.createFollowup("Registered character **" + characterName + "** successfully");
     }
 
     @Override
     public String getEventName() {
-        return EventName.getRegisterCharacter();
+        return EventName.registerCharacter;
     }
 }

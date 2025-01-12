@@ -15,6 +15,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
 
@@ -22,7 +23,9 @@ import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static utils.Emojis.getBlankEmoji;
+import static utils.Methods.formatToDiscordLink;
 
+@Slf4j
 public class Boosteds extends ServerSaveEvent implements Channelable, Activable {
     private final BoostedsService boostedsService;
 
@@ -41,7 +44,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -50,14 +53,14 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         while (true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
                 boostedsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
                 synchronized (this) {
                     wait(getWaitTime());
@@ -88,7 +91,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
 
     private void processEmbeddableData(GuildMessageChannel channel, BoostedModel model) {
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
 
@@ -105,7 +108,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
                     null,
                     model.getBoostedTypeText(),
                     "### " + getBlankEmoji() + getBlankEmoji() +
-                            ":star: [" + model.getName() + "](" + model.getBoosted_data_link() + ")",
+                            ":star: " + formatToDiscordLink(model.getName(), model.getBoosted_data_link()),
                     "",
                     model.getIcon_link(),
                     getRandomColor());
@@ -132,6 +135,6 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
 
     @Override
     public String getEventName() {
-        return EventName.getBoosteds();
+        return EventName.boosteds;
     }
 }

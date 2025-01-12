@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class WorldsCache {
     @Getter
-    private static ConcurrentHashMap<String, Status> worldsStatus = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Status> worldsStatus = new ConcurrentHashMap<>();
 
     public static void setWorldsStatus(WorldModel worlds) {
         for(WorldData world : worlds.getWorlds().getRegular_worlds()) {

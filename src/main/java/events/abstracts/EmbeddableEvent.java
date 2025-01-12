@@ -5,12 +5,14 @@ import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.MessageData;
 import discord4j.rest.util.Color;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+@Slf4j
 public abstract class EmbeddableEvent extends ProcessEvent {
     protected Color getRandomColor() {
         Random rand = new Random();
@@ -34,7 +36,7 @@ public abstract class EmbeddableEvent extends ProcessEvent {
 
             return sentMessages;
         } catch (Exception msg) {
-            logINFO.info("Could not send embedded messages - " + msg);
+            log.info("Could not send embedded messages - " + msg);
             return new ArrayList<>();
         }
     }

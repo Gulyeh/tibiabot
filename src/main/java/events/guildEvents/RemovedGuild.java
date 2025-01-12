@@ -3,10 +3,12 @@ package events.guildEvents;
 import discord4j.core.event.domain.guild.GuildDeleteEvent;
 import discord4j.core.event.domain.guild.MemberLeaveEvent;
 import events.abstracts.DiscordEvent;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 import static discord.Connector.client;
 
+@Slf4j
 public class RemovedGuild extends DiscordEvent {
     @Override
     public void executeEvent() {
@@ -14,7 +16,7 @@ public class RemovedGuild extends DiscordEvent {
             try {
                 removeGuild(event.getGuildId());
             } catch (Exception e) {
-                logINFO.info("Something went wrong during GuildDeleteEvent");
+                log.info("Something went wrong during GuildDeleteEvent");
             }
             return Mono.empty();
         }).subscribe();
@@ -24,7 +26,7 @@ public class RemovedGuild extends DiscordEvent {
                 if(event.getUser().getId().equals(client.getSelfId()))
                     removeGuild(event.getGuildId());
             } catch (Exception e) {
-                logINFO.info("Something went wrong during MemberLeaveEvent");
+                log.info("Something went wrong during MemberLeaveEvent");
             }
             return Mono.empty();
         }).subscribe();

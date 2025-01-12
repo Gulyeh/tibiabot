@@ -1,5 +1,6 @@
 package services.killStatistics.pageObjects;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -11,13 +12,9 @@ import webDriver.Driver;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class GuildStatsBosses extends Driver {
-
     private List<BossModel> listBosses;
-    private final Logger logINFO = LoggerFactory.getLogger(GuildStatsBosses.class);
-
-    public GuildStatsBosses() {
-    }
 
 
     @FindBy(xpath = "//tbody//tr")
@@ -41,7 +38,7 @@ public class GuildStatsBosses extends Driver {
             openWebsite("https://guildstats.eu/bosses?world=" + world + "&monsterName=&bossType=3&rook=0");
             listBosses.addAll(getDisplayedBosses());
         } catch (Exception e) {
-            logINFO.info("COULD NOT GET DATA FROM PAGE: " + e.getMessage());
+            log.info("COULD NOT GET DATA FROM PAGE: " + e.getMessage());
         } finally {
             closeDriver();
         }

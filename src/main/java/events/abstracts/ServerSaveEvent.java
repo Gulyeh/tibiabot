@@ -1,9 +1,12 @@
 package events.abstracts;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public abstract class ServerSaveEvent extends EmbeddableEvent {
     private LocalDateTime serverSaveTime;
 
@@ -20,7 +23,7 @@ public abstract class ServerSaveEvent extends EmbeddableEvent {
 
         long timeLeft = now.until(serverSaveTime, ChronoUnit.MILLIS);
         if(timeLeft < specifiedMillis) {
-            logINFO.info(TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) +
+            log.info(TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) +
                     " minutes left to server save! Initial specified time to wait was: " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(specifiedMillis) + "min");
         }
 
@@ -31,7 +34,7 @@ public abstract class ServerSaveEvent extends EmbeddableEvent {
         LocalDateTime now = LocalDateTime.now();
         if(now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime)) serverSaveTime = serverSaveTime.plusDays(1);
         long timeLeft = now.until(serverSaveTime, ChronoUnit.MILLIS);
-        logINFO.info(TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes left to server save!");
+        log.info(TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes left to server save!");
         return timeLeft;
     }
 

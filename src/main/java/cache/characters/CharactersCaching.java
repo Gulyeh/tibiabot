@@ -5,6 +5,7 @@ import cache.interfaces.Cachable;
 import discord4j.common.util.Snowflake;
 import lombok.extern.slf4j.Slf4j;
 import mongo.CharactersDocumentActions;
+import mongo.GuildDocumentActions;
 import mongo.MongoConnector;
 import mongo.models.CharacterModel;
 
@@ -14,6 +15,12 @@ import static cache.characters.CharactersCacheData.addRegisteredCharacter;
 
 @Slf4j
 public class CharactersCaching extends Singleton implements Cachable {
+    protected final CharactersDocumentActions charactersDocumentActions;
+
+    public CharactersCaching() {
+        charactersDocumentActions = CharactersDocumentActions.getInstance();
+    }
+
     public static CharactersCaching getInstance() {
         return getInstance(CharactersCaching.class);
     }
@@ -21,7 +28,6 @@ public class CharactersCaching extends Singleton implements Cachable {
     @Override
     public void refreshCache() {
         new Thread(() -> {
-            MongoConnector.connect();
             while (true) {
                 try {
                     cacheCharacterData();
@@ -37,12 +43,12 @@ public class CharactersCaching extends Singleton implements Cachable {
     private void cacheCharacterData() {
         List<CharacterModel> characters = fetchCharactersModels();
         CharactersCacheData.clearCache(characters);
-        characters.forEach(x -> addRegisteredCharacter(Snowflake.of(x.getUserId()), x.getCharacterName()));
+        characters.forEach(x -> addRegisteredCharacter(Snowflake.of(x.getUser()), x.getCharacter()));
     }
 
     private List<CharacterModel> fetchCharactersModels() {
         try {
-            return CharactersDocumentActions.getDocuments(CharacterModel.class);
+            return charactersDocumentActions.getDocuments();
         } catch (Exception e) {
             log.error("Failed to fetch characters models", e);
             return List.of();

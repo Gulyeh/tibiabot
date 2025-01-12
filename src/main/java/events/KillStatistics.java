@@ -17,6 +17,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.killStatistics.KillStatisticsService;
 import services.killStatistics.models.BossType;
@@ -33,6 +34,7 @@ import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 
+@Slf4j
 public class KillStatistics extends EmbeddableEvent implements Channelable, Activable {
 
     private final KillStatisticsService killStatisticsService;
@@ -51,7 +53,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -60,12 +62,12 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         long timeLeft = 0;
 
         while(true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
 
                 LocalDateTime now = LocalDateTime.now();
                 int expectedHour = 5;
@@ -83,9 +85,9 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
                 killStatisticsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
-                logINFO.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
+                log.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
                 synchronized (this) {
                     wait(timeLeft);
                 }
@@ -116,7 +118,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
 
     @Override
     public String getEventName() {
-        return EventName.getKillStatistics();
+        return EventName.killStatistics;
     }
 
     @Override
@@ -140,7 +142,7 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
         deleteMessages(channel);
 
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
 

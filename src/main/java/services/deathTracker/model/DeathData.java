@@ -12,6 +12,8 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
+import static utils.Methods.formatToDiscordLink;
+
 @Getter
 public class DeathData {
     private final CharacterData character;
@@ -35,7 +37,11 @@ public class DeathData {
 
     public List<String> getKilledByNames() {
         List<String> names = new ArrayList<>();
-        killedBy.forEach(x -> names.add(x.getName()));
+        killedBy.forEach(x -> {
+            String name = x.getName();
+            if(x.isPlayer()) name = formatToDiscordLink(name, x.getCharacterLink());
+            names.add(name);
+        });
         return names;
     }
 

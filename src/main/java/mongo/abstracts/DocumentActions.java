@@ -1,5 +1,6 @@
 package mongo.abstracts;
 
+import abstracts.Singleton;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
@@ -23,34 +24,31 @@ import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 import static utils.Configurator.config;
 
 @Slf4j
-public abstract class DocumentActions {
-    protected static String collectionName;
-    protected final static String id = "_id";
+public abstract class DocumentActions<T> extends Singleton {
+
+    protected String collectionName;
+    protected final String id = "_id";
 
     public DocumentActions(Configurator.ConfigPaths collection) {
         collectionName = config.get(collection.getName());
     }
 
-    protected static Document getDocument(String id, String fieldNameId) {
-        MongoCollection<Document> collection = getCollection();
 
-        Document doc = collection.find(Filters.eq(fieldNameId, id)).first();
-        if(doc == null || doc.isEmpty()) {
-            log.info("Could not find specified document");
-            return null;
-        }
-
-        return doc;
-    }
-
-    protected static <T> T getDocument(String id, String fieldNameId, Class<T> classType) {
+    protected T getDocument(String id, String fieldNameId, Class<T> classType) {
         Gson gson = getGson();
         Document doc = getDocument(id, fieldNameId);
         if(doc == null) return null;
         return gson.fromJson(doc.toJson(), classType);
     }
 
-    public static boolean insertDocuments(Document... document) {
+    protected Document getDocument(String id, String fieldNameId) {
+        MongoCollection<Document> collection = getCollection();
+        return collection.find(Filters.eq(fieldNameId, id)).first();
+    }
+
+    protected abstract Document createDocument(T model);
+
+    public boolean insertDocuments(Document... document) {
         try {
             MongoCollection<Document> collection = getCollection();
             if (document.length == 1) collection.insertOne(document[0]);
@@ -63,24 +61,24 @@ public abstract class DocumentActions {
         }
     }
 
-    public static <T> List<T> getDocuments(Class<T> classType) {
+    protected List<T> getDocuments(Class<T> className) {
         MongoCollection<Document> collection = getCollection();
         List<T> list = new ArrayList<>();
         Gson gson = getGson();
 
         try {
             for (Document document : collection.find()) {
-                T model = gson.fromJson(document.toJson(), classType);
+                T model = gson.fromJson(document.toJson(), className);
                 list.add(model);
             }
-        } catch (Exception ignore) {
-            log.info("Could not get data from database");
+        } catch (Exception e) {
+            log.info("Could not get data from database - " + e.getMessage());
         }
 
         return list;
     }
 
-    public static boolean deleteDocument(Document... documents) {
+    public boolean deleteDocument(Document... documents) {
         try {
             MongoCollection<Document> collection = getCollection();
             for (Document doc : documents) {
@@ -96,8 +94,7 @@ public abstract class DocumentActions {
         }
     }
 
-
-    public static boolean replaceDocument(Document document) {
+    public boolean replaceDocument(Document document) {
         try {
             MongoCollection<Document> collection = getCollection();
             Bson query = eq(id, document.get(id));
@@ -110,7 +107,7 @@ public abstract class DocumentActions {
         }
     }
 
-    protected static MongoCollection<Document> getCollection() {
+    protected MongoCollection<Document> getCollection() {
         var providers = fromRegistries(
                 MongoClientSettings.getDefaultCodecRegistry(),
                 fromProviders(PojoCodecProvider.builder()
@@ -119,8 +116,9 @@ public abstract class DocumentActions {
         return mongoDatabase.getCollection(collectionName).withCodecRegistry(providers);
     }
 
-    protected static Gson getGson() {
-        JsonDeserializer<ObjectId> dec = (jsonElement, type, jsonDeserializationContext) -> new ObjectId(jsonElement.getAsJsonObject().get("$oid").getAsString());
+    protected Gson getGson() {
+        JsonDeserializer<ObjectId> dec = (jsonElement, type, jsonDeserializationContext) ->
+                new ObjectId(jsonElement.getAsJsonObject().get("$oid").getAsString());
         return new GsonBuilder().registerTypeAdapter(ObjectId.class, dec).create();
     }
 }

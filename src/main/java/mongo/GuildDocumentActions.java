@@ -7,21 +7,32 @@ import mongo.models.GuildModel;
 import org.bson.Document;
 import utils.Configurator;
 
+import java.util.List;
+
 @Slf4j
-public final class GuildDocumentActions extends DocumentActions {
+public class GuildDocumentActions extends DocumentActions<GuildModel> {
+
     public GuildDocumentActions() {
         super(Configurator.ConfigPaths.DB_COLLECTION_GUILDS);
     }
 
-    public static Document getDocument(Snowflake guildId) {
+    public static GuildDocumentActions getInstance() {
+        return getInstance(GuildDocumentActions.class);
+    }
+
+    public GuildModel getDocumentModel(Snowflake guildId) {
+        return getDocument(guildId.asString(), "guildId", GuildModel.class);
+    }
+
+    public Document getDocument(Snowflake guildId) {
         return getDocument(guildId.asString(), "guildId");
     }
 
-    public static <T> T getDocument(Snowflake guildId, Class<T> classType) {
-        return getDocument(guildId.asString(), "guildId", classType);
+    public List<GuildModel> getDocuments() {
+        return getDocuments(GuildModel.class);
     }
 
-    public static Document createDocument(GuildModel model) {
+    public Document createDocument(GuildModel model) {
         Document doc = new Document()
                 .append("guildId", model.getGuildId())
                 .append("world", model.getWorld())

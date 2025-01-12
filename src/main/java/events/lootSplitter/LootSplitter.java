@@ -15,6 +15,7 @@ import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
 import events.abstracts.InteractionEvent;
 import events.utils.EventName;
+import lombok.extern.slf4j.Slf4j;
 import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
@@ -35,6 +36,7 @@ import static discord.messages.GetMessages.getChannelMessages;
 import static utils.Emojis.getBlankEmoji;
 import static utils.Emojis.getCoinEmoji;
 
+@Slf4j
 public class LootSplitter extends InteractionEvent {
     private final LootSplitterService service;
     private final SplitterTransfersHandler splitterTransfersHandler;
@@ -62,7 +64,7 @@ public class LootSplitter extends InteractionEvent {
                                         .placeholder("Party hunt analyzer").required(true))))
                         .build());
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return Mono.empty();
             }
         }).subscribe();
@@ -85,7 +87,7 @@ public class LootSplitter extends InteractionEvent {
 
                 SplitLootModel model = service.splitLoot(analyzer, spot);
                 analyzer = spot.isEmpty() ? analyzer : "Hunted on: " + spot + "\n\n" + analyzer;
-                List<Button> buttons = splitterTransfersHandler.getSplittingButtons(model);
+                List<Button> buttons = splitterTransfersHandler.getSplittingButtons(model, getGuildId(event));
 
                 if (isComparableData(event, model))
                     buttons.add(Button.primary(splitterComparatorHandler.getButtonId(), "Compare"));
@@ -240,7 +242,7 @@ public class LootSplitter extends InteractionEvent {
 
     @Override
     public String getEventName() {
-        return EventName.getLootSplitter();
+        return EventName.lootSplitter;
     }
 
     @Override

@@ -12,15 +12,15 @@ import mongo.models.GuildModel;
 import java.util.List;
 
 import static discord.Connector.client;
-import static mongo.GuildDocumentActions.deleteDocument;
-import static mongo.GuildDocumentActions.getDocument;
 
 @Slf4j
 public final class GuildCaching extends Singleton implements Cachable {
     private final GuildCacheInitializer initializer;
+    private final GuildDocumentActions guildDocumentActions;
 
     public GuildCaching() {
         initializer = new GuildCacheInitializer();
+        guildDocumentActions = GuildDocumentActions.getInstance();
     }
 
     public static GuildCaching getInstance() {
@@ -30,7 +30,6 @@ public final class GuildCaching extends Singleton implements Cachable {
     @Override
     public void refreshCache() {
         new Thread(() -> {
-            MongoConnector.connect();
             while (true) {
                 try {
                     cacheGuildData(initializer);
@@ -72,7 +71,7 @@ public final class GuildCaching extends Singleton implements Cachable {
 
     private List<GuildModel> fetchGuildModels() {
         try {
-            return GuildDocumentActions.getDocuments(GuildModel.class);
+            return guildDocumentActions.getDocuments();
         } catch (Exception e) {
             log.error("Failed to fetch guild models", e);
             return List.of();
@@ -91,7 +90,7 @@ public final class GuildCaching extends Singleton implements Cachable {
     }
 
     private void removeGuildDocument(GuildModel model) {
-        deleteDocument(getDocument(Snowflake.of(model.getGuildId())));
+        guildDocumentActions.deleteDocument(guildDocumentActions.getDocument(Snowflake.of(model.getGuildId())));
     }
 
     private void sleepUntilNextRefresh() {

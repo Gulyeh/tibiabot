@@ -14,6 +14,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.events.EventsService;
 
@@ -26,6 +27,7 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendImageMessage;
 
+@Slf4j
 public class EventsCalendar extends ProcessEvent implements Channelable, Activable {
 
     private final EventsService eventsService;
@@ -44,7 +46,7 @@ public class EventsCalendar extends ProcessEvent implements Channelable, Activab
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -52,18 +54,18 @@ public class EventsCalendar extends ProcessEvent implements Channelable, Activab
 
     @Override
     public String getEventName() {
-        return EventName.getEvents();
+        return EventName.events;
     }
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         long timeLeft = 0;
 
         while (true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
 
                 LocalDateTime now = LocalDateTime.now();
                 int expectedHour = 10;
@@ -81,9 +83,9 @@ public class EventsCalendar extends ProcessEvent implements Channelable, Activab
                 eventsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
-                logINFO.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
+                log.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
                 synchronized (this) {
                     wait(timeLeft);
                 }

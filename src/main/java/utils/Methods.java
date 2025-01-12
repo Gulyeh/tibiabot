@@ -30,6 +30,10 @@ public final class Methods {
         return "https://static.wikia.nocookie.net/tibia/images/2/27/Red_Skull_%28Item%29.gif/revision/latest/thumbnail/width/64/height/64?cb=20220107212229&path-prefix=en";
     }
 
+    public static String formatToDiscordLink(String title, String link) {
+        return "[" + title + "](" + link + ")";
+    }
+
     private static String replaceWikiChars(String name) {
         if(name.startsWith("a "))
             name = name.replace("a ", "");

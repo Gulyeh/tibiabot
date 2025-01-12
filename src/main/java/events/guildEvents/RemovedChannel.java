@@ -2,10 +2,12 @@ package events.guildEvents;
 
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
 import events.abstracts.DiscordEvent;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 import static discord.Connector.client;
 
+@Slf4j
 public class RemovedChannel extends DiscordEvent {
 
     @Override
@@ -14,7 +16,7 @@ public class RemovedChannel extends DiscordEvent {
             try {
                 removeChannel(event.getChannel().getGuildId(), event.getChannel().getId());
             } catch (Exception e) {
-                logINFO.info("Something went wrong during TextChannelDeleteEvent");
+                log.info("Something went wrong during TextChannelDeleteEvent");
             }
             return Mono.empty();
         }).subscribe();

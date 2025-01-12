@@ -18,6 +18,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.worlds.WorldsService;
 
@@ -30,6 +31,7 @@ import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 
+@Slf4j
 public class ServerStatus extends ServerSaveEvent implements Channelable, Activable {
     private final WorldsService worldsService;
 
@@ -47,7 +49,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -56,15 +58,15 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
 
         while(true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
                 worldsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
                 synchronized (this) {
                     wait(getWaitTime(300000));
@@ -96,7 +98,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     @Override
     public String getEventName() {
-        return EventName.getServerStatus();
+        return EventName.serverStatus;
     }
 
     private List<EmbedCreateFields.Field> createEmbedFields(WorldModel model) {
@@ -111,7 +113,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     private void processEmbeddableData(GuildMessageChannel channel, WorldModel model) {
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
         deleteMessages(channel);

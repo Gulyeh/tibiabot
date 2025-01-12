@@ -15,6 +15,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
@@ -27,7 +28,9 @@ import static discord.Connector.client;
 import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 import static java.util.UUID.randomUUID;
+import static utils.Methods.formatToDiscordLink;
 
+@Slf4j
 public class OnlineTracker extends ServerSaveEvent implements Channelable, Activable {
     private final OnlineService onlineService;
     private final String othersKey;
@@ -47,7 +50,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -56,15 +59,15 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         while (true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
                 onlineService.clearCache();
                 if(isAfterSaverSave()) onlineService.clearCharStorageCache();
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
                 synchronized (this) {
                     wait(300000);
@@ -75,12 +78,12 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
 
     @Override
     public String getEventName() {
-        return EventName.getOnlineTracker();
+        return EventName.onlineTracker;
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<OnlineModel> model) {
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
 
@@ -155,7 +158,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
         map.forEach((k, v) -> {
             String title;
             if(k.equals(othersKey)) title = "### Others " + v.size();
-            else title = "### [" + k + "](" + v.get(0).getGuild().getGuildLink() + ") " + v.size();
+            else title = "### " + formatToDiscordLink(k, v.get(0).getGuild().getGuildLink()) + " " + v.size();
             if(description.length() + title.length() >= maxDescCharacters) {
                 descriptionList.add(description.toString());
                 description.setLength(0);
@@ -164,7 +167,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
 
             for(OnlineModel online : v) {
                 String onlineText = online.getVocation().getIcon() + " " +
-                        online.getLevel() + " - [" + online.getName() + "](" + online.getCharacterLink() + ") ``" +
+                        online.getLevel() + " - " + formatToDiscordLink(online.getName(), online.getCharacterLink()) + " ``" +
                         online.getFormattedLoggedTime() + "`` " + online.getLeveled().getIcon();
                 if(description.length() + onlineText.length() >= maxDescCharacters) {
                     descriptionList.add(description.toString());

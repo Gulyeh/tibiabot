@@ -5,17 +5,22 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import lombok.extern.slf4j.Slf4j;
+import mongo.GuildDocumentActions;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
 
 import java.util.List;
 
 import static discord.Connector.client;
-import static mongo.GuildDocumentActions.createDocument;
-import static mongo.GuildDocumentActions.replaceDocument;
 
 @Slf4j
 public class GuildCacheInitializer {
+    private final GuildDocumentActions guildDocumentActions;
+
+    public GuildCacheInitializer() {
+        guildDocumentActions = GuildDocumentActions.getInstance();
+    }
+
     public void addToWorldCache(GuildModel model) {
         if(model.getWorld() == null || model.getWorld().isEmpty() || model.getGuildId().isEmpty()) {
             log.info("Could not add world to cache");
@@ -100,7 +105,7 @@ public class GuildCacheInitializer {
             int removed = model.getChannels().removeChannelsExcept(channels);
 
             if (removed > 0) {
-                replaceDocument(createDocument(model));
+                guildDocumentActions.replaceDocument(guildDocumentActions.createDocument(model));
                 log.info("Removed " + removed + " channels from guild " + model.getGuildId());
             }
         } catch (Exception e) {

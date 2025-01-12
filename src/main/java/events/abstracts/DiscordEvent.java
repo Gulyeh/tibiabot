@@ -3,29 +3,33 @@ package events.abstracts;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import events.interfaces.Listener;
+import lombok.extern.slf4j.Slf4j;
+import mongo.GuildDocumentActions;
 import mongo.models.GuildModel;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static mongo.GuildDocumentActions.*;
-
+@Slf4j
 public abstract class DiscordEvent implements Listener {
+    protected final GuildDocumentActions guildDocumentActions;
 
-    protected final static Logger logINFO = LoggerFactory.getLogger(DiscordEvent.class);
+    public DiscordEvent() {
+        guildDocumentActions = GuildDocumentActions.getInstance();
+    }
 
     protected void removeGuild(Snowflake guildId) {
         try {
             if(!GuildCacheData.isGuildCached(guildId)) throw new Exception("Guild does not exist in cache");
 
-            Document doc = getDocument(guildId);
+            Document doc = guildDocumentActions.getDocument(guildId);
             if(doc == null) throw new Exception("Could not find guild in db");
-            if(!deleteDocument(doc)) throw new Exception("Could not delete document");
+            if(!guildDocumentActions.deleteDocument(doc)) throw new Exception("Could not delete document");
 
             GuildCacheData.removeGuild(guildId);
-            logINFO.info("Successfully removed guild");
+            log.info("Successfully removed guild");
         } catch (Exception e) {
-            logINFO.info("Could not remove guild: " + e.getMessage());
+            log.info("Could not remove guild: " + e.getMessage());
         }
     }
 
@@ -33,17 +37,18 @@ public abstract class DiscordEvent implements Listener {
         try {
             if(!GuildCacheData.channelsCache.containsKey(guildId)) throw new Exception("Guild does not exist in cache");
 
-            GuildModel doc = getDocument(guildId, GuildModel.class);
+            GuildModel doc = guildDocumentActions.getDocumentModel(guildId);
             if(doc == null) throw new Exception("Could not find guild in db");
             if(!doc.getChannels().isChannelUsed(channelId)) return;
 
             doc.getChannels().removeChannel(channelId.asString());
-            if(!replaceDocument(createDocument(doc))) throw new Exception("Could not remove channelId from db");
+            if(!guildDocumentActions.replaceDocument(guildDocumentActions.createDocument(doc)))
+                throw new Exception("Could not remove channelId from db");
 
             GuildCacheData.removeChannel(guildId, channelId);
-            logINFO.info("Successfully removed channel");
+            log.info("Successfully removed channel");
         } catch (Exception e) {
-            logINFO.info("Could not remove channel: " + e.getMessage());
+            log.info("Could not remove channel: " + e.getMessage());
         }
     }
 }

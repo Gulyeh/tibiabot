@@ -1,27 +1,40 @@
 package mongo;
 
+import discord4j.common.util.Snowflake;
 import mongo.abstracts.DocumentActions;
 import mongo.models.CharacterModel;
 import org.bson.Document;
 import utils.Configurator;
 
-public final class CharactersDocumentActions extends DocumentActions {
+import java.util.List;
+
+public final class CharactersDocumentActions extends DocumentActions<CharacterModel> {
+
     public CharactersDocumentActions() {
         super(Configurator.ConfigPaths.DB_COLLECTION_CHARACTERS);
     }
 
-    public static Document getDocument(String characterName) {
+    public static CharactersDocumentActions getInstance() {
+        return getInstance(CharactersDocumentActions.class);
+    }
+
+    public CharacterModel getDocumentModel(String characterName) {
+        return getDocument(characterName, "character", CharacterModel.class);
+    }
+
+    public Document getDocument(String characterName) {
         return getDocument(characterName, "character");
     }
 
-    public static <T> T getDocument(String characterName, Class<T> classType) {
-        return getDocument(characterName, "character", classType);
+    public List<CharacterModel> getDocuments() {
+        return getDocuments(CharacterModel.class);
     }
 
-    public static Document createDocument(CharacterModel model) {
+    @Override
+    public Document createDocument(CharacterModel model) {
         Document doc = new Document()
-                .append("character", model.getCharacterName())
-                .append("user", model.getUserId());
+                .append("character", model.getCharacter())
+                .append("user", model.getUser());
         if(model.get_id() != null) doc.append("_id", model.get_id());
         return doc;
     }

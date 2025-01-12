@@ -17,6 +17,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.tibiaCoins.TibiaCoinsService;
 import services.worlds.enums.BattleEyeType;
@@ -30,6 +31,7 @@ import static builders.commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 
+@Slf4j
 public class TibiaCoins extends EmbeddableEvent implements Channelable, Activable {
     private final TibiaCoinsService tibiaCoinsService;
 
@@ -47,7 +49,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -55,19 +57,19 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
 
     @Override
     public String getEventName() {
-        return EventName.getTibiaCoins();
+        return EventName.tibiaCoins;
     }
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         while(true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
                 synchronized (this) {
                     wait(3600000);
@@ -123,7 +125,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
 
     private void processEmbeddableData(GuildMessageChannel channel, PriceModel model) {
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
 

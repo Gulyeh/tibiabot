@@ -153,6 +153,14 @@ public class Commands {
         return this;
     }
 
+    public Commands setUnregistration() {
+        ApplicationCommandRequest setUnregCmd =
+                requestBuilder(unregisterCommand, "Unregister character from discord user", "Character name", ApplicationCommandOption.Type.STRING);
+
+        if(!listOfCommands.contains(setUnregCmd)) listOfCommands.add(setUnregCmd);
+        return this;
+    }
+
     private ApplicationCommandRequest requestBuilder(String name, String description, String optionDescription, ApplicationCommandOption.Type type) {
         return ApplicationCommandRequest.builder()
                 .name(name)

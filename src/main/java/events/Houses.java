@@ -17,6 +17,7 @@ import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.houses.HousesService;
 
@@ -27,7 +28,9 @@ import java.util.Set;
 import static builders.commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
+import static utils.Methods.formatToDiscordLink;
 
+@Slf4j
 public class Houses extends EmbeddableEvent implements Channelable, Activable {
 
     private final HousesService housesService;
@@ -47,7 +50,7 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
-                logINFO.error(e.getMessage());
+                log.error(e.getMessage());
                 return event.createFollowup("Could not execute command");
             }
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
@@ -56,14 +59,14 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        logINFO.info("Activating " + getEventName());
+        log.info("Activating " + getEventName());
         while (true) {
             try {
-                logINFO.info("Executing thread " + getEventName());
+                log.info("Executing thread " + getEventName());
                 housesService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
-                logINFO.info(e.getMessage());
+                log.info(e.getMessage());
             } finally {
                 synchronized (this) {
                     wait(1800000);
@@ -74,12 +77,12 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
 
     @Override
     public String getEventName() {
-        return EventName.getHouses();
+        return EventName.houses;
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<HousesModel> model) {
         if (model == null) {
-            logINFO.warn("model is null");
+            log.warn("model is null");
             return;
         }
         deleteMessages(channel);
@@ -149,7 +152,7 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
     }
 
     private EmbedCreateFields.Field buildEmbedField(HouseData data, String world) {
-        String auctionLink = "[Auction](" + data.getHouseLink(world) + ")";
+        String auctionLink = formatToDiscordLink("Auction", data.getHouseLink(world));
 
         return EmbedCreateFields.Field.of(data.getName() + " (" + data.getHouse_id() + ")",
                 "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n\n``Current bidder: " + data.getAuction().getCurrentBidder() +
