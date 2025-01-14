@@ -10,6 +10,7 @@ import mongo.MongoConnector;
 import mongo.models.GuildModel;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static discord.Connector.client;
 
@@ -28,11 +29,16 @@ public final class GuildCaching extends Singleton implements Cachable {
     }
 
     @Override
-    public void refreshCache() {
+    public void refreshCache(CountDownLatch latch) {
         new Thread(() -> {
+            boolean firstRun = true;
             while (true) {
                 try {
                     cacheGuildData(initializer);
+                    if (firstRun) {
+                        latch.countDown();
+                        firstRun = false;
+                    }
                 } catch (Exception e) {
                     log.error("Error while caching guild data: ", e);
                 }

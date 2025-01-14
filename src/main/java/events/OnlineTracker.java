@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
+import services.worlds.WorldsService;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,7 +36,8 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
     private final OnlineService onlineService;
     private final String othersKey;
 
-    public OnlineTracker(OnlineService onlineService) {
+    public OnlineTracker(OnlineService onlineService, WorldsService worldsService) {
+        super(worldsService);
         this.onlineService = onlineService;
         othersKey = randomUUID().toString();
     }
@@ -82,11 +84,6 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<OnlineModel> model) {
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
-
         deleteMessages(channel);
         addChannelSuffix(channel, model.size());
         if(model.isEmpty()) {
@@ -137,7 +134,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
     @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
-        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId(event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!GuildCacheData.worldCache.containsKey(guildId))

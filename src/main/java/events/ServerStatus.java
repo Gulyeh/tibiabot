@@ -36,6 +36,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     private final WorldsService worldsService;
 
     public ServerStatus(WorldsService worldsService) {
+        super(worldsService);
         this.worldsService = worldsService;
     }
 
@@ -112,10 +113,6 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, WorldModel model) {
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
         deleteMessages(channel);
         addChannelSuffix(channel, model.getWorlds().getPlayers_online());
 

@@ -99,14 +99,20 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
             GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
             if(guildChannel == null) continue;
 
-            processEmbeddableData(guildChannel, deathTrackerService.getDeaths(guildId));
+            int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
+            List<DeathData> deaths = deathTrackerService.getDeaths(guildId)
+                    .stream()
+                    .filter(x -> x.getKilledAtLevel() >= minimumLevel)
+                    .toList();
+
+            processEmbeddableData(guildChannel, deaths);
         }
     }
 
     @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
-        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId(event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!GuildCacheData.worldCache.containsKey(guildId))
@@ -115,16 +121,11 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        addMinimumDeathLevelCache(getGuildId((ChatInputInteractionEvent) event), 8);
+        addMinimumDeathLevelCache(getGuildId(event), 8);
         return event.createFollowup("Set default Death Tracker event channel to <#" + channelId.asString() + ">");
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
-
         for (DeathData death : model) {
             sendEmbeddedMessages(channel,
                     null,

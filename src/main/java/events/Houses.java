@@ -81,10 +81,6 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<HousesModel> model) {
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
         deleteMessages(channel);
 
         List<HousesModel> list = model

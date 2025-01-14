@@ -21,6 +21,7 @@ import services.tibiaCoins.TibiaCoinsService;
 import services.worlds.WorldsService;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static discord.Connector.client;
 
@@ -43,11 +44,11 @@ public class Main {
                 new TrackWorld(worldsService),
                 new KillStatistics(new KillStatisticsService()),
                 new Houses(new HousesService()),
-                new EventsCalendar(new EventsService()),
-                new MiniWorldEvents(new MiniWorldEventsService(worldsService)),
-                new Boosteds(new BoostedsService()),
+                new EventsCalendar(new EventsService(), worldsService),
+                new MiniWorldEvents(new MiniWorldEventsService(worldsService), worldsService),
+                new Boosteds(new BoostedsService(), worldsService),
                 new DeathTracker(new DeathTrackerService()),
-                new OnlineTracker(new OnlineService())
+                new OnlineTracker(new OnlineService(), worldsService)
         ).forEach(x -> {
             Connector.addListener(x);
             x.activate();
@@ -80,7 +81,16 @@ public class Main {
     }
 
     private static void initializeCache() {
+        CountDownLatch latch = new CountDownLatch(2);
+
         List.of(GuildCaching.getInstance(), CharactersCaching.getInstance())
-                .forEach(Cachable::refreshCache);
+                .forEach(x -> x.refreshCache(latch));
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Cache Initialization interrupted!");
+        }
     }
 }

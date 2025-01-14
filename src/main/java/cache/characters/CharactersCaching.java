@@ -10,6 +10,7 @@ import mongo.MongoConnector;
 import mongo.models.CharacterModel;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static cache.characters.CharactersCacheData.addRegisteredCharacter;
 
@@ -26,11 +27,16 @@ public class CharactersCaching extends Singleton implements Cachable {
     }
 
     @Override
-    public void refreshCache() {
+    public void refreshCache(CountDownLatch latch) {
         new Thread(() -> {
+            boolean firstRun = true;
             while (true) {
                 try {
                     cacheCharacterData();
+                    if (firstRun) {
+                        latch.countDown();
+                        firstRun = false;
+                    }
                 } catch (Exception e) {
                     log.error("Error while caching characters data: ", e);
                 }

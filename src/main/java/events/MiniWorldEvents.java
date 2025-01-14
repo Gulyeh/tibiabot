@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 import services.miniWorldEvents.MiniWorldEventsService;
 import services.miniWorldEvents.models.MiniWorldEvent;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
+import services.worlds.WorldsService;
 import services.worlds.enums.Status;
 
 import java.time.LocalDateTime;
@@ -38,7 +39,8 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     private final ConcurrentHashMap<String, Status> beforeWorldsStatus;
     private LocalDateTime customServerSaveTime;
 
-    public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
+    public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService, WorldsService worldsService) {
+        super(worldsService);
         this.miniWorldEventsService = miniWorldEventsService;
         beforeWorldsStatus = new ConcurrentHashMap<>();
         customServerSaveTime = LocalDateTime.now().withHour(12).withMinute(0).withSecond(0);
@@ -71,7 +73,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
                     miniWorldEventsService.clearCache();
                     beforeWorldsStatus.clear();
                 }
-                else if(isAfterSaverSave(customServerSaveTime)) {
+                else if(isAfterDate(customServerSaveTime)) {
                     customServerSaveTime = customServerSaveTime.plusDays(1);
                     executeEventProcess();
                 }
@@ -86,11 +88,6 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, MiniWorldEventsModel model) {
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
-
         deleteMessages(channel);
         List<MiniWorldEvent> miniWorldChanges = model.getActive_mini_world_changes();
         if(miniWorldChanges.isEmpty()) {

@@ -18,6 +18,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
+import services.worlds.WorldsService;
 
 import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
@@ -29,7 +30,8 @@ import static utils.Methods.formatToDiscordLink;
 public class Boosteds extends ServerSaveEvent implements Channelable, Activable {
     private final BoostedsService boostedsService;
 
-    public Boosteds(BoostedsService boostedsService) {
+    public Boosteds(BoostedsService boostedsService, WorldsService worldsService) {
+        super(worldsService);
         this.boostedsService = boostedsService;
     }
 
@@ -90,11 +92,6 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, BoostedModel model) {
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
-
         if(model.getName() == null || model.getName().isEmpty())
             sendEmbeddedMessages(channel,
                     null,
@@ -117,7 +114,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
     @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
-        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId(event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!GuildCacheData.worldCache.containsKey(guildId))

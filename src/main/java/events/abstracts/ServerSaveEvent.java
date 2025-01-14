@@ -1,52 +1,51 @@
 package events.abstracts;
 
 import lombok.extern.slf4j.Slf4j;
+import services.worlds.WorldsService;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public abstract class ServerSaveEvent extends EmbeddableEvent {
-    private LocalDateTime serverSaveTime;
+public abstract class ServerSaveEvent extends TimerEvent {
+    private final WorldsService worldsService;
+    private final long defaultTime = 120000;
 
-    public ServerSaveEvent() {
-        serverSaveTime = LocalDateTime.now()
+    public ServerSaveEvent(WorldsService worldsService) {
+        super(LocalDateTime.now()
                 .withHour(10)
                 .withMinute(3)
-                .withSecond(0);
+                .withSecond(0));
+        this.worldsService = worldsService;
     }
 
     protected long getWaitTime(int specifiedMillis) {
+        if(!isServerOnline()) return specifiedMillis;
         LocalDateTime now = LocalDateTime.now();
-        if(now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime)) serverSaveTime = serverSaveTime.plusDays(1);
-
-        long timeLeft = now.until(serverSaveTime, ChronoUnit.MILLIS);
-        if(timeLeft < specifiedMillis) {
-            log.info(TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) +
-                    " minutes left to server save! Initial specified time to wait was: " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(specifiedMillis) + "min");
-        }
-
-        return timeLeft <= specifiedMillis ? timeLeft : specifiedMillis;
+        if(now.isAfter(timer) || now.isEqual(timer)) adjustTimerByDays(1);
+        return super.getWaitTime(specifiedMillis);
     }
 
     protected long getWaitTime() {
+        if(!isServerOnline()) return defaultTime;
         LocalDateTime now = LocalDateTime.now();
-        if(now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime)) serverSaveTime = serverSaveTime.plusDays(1);
-        long timeLeft = now.until(serverSaveTime, ChronoUnit.MILLIS);
-        log.info(TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes left to server save!");
-        return timeLeft;
+        if(now.isAfter(timer) || now.isEqual(timer)) adjustTimerByDays(1);
+        return super.getWaitTime();
     }
 
     protected boolean isAfterSaverSave() {
+        if(!isServerOnline()) return false;
         LocalDateTime now = LocalDateTime.now();
-        boolean isAfterSS = now.isAfter(serverSaveTime) || now.isEqual(serverSaveTime);
-        if(isAfterSS) serverSaveTime = serverSaveTime.plusDays(1);
-        return isAfterSS;
+        return now.isAfter(timer) || now.isEqual(timer);
     }
 
-    protected boolean isAfterSaverSave(LocalDateTime date) {
-        LocalDateTime now = LocalDateTime.now();
-        return now.isAfter(date) || now.isEqual(date);
+    private boolean isServerOnline() {
+        if(worldsService.getWorlds().getWorlds() == null || Integer.parseInt(worldsService.getWorlds().getWorlds().getPlayers_online()) < 1) {
+            log.info("Servers are offline. Waiting for them to go back online");
+            return false;
+        }
+
+        return true;
     }
 }

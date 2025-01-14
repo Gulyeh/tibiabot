@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 public class DeathTrackerService implements Cacheable {
     private final ConcurrentHashMap<String, List<CharacterData>> mapCache; // data of previously online characters
     private ConcurrentHashMap<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, ArrayList<DeathResponse>>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
+    private final ConcurrentHashMap<String, ArrayList<DeathResponse>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
     private final int deathRangeAllowance = 15;
     private final TibiaDataAPI api;
 
@@ -49,13 +49,12 @@ public class DeathTrackerService implements Cacheable {
         String world = GuildCacheData.worldCache.get(guildId);
         if(deathsCache.containsKey(world)) return deathsCache.get(world);
 
-        List<CharacterData> checkableCharacters = getCharacters(guildId, world);
+        List<CharacterData> checkableCharacters = new ArrayList<>(api.getCharactersOnWorld(world));
         List<CharacterData> cachedCharacters = mapCache.getOrDefault(world, new ArrayList<>());
         updateOfflineCharacters(cachedCharacters, checkableCharacters);
 
         List<DeathData> deads = getCharactersDeathData(checkableCharacters, world);
         updateCachedData(checkableCharacters, world);
-        log.info("Checkable characters: " + checkableCharacters.size() + " - Previously cached characters: " + mapCache.get(world).size() + " - Recent Deaths cached: " + recentDeathsCache.get(world).size());
         return deads;
     }
 
@@ -68,7 +67,7 @@ public class DeathTrackerService implements Cacheable {
         List<CharacterData> offlineCharacters = cachedCharacters.stream()
                 .filter(x -> !onlineCharacterNames.contains(x.getName()))
                 .peek(x -> x.setOnline(false))
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
 
         checkableCharacters.addAll(offlineCharacters);
     }
@@ -77,7 +76,7 @@ public class DeathTrackerService implements Cacheable {
         int maxOfflineTime = 10;
         List<CharacterData> filteredCharacters = checkableCharacters.stream()
                 .filter(character -> ChronoUnit.MINUTES.between(character.getUpdatedAt(), LocalDateTime.now()) <= maxOfflineTime)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
 
         mapCache.put(world, filteredCharacters);
     }
@@ -111,27 +110,13 @@ public class DeathTrackerService implements Cacheable {
             CharacterInfo info = data.getCharacter().getCharacter();
             adjustCharacterLevel(character, info);
 
-            if(!character.getName().equalsIgnoreCase(info.getName())) {
-                updateCharacterCacheChangedName(character.getName(), info.getName(), world);
-                return;
-            }
-
-            updateCharacterFormerNames(info, world);
-
             ArrayList<DeathResponse> acceptableDeaths = deathsModel.stream()
                     .filter(x -> x.getTimeLocal().isAfter(LocalDateTime.now().minusMinutes(deathRangeAllowance)))
                     .collect(Collectors.toCollection(ArrayList::new));
 
-            List<DeathResponse> actualDeaths = filterDeaths(character, acceptableDeaths, world);
+            List<DeathResponse> actualDeaths = filterDeaths(acceptableDeaths, world);
             processDeaths(character, actualDeaths, info.getGuild(), deaths, world);
         } catch (Exception ignore) {}
-    }
-
-    private void updateCharacterFormerNames(CharacterInfo info, String world) {
-        if (info.getFormer_names() == null) return;
-        for (String formerName : info.getFormer_names()) {
-            updateCharacterCacheChangedName(formerName, info.getName(), world);
-        }
     }
 
     private void adjustCharacterLevel(CharacterData character, CharacterInfo info) {
@@ -139,27 +124,6 @@ public class DeathTrackerService implements Cacheable {
         if (!character.isOnline() && character.getLevel() > currentLevel)
             character.setLevel(currentLevel);
     }
-
-
-    private void updateCharacterCacheChangedName(String oldName, String newName, String world) {
-        ConcurrentHashMap<String, ArrayList<DeathResponse>> worldMap = recentDeathsCache.get(world);
-        if(worldMap == null || !worldMap.containsKey(oldName) || worldMap.containsKey(newName)) return;
-
-        ArrayList<DeathResponse> deathData = worldMap.remove(oldName);
-        if (deathData == null) return;
-
-        worldMap.put(newName, deathData);
-    }
-
-    private List<CharacterData> getCharacters(Snowflake guildId, String world) {
-        int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
-        List<CharacterData> players = api.getCharactersOnWorld(world);
-        return new ArrayList<>(players
-                .stream()
-                .filter(x -> x.getLevel() >= minimumLevel)
-                .toList());
-    }
-
 
     private void processDeaths(CharacterData character, List<DeathResponse> actualDeaths,
                                GuildData guild, List<DeathData> deaths, String world) {
@@ -185,33 +149,22 @@ public class DeathTrackerService implements Cacheable {
         }
     }
 
-    private List<DeathResponse> filterDeaths(CharacterData data, ArrayList<DeathResponse> characterDeaths, String world) {
+    private List<DeathResponse> filterDeaths(ArrayList<DeathResponse> characterDeaths, String world) {
         if(characterDeaths.isEmpty()) return new ArrayList<>();
-        ConcurrentHashMap<String, ArrayList<DeathResponse>> worldMap = recentDeathsCache.getOrDefault(world, new ConcurrentHashMap<>());
+        ArrayList<DeathResponse> worldMap = recentDeathsCache.getOrDefault(world, new ArrayList<>());
 
-        ArrayList<DeathResponse> deathData = worldMap.get(data.getName());
-        if(deathData == null) {
-            worldMap.put(data.getName(), characterDeaths);
-            recentDeathsCache.put(world, worldMap);
-            return characterDeaths;
-        }
+        List<DeathResponse> acceptedDeaths = characterDeaths.stream()
+                .filter(x -> worldMap.stream().noneMatch(y -> y.getTimeUTC().equals(x.getTimeUTC()) &&
+                        y.getReason().equalsIgnoreCase(x.getReason())))
+                .collect(Collectors.toCollection(ArrayList::new));
 
-        List<DeathResponse> acceptedDeaths = characterDeaths.stream().filter(x -> deathData.stream()
-                .noneMatch(y -> y.getTimeLocal().isEqual(x.getTimeLocal()))).toList();
-        deathData.addAll(acceptedDeaths);
-
-        if(deathData.isEmpty()) worldMap.remove(data.getName());
-        else worldMap.put(data.getName(), deathData);
-        recentDeathsCache.put(world, worldMap);
-
+        worldMap.addAll(acceptedDeaths);
         return acceptedDeaths;
     }
 
     private void clearRecentDeathsCache(String world) {
         recentDeathsCache.computeIfPresent(world, (key, worldMap) -> {
-            worldMap.forEach((k, v) -> {
-                v.removeIf(x -> x.getTimeLocal().isBefore(LocalDateTime.now().minusMinutes(deathRangeAllowance)));
-            });
+            worldMap.removeIf(x -> x.getTimeLocal().isBefore(LocalDateTime.now().minusMinutes(deathRangeAllowance)));
             return worldMap;
         });
     }

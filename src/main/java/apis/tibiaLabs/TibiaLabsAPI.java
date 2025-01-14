@@ -21,9 +21,10 @@ public class TibiaLabsAPI extends WebClient {
         String response = sendRequest(getRequest(param));
         BoostedModel model = new BoostedModel();
         if(response.contains(":")) {
-            if(response.split(": ").length > 1)
-                model.setName(response.split(": ")[1].trim());
-            model.setBoostedTypeText(response.split(": ")[0]);
+            String[] split = response.split(": ");
+            if(split.length > 1)
+                model.setName(split[1].trim());
+            model.setBoostedTypeText(split[0]);
         }
         return model;
     }

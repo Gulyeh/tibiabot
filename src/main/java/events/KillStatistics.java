@@ -13,6 +13,7 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
+import events.abstracts.TimerEvent;
 import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
@@ -35,11 +36,15 @@ import static discord.channels.ChannelUtils.addChannelSuffix;
 import static discord.messages.DeleteMessages.deleteMessages;
 
 @Slf4j
-public class KillStatistics extends EmbeddableEvent implements Channelable, Activable {
+public class KillStatistics extends TimerEvent implements Channelable, Activable {
 
     private final KillStatisticsService killStatisticsService;
 
     public KillStatistics(KillStatisticsService killStatisticsService) {
+        super(LocalDateTime.now()
+                .withHour(8)
+                .withMinute(0)
+                .withSecond(0));
         this.killStatisticsService = killStatisticsService;
     }
 
@@ -63,33 +68,18 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
         log.info("Activating " + getEventName());
-        long timeLeft = 0;
 
         while(true) {
             try {
                 log.info("Executing thread " + getEventName());
-
-                LocalDateTime now = LocalDateTime.now();
-                int expectedHour = 5;
-
-                LocalDateTime requiredTime = now
-                        .withHour(expectedHour)
-                        .withMinute(0)
-                        .withSecond(0);
-
-                if(now.getHour() >= expectedHour)
-                    requiredTime = requiredTime.plusDays(1);
-
-                timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
-
                 killStatisticsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
-                log.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
+                adjustTimerByDays(1);
                 synchronized (this) {
-                    wait(timeLeft);
+                    wait(getWaitTime());
                 }
             }
         }
@@ -140,12 +130,6 @@ public class KillStatistics extends EmbeddableEvent implements Channelable, Acti
 
     protected void processEmbeddableData(GuildMessageChannel channel, KillingStatsModel model) {
         deleteMessages(channel);
-
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
-
         List<KillingStatsData> bosses = model.getEntries();
         addChannelSuffix(channel, model.getAllLastDayKilled());
 

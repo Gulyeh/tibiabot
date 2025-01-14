@@ -124,11 +124,6 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, PriceModel model) {
-        if (model == null) {
-            log.warn("model is null");
-            return;
-        }
-
         deleteMessages(channel);
         List<Prices> data = model.getPrices();
         boolean isFirstMessage = true;

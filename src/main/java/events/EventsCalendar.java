@@ -10,6 +10,8 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import events.abstracts.ProcessEvent;
+import events.abstracts.ServerSaveEvent;
+import events.abstracts.TimerEvent;
 import events.interfaces.Activable;
 import events.interfaces.Channelable;
 import events.utils.EventName;
@@ -17,6 +19,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.events.EventsService;
+import services.worlds.WorldsService;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -28,11 +31,12 @@ import static discord.messages.DeleteMessages.deleteMessages;
 import static discord.messages.SendMessages.sendImageMessage;
 
 @Slf4j
-public class EventsCalendar extends ProcessEvent implements Channelable, Activable {
+public class EventsCalendar extends ServerSaveEvent implements Channelable, Activable {
 
     private final EventsService eventsService;
 
-    public EventsCalendar(EventsService eventsService) {
+    public EventsCalendar(EventsService eventsService, WorldsService worldsService) {
+        super(worldsService);
         this.eventsService = eventsService;
     }
 
@@ -61,33 +65,18 @@ public class EventsCalendar extends ProcessEvent implements Channelable, Activab
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
         log.info("Activating " + getEventName());
-        long timeLeft = 0;
 
         while (true) {
             try {
                 log.info("Executing thread " + getEventName());
-
-                LocalDateTime now = LocalDateTime.now();
-                int expectedHour = 10;
-                int expectedMinute = 30;
-
-                LocalDateTime requiredTime = now
-                        .withHour(expectedHour)
-                        .withMinute(expectedMinute)
-                        .withSecond(0);
-
-                if(now.isAfter(requiredTime) || now.isEqual(requiredTime)) requiredTime = requiredTime.plusDays(1);
-
-                timeLeft = now.until(requiredTime, ChronoUnit.MILLIS);
-
+                if(!isAfterSaverSave()) continue;
                 eventsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
-                log.info("Waiting " + TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft) + " minutes for " + getEventName() + " thread execution");
                 synchronized (this) {
-                    wait(timeLeft);
+                    wait(getWaitTime());
                 }
             }
         }

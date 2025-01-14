@@ -42,8 +42,7 @@ public final class WorldsService extends Singleton implements Cacheable {
         try {
             worldsData = tibiaDataAPI.getWorlds();
             setWorldsIds();
-        } catch (Exception e) {
-            log.warn(e.getMessage());
+        } catch (Exception ignore) {
         }
 
         return worldsData;
