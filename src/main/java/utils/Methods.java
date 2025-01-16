@@ -27,7 +27,7 @@ public final class Methods {
     }
 
     public static String getPlayerIcon() {
-        return "https://static.wikia.nocookie.net/tibia/images/2/27/Red_Skull_%28Item%29.gif/revision/latest/thumbnail/width/64/height/64?cb=20220107212229&path-prefix=en";
+        return formatWikiGifLink("Red_Skull_%28Item%29");
     }
 
     public static String formatToDiscordLink(String title, String link) {
@@ -35,6 +35,7 @@ public final class Methods {
     }
 
     private static String replaceWikiChars(String name) {
+        if(name.equalsIgnoreCase("dragon pack")) return "Despor";
         if(name.startsWith("a "))
             name = name.replace("a ", "");
         return name
