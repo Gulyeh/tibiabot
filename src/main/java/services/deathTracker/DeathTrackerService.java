@@ -151,7 +151,7 @@ public class DeathTrackerService implements Cacheable {
 
     private List<DeathResponse> filterDeaths(ArrayList<DeathResponse> characterDeaths, String world) {
         if(characterDeaths.isEmpty()) return new ArrayList<>();
-        ArrayList<DeathResponse> worldMap = recentDeathsCache.getOrDefault(world, new ArrayList<>());
+        ArrayList<DeathResponse> worldMap = recentDeathsCache.computeIfAbsent(world, k -> new ArrayList<>());
 
         List<DeathResponse> acceptedDeaths = characterDeaths.stream()
                 .filter(x -> worldMap.stream().noneMatch(y -> y.getTimeUTC().equals(x.getTimeUTC()) &&
