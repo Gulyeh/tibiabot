@@ -44,8 +44,4 @@ public class DeathData {
         });
         return names;
     }
-
-    public long getKilledDateEpochSeconds() {
-        return killedAtDate.toInstant(ZoneOffset.UTC).getEpochSecond();
-    }
 }

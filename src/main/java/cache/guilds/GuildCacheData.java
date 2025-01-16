@@ -1,6 +1,7 @@
 package cache.guilds;
 
 import cache.enums.EventTypes;
+import cache.enums.Roles;
 import discord4j.common.util.Snowflake;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,10 +12,21 @@ public final class GuildCacheData {
     public static ConcurrentHashMap<Snowflake, String> worldCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<Snowflake, ConcurrentHashMap<Roles, Snowflake>> rolesCache = new ConcurrentHashMap<>();
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
         if(guildId == null || worldName.isEmpty()) return;
         worldCache.put(guildId, worldName);
+    }
+
+    public static void addToRolesCache(Snowflake guildId, Snowflake roleId, Roles roleName) {
+        if(guildId == null || roleId == null || roleName == null) return;
+        rolesCache.compute(guildId, (key, role) -> {
+            if (role == null)
+                role = new ConcurrentHashMap<>();
+            role.put(roleName, roleId);
+            return role;
+        });
     }
 
     public static void addMinimumDeathLevelCache(Snowflake guildId, int minimumLevel) {

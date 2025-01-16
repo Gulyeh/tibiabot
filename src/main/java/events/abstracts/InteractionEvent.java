@@ -9,7 +9,7 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.discordjson.json.ComponentData;
 import lombok.Getter;
-import observers.InteractionObserver;
+import events.observers.InteractionObserver;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -23,6 +23,11 @@ public abstract class InteractionEvent extends EmbeddableEvent {
     protected InteractionEvent(String buttonId, InteractionObserver observer) {
         this.buttonId = buttonId;
         this.observer = observer;
+    }
+
+    protected InteractionEvent(String buttonId) {
+        this.buttonId = buttonId;
+        this.observer = new InteractionObserver();
     }
 
     protected List<ComponentData> getInteractionButtons(Message message) {
@@ -59,10 +64,6 @@ public abstract class InteractionEvent extends EmbeddableEvent {
 
     protected String getId(ButtonInteractionEvent event) {
         return event.getCustomId();
-    }
-
-    protected GuildMessageChannel getChannel(ButtonInteractionEvent event) {
-        return (GuildMessageChannel) event.getInteraction().getChannel().block();
     }
 
     protected Message getMessage(ButtonInteractionEvent event) {

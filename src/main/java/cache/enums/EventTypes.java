@@ -15,6 +15,7 @@ public enum EventTypes {
     EVENTS_CALENDAR(EventName.events),
     DEATH_TRACKER(EventName.deathTracker),
     ONLINE_TRACKER(EventName.onlineTracker),
+    DROME(EventName.dromeNotification),
     BOOSTEDS(EventName.boosteds);
 
     private final String name;

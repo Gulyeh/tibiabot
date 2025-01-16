@@ -30,8 +30,7 @@ import java.util.Set;
 import static builders.commands.names.CommandsNames.deathsCommand;
 import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
-import static utils.Methods.formatToDiscordLink;
-import static utils.Methods.formatWikiGifLink;
+import static utils.Methods.*;
 
 @Slf4j
 public class DeathTracker extends EmbeddableEvent implements Channelable, Activable {
@@ -156,9 +155,8 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
                     .append("\n");
         }
         builder.append("Died ")
-                .append("<t:")
-                .append(data.getKilledDateEpochSeconds())
-                .append(":R> at level ")
+                .append(formatToDiscordTimeFormat(data.getKilledAtDate()))
+                .append(" at level ")
                 .append(data.getKilledAtLevel())
                 .append("\nby **")
                 .append(String.join(" and ", data.getKilledByNames()))

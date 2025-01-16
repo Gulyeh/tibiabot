@@ -1,6 +1,9 @@
 package utils;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
@@ -32,6 +35,14 @@ public final class Methods {
 
     public static String formatToDiscordLink(String title, String link) {
         return "[" + title + "](" + link + ")";
+    }
+
+    public static String formatToDiscordTimeFormat(LocalDateTime date) {
+        return "<t:" + date.toInstant(ZoneOffset.UTC).getEpochSecond() + ":R>";
+    }
+
+    public static LocalDateTime getUTCTime(LocalDateTime date) {
+        return date.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneId.of("UTC")).toLocalDateTime();
     }
 
     private static String replaceWikiChars(String name) {

@@ -37,7 +37,8 @@ public class GuildDocumentActions extends DocumentActions<GuildModel> {
                 .append("guildId", model.getGuildId())
                 .append("world", model.getWorld())
                 .append("minimumDeathLevel", model.getDeathMinimumLevel())
-                .append("channels", model.getChannels());
+                .append("channels", model.getChannels())
+                .append("roles", model.getRoles());
 
         if(model.get_id() != null) doc.append("_id", model.get_id());
         return doc;

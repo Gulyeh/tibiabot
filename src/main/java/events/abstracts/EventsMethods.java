@@ -1,6 +1,7 @@
 package events.abstracts;
 
 import cache.enums.EventTypes;
+import cache.enums.Roles;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -8,6 +9,8 @@ import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.Role;
+import discord4j.core.spec.RoleCreateSpec;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import events.interfaces.Listener;
@@ -47,6 +50,12 @@ public abstract class EventsMethods implements Listener {
     protected String getTextParameter(ChatInputInteractionEvent event) {
         Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().get(0).getValue();
         return value.map(ApplicationCommandInteractionOptionValue::getRaw).orElse(null);
+    }
+
+    protected boolean roleExists(InteractionCreateEvent event, Snowflake id) {
+        Guild guild = event.getInteraction().getGuild().block();
+        if(guild == null) return false;
+        return Boolean.TRUE.equals(guild.getRoles().any(x -> x.getId().equals(id)).block());
     }
 
     protected Snowflake getUserId(InteractionCreateEvent event) {
@@ -103,5 +112,34 @@ public abstract class EventsMethods implements Listener {
         GuildModel model = guildDocumentActions.getDocumentModel(guildId);
         if (model == null || model.get_id() == null) throw new Exception("Document is null");
         return model;
+    }
+
+    protected Snowflake createRole(InteractionCreateEvent event, RoleCreateSpec roleBuilder) {
+        Guild guild = event.getInteraction().getGuild().block();
+        if(guild == null) return null;
+
+        Role existingRole = guild.getRoles().filter(x -> x.getName().equals(roleBuilder.name().get())).blockFirst();
+        if(existingRole != null)
+            return existingRole.getId();
+
+        discord4j.core.object.entity.Role role = guild
+                .createRole(roleBuilder).block();
+        if(role == null) return null;
+
+        return role.getId();
+    }
+
+    protected boolean saveRole(Snowflake guildId, Snowflake roleId, Roles role) {
+        try {
+            GuildModel model = getGuild(guildId);
+            model.getRoles().setByType(role, roleId.asString());
+            if(!guildDocumentActions.replaceDocument(guildDocumentActions.createDocument(model)))
+                throw new Exception("Could not update model in database");
+            GuildCacheData.addToRolesCache(guildId, roleId, role);
+            return true;
+        } catch (Exception e) {
+            log.info("Could not save role: " + e.getMessage());
+            return false;
+        }
     }
 }

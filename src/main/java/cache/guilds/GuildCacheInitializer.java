@@ -1,6 +1,7 @@
 package cache.guilds;
 
 import cache.enums.EventTypes;
+import cache.enums.Roles;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.channel.GuildChannel;
 import discord4j.core.object.entity.channel.TextChannel;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
+import mongo.models.RolesModel;
 
 import java.util.List;
 
@@ -39,6 +41,27 @@ public class GuildCacheInitializer {
 
         Snowflake guildId = Snowflake.of(model.getGuildId());
         GuildCacheData.addMinimumDeathLevelCache(guildId, model.getDeathMinimumLevel());
+    }
+
+    public void addRolesToCache(GuildModel model) {
+        if(model.getRoles() == null) {
+            log.info("Could not add roles to cache");
+            return;
+        }
+
+        Snowflake guildId = Snowflake.of(model.getGuildId());
+        RolesModel roles = model.getRoles();
+
+        for(Roles role : Roles.values()) {
+            Snowflake roleId = switch (role) {
+                case DROME -> {
+                    if(roles.getDromeRole().isEmpty()) yield null;
+                    yield Snowflake.of(roles.getDromeRole());
+                }
+            };
+
+            GuildCacheData.addToRolesCache(guildId, roleId, role);
+        }
     }
 
     public void addToChannelsCache(GuildModel model) {
@@ -87,6 +110,10 @@ public class GuildCacheInitializer {
                 case ONLINE_TRACKER -> {
                     if(channels.getOnlineTracker().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getOnlineTracker());
+                }
+                case DROME -> {
+                    if(channels.getDrome().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getDrome());
                 }
             };
 

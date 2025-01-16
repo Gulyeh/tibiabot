@@ -66,7 +66,10 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
             try {
                 log.info("Executing thread " + getEventName());
                 onlineService.clearCache();
-                if(isAfterSaverSave()) onlineService.clearCharStorageCache();
+                if(isAfterSaverSave()) {
+                    onlineService.clearCharStorageCache();
+                    adjustTimerByDays(1);
+                }
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());

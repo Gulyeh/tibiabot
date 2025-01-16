@@ -12,6 +12,7 @@ import events.registration.CharacterUnregistration;
 import mongo.MongoConnector;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
+import services.drome.DromeService;
 import services.events.EventsService;
 import services.houses.HousesService;
 import services.killStatistics.KillStatisticsService;
@@ -56,7 +57,7 @@ public class Main {
 
         // Add listeners for specific events
         List.of(new MinimumDeathLevel(), new LootSplitter(), new RemovedChannel(), new RemovedGuild(),
-                        new CharacterRegistration(), new CharacterUnregistration())
+                        new CharacterRegistration(), new CharacterUnregistration(), new Drome(new DromeService()))
                 .forEach(Connector::addListener);
     }
 
@@ -74,6 +75,7 @@ public class Main {
                 .setMinimumDeathsLevel()
                 .setOnlineTracker()
                 .setSplitLoot()
+                .setDrome()
                 .setRegistration()
                 .setUnregistration()
                 .clearUnusedCommands()

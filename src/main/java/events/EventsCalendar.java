@@ -63,6 +63,7 @@ public class EventsCalendar extends ServerSaveEvent implements Channelable, Acti
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
+    @Override
     public void activatableEvent() {
         log.info("Activating " + getEventName());
 

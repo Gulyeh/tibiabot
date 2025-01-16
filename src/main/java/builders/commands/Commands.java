@@ -161,6 +161,14 @@ public class Commands {
         return this;
     }
 
+    public Commands setDrome() {
+        ApplicationCommandRequest setDromeCmd =
+                requestBuilder(dromeCommand, "Set Drome information channel", "Channel name", ApplicationCommandOption.Type.CHANNEL);
+
+        if(!listOfCommands.contains(setDromeCmd)) listOfCommands.add(setDromeCmd);
+        return this;
+    }
+
     private ApplicationCommandRequest requestBuilder(String name, String description, String optionDescription, ApplicationCommandOption.Type type) {
         return ApplicationCommandRequest.builder()
                 .name(name)

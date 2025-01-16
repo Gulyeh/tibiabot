@@ -43,7 +43,7 @@ public abstract class EmbeddableEvent extends ProcessEvent {
 
     protected List<EmbedCreateSpec> createEmbeddedMessages(List<EmbedCreateFields.Field> fields, String title, String description,
                                                      String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
-
+        if(fields == null) fields = List.of(emptyField(false));
         EmbedCreateSpec template = buildEmbedTemplate(title, description, imageUrl, thumbnailUrl, color, footer);
         return new ArrayList<>(splitEmbeddedMessage(fields, template));
     }
@@ -56,13 +56,14 @@ public abstract class EmbeddableEvent extends ProcessEvent {
     private List<EmbedCreateSpec> splitEmbeddedMessage(List<EmbedCreateFields.Field> fields, EmbedCreateSpec embedData) {
         List<EmbedCreateSpec> listOfMessages = new ArrayList<>();
 
-        if(fields == null || fields.isEmpty()) {
+        int maxFields = 20;
+        if(fields.size() <= maxFields) {
             EmbedCreateSpec builder = generateEmbed(embedData, 0, 0);
             listOfMessages.add(builder);
             return listOfMessages;
         }
 
-        int maxIndex, minIndex, maxFields = 20;
+        int maxIndex, minIndex;
         int iterations = (int) Math.ceil((double) fields.size() / maxFields);
 
         for(int i = 0; i < iterations; i++) {

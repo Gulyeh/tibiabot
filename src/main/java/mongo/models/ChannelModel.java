@@ -20,6 +20,7 @@ public class ChannelModel {
     private String boosteds = "";
     private String deathTracker = "";
     private String onlineTracker = "";
+    private String drome = "";
 
     public void setByEventType(EventTypes eventType, String channelId) {
         switch (eventType) {
@@ -32,6 +33,7 @@ public class ChannelModel {
             case BOOSTEDS -> boosteds = channelId;
             case DEATH_TRACKER -> deathTracker = channelId;
             case ONLINE_TRACKER -> onlineTracker = channelId;
+            case DROME -> drome = channelId;
         }
     }
 

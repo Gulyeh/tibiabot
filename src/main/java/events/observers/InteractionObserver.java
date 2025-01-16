@@ -1,4 +1,4 @@
-package observers;
+package events.observers;
 
 import discord4j.common.util.Snowflake;
 

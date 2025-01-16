@@ -9,7 +9,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.rest.util.Color;
 import events.abstracts.InteractionEvent;
-import observers.InteractionObserver;
+import events.observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
 import services.lootSplitter.model.ComparatorMember;
