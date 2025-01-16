@@ -70,7 +70,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(300000));
+                    wait(getWaitTime(180000));
                 }
             }
         }

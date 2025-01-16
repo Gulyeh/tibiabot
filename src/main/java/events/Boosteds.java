@@ -59,6 +59,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
         while (true) {
             try {
                 log.info("Executing thread " + getEventName());
+                if(!isAfterSaverSave()) continue;
                 boostedsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
