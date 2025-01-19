@@ -114,8 +114,6 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     private void processEmbeddableData(GuildMessageChannel channel, WorldModel model) {
         deleteMessages(channel);
-        addChannelSuffix(channel, model.getWorlds().getPlayers_online());
-
         sendEmbeddedMessages(channel,
                 createEmbedFields(model),
                 "Servers Status",

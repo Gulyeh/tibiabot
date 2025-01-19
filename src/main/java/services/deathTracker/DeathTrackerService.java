@@ -121,7 +121,7 @@ public class DeathTrackerService implements Cacheable {
 
     private void adjustCharacterLevel(CharacterData character, CharacterInfo info) {
         int currentLevel = info.getLevel();
-        if (!character.isOnline() && character.getLevel() > currentLevel)
+        if (character.getLevel() > currentLevel)
             character.setLevel(currentLevel);
     }
 
