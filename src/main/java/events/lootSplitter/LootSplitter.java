@@ -1,5 +1,7 @@
 package events.lootSplitter;
 
+import discord.Connector;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.ActionRow;
@@ -226,8 +228,12 @@ public class LootSplitter extends InteractionEvent {
                 .block();
         if(msgs == null || msgs.isEmpty()) return false;
 
-        List<Message> embeddedMsgs = msgs.stream().filter(x -> x.getEmbeds().size() == 1 &&
-                x.getAttachments().size() == 1).toList();
+        List<Message> embeddedMsgs = msgs.stream().filter(x ->
+                x.getAuthor().get().getId().equals(Snowflake.of(Connector.getId())) &&
+                x.getEmbeds().size() == 1 &&
+                x.getAttachments().size() == 1)
+                .toList();
+
         return embeddedMsgs.stream().anyMatch(x -> {
             EmbedData embed = x.getData().embeds().get(0);
             String title = embed.title().get();

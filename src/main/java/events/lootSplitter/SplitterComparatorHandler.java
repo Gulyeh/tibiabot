@@ -1,5 +1,7 @@
 package events.lootSplitter;
 
+import discord.Connector;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
@@ -9,6 +11,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.rest.util.Color;
 import events.abstracts.InteractionEvent;
+import lombok.extern.slf4j.Slf4j;
 import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
@@ -17,12 +20,16 @@ import services.lootSplitter.model.HuntComparatorModel;
 import services.lootSplitter.model.SplitLootModel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static discord.Connector.client;
 import static discord.messages.GetMessages.getChannelMessages;
 import static utils.Emojis.getBlankEmoji;
 
+@Slf4j
 public class SplitterComparatorHandler extends InteractionEvent {
     private final LootSplitterService lootSplitterService;
 
@@ -46,13 +53,13 @@ public class SplitterComparatorHandler extends InteractionEvent {
                 List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block(), message.getTimestamp())
                         .collectList()
                         .block();
-                if (msgs == null) throw new Exception();
+                if (msgs == null) throw new Exception("No messages found");
 
-                List<Message> embeddedMsgs = msgs.stream().filter(x -> x.getEmbeds().size() == 1 &&
+                List<Message> embeddedMsgs = msgs.stream().filter(x ->
+                                x.getAuthor().get().getId().equals(Snowflake.of(Connector.getId())) &&
+                                x.getEmbeds().size() == 1 &&
                                 x.getAttachments().size() == 1 &&
-                                x.getEmbeds().get(0).getTitle().get().equals(message.getEmbeds().get(0).getTitle().get()))
-                        .limit(5)
-                        .toList();
+                                x.getEmbeds().get(0).getTitle().get().equals(message.getEmbeds().get(0).getTitle().get())).toList();
 
                 List<EmbedCreateSpec> comparedMessages = buildCompareData(message, embeddedMsgs);
                 message.edit().withComponentsOrNull(splitActionRows(updateButtons(buttons, !embeddedMsgs.isEmpty())))
@@ -61,7 +68,7 @@ public class SplitterComparatorHandler extends InteractionEvent {
                     return event.createFollowup().withEphemeral(true)
                             .withContent("There is no previous data to compare with");
                 return event.createFollowup().withEmbeds(comparedMessages);
-            } catch (Exception ignore) {
+            } catch (Exception e) {
                 message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(buttons, false)))
                         .subscribe();
                 return event.createFollowup("Something went wrong").withEphemeral(true);
@@ -88,20 +95,23 @@ public class SplitterComparatorHandler extends InteractionEvent {
 
     private List<EmbedCreateSpec> buildCompareData(Message currentHunt, List<Message> previousHuntSessions) {
         List<SplitLootModel> previousHunts = new ArrayList<>();
+        int maxHuntsToCompare = 5;
         String session = lootSplitterService.getHuntSession(currentHunt.getAttachments().get(0).getUrl());
         SplitLootModel currentHuntModel = lootSplitterService.splitLoot(session, "");
 
         for(Message msg : previousHuntSessions) {
+            if(previousHunts.size() >= maxHuntsToCompare) break;
             session = lootSplitterService.getHuntSession(msg.getAttachments().get(0).getUrl());
             SplitLootModel previousHuntModel = lootSplitterService.splitLoot(session, "");
-            previousHunts.add(previousHuntModel);
+            if(containsAllMembers(currentHuntModel, previousHuntModel))
+                previousHunts.add(previousHuntModel);
         }
 
         HuntComparatorModel comparedData = lootSplitterService.compareHunts(currentHuntModel, previousHunts);
         List<EmbedCreateFields.Field> fields = fieldsBuilder(comparedData);
 
         return createEmbeddedMessages(fields,
-                previousHuntSessions.size() + " Hunt session(s) comparison - " + comparedData.getComparedMembers().size() + " members (per hour)",
+                previousHunts.size() + " Hunt session(s) comparison - " + comparedData.getComparedMembers().size() + " members (per hour)",
                 "",
                 "",
                 "",
@@ -160,6 +170,15 @@ public class SplitterComparatorHandler extends InteractionEvent {
         return fields;
     }
 
+    private boolean containsAllMembers(SplitLootModel currentHuntModel, SplitLootModel previousHuntModel) {
+        Set<String> previousHuntMemberNames = previousHuntModel.getMembers().stream()
+                .map(member -> member.getName().toLowerCase())
+                .collect(Collectors.toSet());
+
+        return currentHuntModel.getMembers().stream().map(member -> member.getName().toLowerCase())
+                .allMatch(previousHuntMemberNames::contains);
+    }
+
     @Override
     public String getEventName() {
         return "";
@@ -167,6 +186,5 @@ public class SplitterComparatorHandler extends InteractionEvent {
 
     @Override
     protected void executeEventProcess() {
-
     }
 }

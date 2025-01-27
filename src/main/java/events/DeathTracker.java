@@ -174,13 +174,12 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
     private EmbedCreateFields.Footer getFooter(DeathData data) {
         StringBuilder builder = new StringBuilder();
-        builder.append(data.getCharacter().getName());
         if(data.getLostLevels() > 0)
-            builder.append(" lost ")
+            builder.append(data.getCharacter().getName())
+                    .append(" lost ")
                     .append(data.getLostLevels())
                     .append(" level(s) and was downgraded to Level ")
                     .append(data.getCharacter().getLevel());
-        else builder.append(" did not lose level");
         if(data.getLostExperience() > 0) builder.append("\nCharacter lost approx. ")
                 .append(data.getLostExperience())
                 .append(" experience if died with full blessings");
