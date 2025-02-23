@@ -6,7 +6,7 @@ import apis.tibiaLabs.model.BoostedModel;
 public class TibiaLabsAPI extends WebClient {
     @Override
     protected String getUrl() {
-        return "https://api.tibialabs.com/v2/";
+        return "https://api.tibialabs.com/v3/";
     }
 
     public BoostedModel getBoostedCreature() {
