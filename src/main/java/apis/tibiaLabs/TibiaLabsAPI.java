@@ -6,15 +6,15 @@ import apis.tibiaLabs.model.BoostedModel;
 public class TibiaLabsAPI extends WebClient {
     @Override
     protected String getUrl() {
-        return "https://api.tibialabs.com/v3/";
+        return "https://api.tibialabs.com/v3/boosted/";
     }
 
     public BoostedModel getBoostedCreature() {
-        return getBoostedBase("boostedcreature");
+        return getBoostedBase("creature");
     }
 
     public BoostedModel getBoostedBoss() {
-        return getBoostedBase("boostedboss");
+        return getBoostedBase("boss");
     }
 
     private BoostedModel getBoostedBase(String param) {
