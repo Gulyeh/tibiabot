@@ -2,8 +2,7 @@ package apis.tibiaData.model.deathtracker;
 
 import lombok.Getter;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.util.List;
 
 @Getter
@@ -14,8 +13,10 @@ public class DeathResponse {
     private List<Killer> killers;
 
     public LocalDateTime getTimeLocal() {
-        OffsetDateTime odt = OffsetDateTime.parse(time).plusHours(1);
-        return odt.toLocalDateTime();
+        Instant utcInstant = Instant.parse(time);
+        ZoneId warsawTimeZone = ZoneId.of("Europe/Warsaw");
+        ZonedDateTime warsawTime = utcInstant.atZone(ZoneId.of("UTC")).withZoneSameInstant(warsawTimeZone);
+        return warsawTime.toLocalDateTime();
     }
 
     public LocalDateTime getTimeUTC() {
