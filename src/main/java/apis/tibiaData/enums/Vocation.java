@@ -13,11 +13,14 @@ public enum Vocation {
     MS("Master Sorcerer", true, ":fire:"),
     ED("Elder Druid", true, ":snowflake:"),
     EK("Elite Knight", true, ":shield:"),
+    EM("Exalted Monk", true, ":punch:"),
     K("Knight", false, ":shield:"),
     P("Paladin", false, ":bow_and_arrow:"),
     D("Druid", false, ":snowflake:"),
     S("Sorcerer", false, ":fire:"),
-    NONE("None", false, ":no_entry_sign:");
+    M("Monk", false, ":punch:"),
+    NONE("None", false, ":no_entry_sign:"),
+    UNKNOWN("Unknown", false, ":question:");
 
     private final String name;
     private final boolean promotion;
@@ -25,6 +28,6 @@ public enum Vocation {
 
     public static Vocation getEnum(String value) {
         Optional<Vocation> voc = Arrays.stream(Vocation.values()).filter(x -> x.getName().equals(value)).findFirst();
-        return voc.orElse(null);
+        return voc.orElse(Vocation.UNKNOWN);
     }
 }
