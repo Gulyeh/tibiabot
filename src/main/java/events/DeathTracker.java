@@ -104,7 +104,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
             int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
             boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guildId);
 
-            ArrayList<DeathData> deaths = deathTrackerService.getDeaths(guildId)
+            List<DeathData> deaths = deathTrackerService.getDeaths(guildId)
                     .stream()
                     .filter(x -> x.getKilledAtLevel() >= minimumLevel)
                     .collect(Collectors.toCollection(ArrayList::new));

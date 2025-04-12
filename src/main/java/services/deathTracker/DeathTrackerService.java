@@ -64,7 +64,7 @@ public class DeathTrackerService implements Cacheable {
         return deads;
     }
 
-    public void processAntiSpam(Snowflake guildId, ArrayList<DeathData> deaths) {
+    public void processAntiSpam(Snowflake guildId, List<DeathData> deaths) {
         String world = GuildCacheData.worldCache.get(guildId);
         Map<String, List<DeathData>> groupedDeaths = deaths.stream()
                 .collect(Collectors.groupingBy(death -> death.getCharacter().getName()));
