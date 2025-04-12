@@ -73,14 +73,14 @@ public class DeathTrackerService implements Cacheable {
             String characterName = entry.getKey();
             List<DeathData> deathList = entry.getValue();
 
-            if (deathList.size() >= maxDeathsAllowedAtOnce) {
-                Cache<String, List<Snowflake>> worldCache = spamDeaths.get(world);
-                List<Snowflake> flaggedServers = (worldCache != null) ? worldCache.getIfPresent(characterName) : null;
-                if (flaggedServers != null && flaggedServers.contains(guildId)) {
-                    deaths.removeAll(deathList);
-                    continue;
-                }
+            Cache<String, List<Snowflake>> worldCache = spamDeaths.get(world);
+            List<Snowflake> flaggedServers = (worldCache != null) ? worldCache.getIfPresent(characterName) : null;
+            if (flaggedServers != null && flaggedServers.contains(guildId)) {
+                deaths.removeAll(deathList);
+                continue;
+            }
 
+            if (deathList.size() >= maxDeathsAllowedAtOnce) {
                 addCharacterToSpamCache(world, characterName, guildId);
                 deathList.get(0).setSpamDeath(true);
                 deaths.removeAll(deathList.subList(1, deathList.size()));
