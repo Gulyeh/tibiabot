@@ -7,12 +7,13 @@ public abstract class Singleton {
 
     @SuppressWarnings("unchecked")
     protected static <T> T getInstance(Class<T> type) {
-        return (T) instances.computeIfAbsent(type, key -> {
-            try {
-                return key.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to create singleton instance for: " + type, e);
-            }
-        });
+        if(instances.get(type) != null) return (T) instances.get(type);
+        try {
+            T instance =  type.getDeclaredConstructor().newInstance();
+            instances.putIfAbsent(type, instance);
+            return instance;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create singleton instance for: " + type, e);
+        }
     }
 }

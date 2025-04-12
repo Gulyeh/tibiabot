@@ -1,8 +1,20 @@
 package utils;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+
+import static cache.utils.UtilsCache.*;
 
 public final class Methods {
     public static <K, V> K getKey(Map<K, V> map, V value) {
@@ -19,47 +31,69 @@ public final class Methods {
     }
 
     public static String formatWikiGifLink(String name) {
-        return "https://tibia.fandom.com/wiki/Special:Redirect/file/" + replaceWikiChars(convertToUpperCaseAfterSpace(name)) + ".gif";
+        try {
+            name = validateMonsterName(name);
+            if(wikiGifLinksMap.containsKey(name)) return wikiGifLinksMap.get(name);
+
+            String query = URLEncoder.encode(name + " gif", StandardCharsets.UTF_8);
+            Document document = getWikiPageDocument("https://tibia.fandom.com/wiki/Special:Search?scope=internal&query=" + query + "&ns%5B0%5D=6&filter=imageOnly");
+            String monsterName = document.select("a.unified-search__result__link").first().attr("href").split("File:")[1];
+            String link = "https://tibia.fandom.com/wiki/Special%3ARedirect/file/" + monsterName;
+
+            wikiGifLinksMap.put(name, link);
+            return link;
+        } catch (Exception ignore) {
+            return "";
+        }
     }
 
     public static String formatWikiLink(String name) {
-        return "https://tibia.fandom.com/wiki/" + replaceWikiChars(convertToUpperCaseAfterSpace(name));
+        try {
+            name = validateMonsterName(name);
+            if(wikiArticlesLinksMap.containsKey(name)) return wikiArticlesLinksMap.get(name);
+
+            String query = URLEncoder.encode(name, StandardCharsets.UTF_8);
+            Document document = getWikiPageDocument("https://tibia.fandom.com/wiki/Special:Search?scope=internal&navigationSearch=true&query="+query);
+            String link = document.select("a.unified-search__result__link").first().text().trim();
+
+            wikiArticlesLinksMap.put(name, link);
+            return link;
+        } catch (Exception ignore) {
+            return "";
+        }
     }
 
     public static String getPlayerIcon() {
-        return formatWikiGifLink("Red_Skull_%28Item%29");
+        return formatWikiGifLink("Red Skull Item");
     }
 
     public static String formatToDiscordLink(String title, String link) {
         return "[" + title + "](" + link + ")";
     }
 
-    private static String replaceWikiChars(String name) {
-        if(name.equalsIgnoreCase("dragon pack")) return "Despor";
-        if(name.startsWith("a "))
-            name = name.replace("a ", "");
-        return name
-                .replace(" The ", " the ")
-                .replace(" Of ", " of ")
-                .replace(" ", "_");
+    private static String validateMonsterName(String name) {
+        if(name.equalsIgnoreCase("dragon pack")) name = "Despor";
+        return name;
     }
 
-    public static String convertToUpperCaseAfterSpace(String value) {
-        String[] words = value.split("(\\w+-)|\\s+");
-        StringBuilder result = new StringBuilder();
-
-        for (String word : words)
-        {
-            if(word.length() == 1) {
-                result.append(word)
-                        .append(" ");
-                continue;
-            }
-            result.append(Character.toUpperCase(word.charAt(0)))
-                    .append(word.substring(1))
-                    .append(" ");
+    private static String readInputStream(InputStream input) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+        StringBuilder content = new StringBuilder();
+        String inputLine;
+        while ((inputLine = reader.readLine()) != null) {
+            content.append(inputLine).append("\n");
         }
+        reader.close();
+        return content.toString();
+    }
 
-        return result.toString().trim();
+    private static Document getWikiPageDocument(String url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) URI.create(url)
+                .toURL()
+                .openConnection();
+        conn.setRequestMethod("GET");
+        conn.disconnect();
+        String content = readInputStream(conn.getInputStream());
+        return Jsoup.parse(content);
     }
 }

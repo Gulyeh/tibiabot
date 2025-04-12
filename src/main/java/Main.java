@@ -75,8 +75,8 @@ public class Main {
                 .setSplitLoot()
                 .setRegistration()
                 .setUnregistration()
-                .clearUnusedCommands()
                 .setDeathSpamFilter()
+                .clearUnusedCommands()
                 .build();
     }
 

@@ -82,8 +82,8 @@ public class DeathTrackerService implements Cacheable {
 
             if (deathList.size() >= maxDeathsAllowedAtOnce) {
                 addCharacterToSpamCache(world, characterName, guildId);
-                deathList.get(0).setSpamDeath(true);
-                deaths.removeAll(deathList.subList(1, deathList.size()));
+                deathList.get(deathList.size() - 1).setSpamDeath(true);
+                deaths.removeAll(deathList.subList(0, deathList.size() - 1));
             }
         }
     }
