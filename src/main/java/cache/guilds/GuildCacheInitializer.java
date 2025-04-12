@@ -41,6 +41,12 @@ public class GuildCacheInitializer {
         GuildCacheData.addMinimumDeathLevelCache(guildId, model.getDeathMinimumLevel());
     }
 
+    public void addToDeathsFilterCache(GuildModel model) {
+        if(!model.isFilterDeaths()) return;
+        Snowflake guildId = Snowflake.of(model.getGuildId());
+        GuildCacheData.addToAntiSpamDeath(guildId);
+    }
+
     public void addToChannelsCache(GuildModel model) {
         if(model.getChannels() == null || model.getGuildId().isEmpty()) {
             log.info("Could not add to channels to cache");

@@ -161,6 +161,14 @@ public class Commands {
         return this;
     }
 
+    public Commands setDeathSpamFilter() {
+        ApplicationCommandRequest filterDeaths =
+                requestBuilder(setDeathSpamFilter, "Filter spam deaths of character and blocks for some duration", "Filter deaths", ApplicationCommandOption.Type.BOOLEAN);
+
+        if(!listOfCommands.contains(filterDeaths)) listOfCommands.add(filterDeaths);
+        return this;
+    }
+
     private ApplicationCommandRequest requestBuilder(String name, String description, String optionDescription, ApplicationCommandOption.Type type) {
         return ApplicationCommandRequest.builder()
                 .name(name)

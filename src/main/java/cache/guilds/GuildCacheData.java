@@ -3,6 +3,7 @@ package cache.guilds;
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Methods.getKey;
@@ -11,6 +12,7 @@ public final class GuildCacheData {
     public static ConcurrentHashMap<Snowflake, String> worldCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
+    public static Set<Snowflake> antiSpamDeathCache = ConcurrentHashMap.newKeySet();
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
         if(guildId == null || worldName.isEmpty()) return;
@@ -32,11 +34,22 @@ public final class GuildCacheData {
         });
     }
 
+    public static void addToAntiSpamDeath(Snowflake guildId) {
+        if(guildId == null) return;
+        antiSpamDeathCache.add(guildId);
+    }
+
+    public static void removeAntiSpamDeath(Snowflake guildId) {
+        if(guildId == null) return;
+        antiSpamDeathCache.remove(guildId);
+    }
+
     public static void removeGuild(Snowflake guildId) {
         if(guildId == null) return;
         worldCache.remove(guildId);
         channelsCache.remove(guildId);
         minimumDeathLevelCache.remove(guildId);
+        antiSpamDeathCache.remove(guildId);
     }
 
     public static void removeChannel(Snowflake guildId, Snowflake channelId) {
@@ -49,6 +62,7 @@ public final class GuildCacheData {
         worldCache.clear();
         channelsCache.clear();
         minimumDeathLevelCache.clear();
+        antiSpamDeathCache.clear();
     }
 
     public static boolean isGuildCached(Snowflake guildId) {

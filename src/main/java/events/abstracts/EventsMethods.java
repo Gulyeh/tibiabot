@@ -49,6 +49,11 @@ public abstract class EventsMethods implements Listener {
         return value.map(ApplicationCommandInteractionOptionValue::getRaw).orElse(null);
     }
 
+    protected Boolean getBooleanParameter(ChatInputInteractionEvent event) {
+        Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().get(0).getValue();
+        return value.map(ApplicationCommandInteractionOptionValue::asBoolean).orElse(false);
+    }
+
     protected Snowflake getUserId(InteractionCreateEvent event) {
         return event.getInteraction().getUser().getId();
     }

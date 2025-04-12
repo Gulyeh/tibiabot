@@ -24,6 +24,8 @@ public class DeathData {
     private long lostExperience;
     private final LocalDateTime killedAtDate;
     private final GuildData guild;
+    @Setter
+    private boolean isSpamDeath;
 
     public DeathData(CharacterData character, DeathResponse death, GuildData guild) {
         this.character = character.clone();

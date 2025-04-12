@@ -18,9 +18,11 @@ public final class CommandsNames {
     public final static String splitLootCommand = "splitloot";
     public final static String registerCommand = "register";
     public final static String unregisterCommand = "unregister";
+    public final static String setDeathSpamFilter = "filterdeathspam";
 
     public static List<String> getCommands() {
         return Arrays.asList(worldCommand, serverStatusCommand, tibiaCoinsCommand, killingStatsCommand, houseCommand, eventsCommand, miniWorldChangesCommand,
-                boostedsCommand, deathsCommand, setMinimumDeathsLevelCommand, setOnlineTrackerCommand, splitLootCommand, registerCommand, unregisterCommand);
+                boostedsCommand, deathsCommand, setMinimumDeathsLevelCommand, setOnlineTrackerCommand, splitLootCommand, registerCommand, unregisterCommand,
+                setDeathSpamFilter);
     }
 }

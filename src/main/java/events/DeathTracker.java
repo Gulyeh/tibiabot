@@ -23,9 +23,11 @@ import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
 import utils.Methods;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
 import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
@@ -100,10 +102,15 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
             if(guildChannel == null) continue;
 
             int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
-            List<DeathData> deaths = deathTrackerService.getDeaths(guildId)
+            boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guildId);
+
+            ArrayList<DeathData> deaths = deathTrackerService.getDeaths(guildId)
                     .stream()
                     .filter(x -> x.getKilledAtLevel() >= minimumLevel)
-                    .toList();
+                    .collect(Collectors.toCollection(ArrayList::new));
+
+            if(isAntiSpam)
+                deathTrackerService.processAntiSpam(guildId, deaths);
 
             processEmbeddableData(guildChannel, deaths);
         }
@@ -129,11 +136,12 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         for (DeathData death : model) {
             sendEmbeddedMessages(channel,
                     null,
-                    "",
+                    death.isSpamDeath() ? "Death Spam detected!\n" +
+                            "Blocked " + death.getCharacter().getName() + "'s deaths for " + deathTrackerService.getAntiSpamWaitHours() + " hour(s)\n" : "",
                     getDescription(death),
                     "",
                     getThumbnail(death),
-                    Color.DARK_GRAY,
+                    death.isSpamDeath() ? Color.RED: Color.DARK_GRAY,
                     getFooter(death));
         }
     }

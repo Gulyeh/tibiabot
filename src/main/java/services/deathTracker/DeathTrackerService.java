@@ -7,18 +7,18 @@ import apis.tibiaData.model.deathtracker.CharacterResponse;
 import apis.tibiaData.model.deathtracker.DeathResponse;
 import apis.tibiaData.model.deathtracker.GuildData;
 import cache.guilds.GuildCacheData;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import discord4j.common.util.Snowflake;
 import interfaces.Cacheable;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import services.deathTracker.decorator.ExperienceLostDecorator;
 import services.deathTracker.model.DeathData;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,13 +30,18 @@ public class DeathTrackerService implements Cacheable {
     private final ConcurrentHashMap<String, List<CharacterData>> mapCache; // data of previously online characters
     private ConcurrentHashMap<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
     private final ConcurrentHashMap<String, ArrayList<DeathResponse>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
+    private final ConcurrentHashMap<String, Cache<String, List<Snowflake>>> spamDeaths; // stores all spam death characters for @antiSpamWaitHours hours
     private final int deathRangeAllowance = 15;
+    private final int maxDeathsAllowedAtOnce = 5;
+    @Getter
+    private final int antiSpamWaitHours = 1;
     private final TibiaDataAPI api;
 
     public DeathTrackerService() {
         mapCache = new ConcurrentHashMap<>();
         deathsCache = new ConcurrentHashMap<>();
         recentDeathsCache = new ConcurrentHashMap<>();
+        spamDeaths = new ConcurrentHashMap<>();
         api = new TibiaDataAPI();
     }
 
@@ -55,7 +60,32 @@ public class DeathTrackerService implements Cacheable {
 
         List<DeathData> deads = getCharactersDeathData(checkableCharacters, world);
         updateCachedData(checkableCharacters, world);
+
         return deads;
+    }
+
+    public void processAntiSpam(Snowflake guildId, ArrayList<DeathData> deaths) {
+        String world = GuildCacheData.worldCache.get(guildId);
+        Map<String, List<DeathData>> groupedDeaths = deaths.stream()
+                .collect(Collectors.groupingBy(death -> death.getCharacter().getName()));
+
+        for (Map.Entry<String, List<DeathData>> entry : groupedDeaths.entrySet()) {
+            String characterName = entry.getKey();
+            List<DeathData> deathList = entry.getValue();
+
+            if (deathList.size() >= maxDeathsAllowedAtOnce) {
+                Cache<String, List<Snowflake>> worldCache = spamDeaths.get(world);
+                List<Snowflake> flaggedServers = (worldCache != null) ? worldCache.getIfPresent(characterName) : null;
+                if (flaggedServers != null && flaggedServers.contains(guildId)) {
+                    deaths.removeAll(deathList);
+                    continue;
+                }
+
+                addCharacterToSpamCache(world, characterName, guildId);
+                deathList.get(0).setSpamDeath(true);
+                deaths.removeAll(deathList.subList(1, deathList.size()));
+            }
+        }
     }
 
     private void updateOfflineCharacters(List<CharacterData> cachedCharacters,
@@ -167,5 +197,18 @@ public class DeathTrackerService implements Cacheable {
             worldMap.removeIf(x -> x.getTimeLocal().isBefore(LocalDateTime.now().minusMinutes(deathRangeAllowance)));
             return worldMap;
         });
+    }
+
+    private void addCharacterToSpamCache(String world, String character, Snowflake guildId) {
+        Cache<String, List<Snowflake>> worldCache = spamDeaths.computeIfAbsent(world, k -> Caffeine.newBuilder()
+                .expireAfterWrite(antiSpamWaitHours, TimeUnit.HOURS)
+                .build());
+
+        List<Snowflake> flaggedServers = worldCache.getIfPresent(character);
+        if(flaggedServers == null)
+            flaggedServers = new ArrayList<>();
+
+        flaggedServers.add(guildId);
+        worldCache.put(character, flaggedServers);
     }
 }

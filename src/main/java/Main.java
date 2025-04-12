@@ -1,7 +1,6 @@
 import builders.commands.CommandsBuilder;
 import cache.characters.CharactersCaching;
 import cache.guilds.GuildCaching;
-import cache.interfaces.Cachable;
 import discord.Connector;
 import events.*;
 import events.guildEvents.RemovedChannel;
@@ -56,7 +55,7 @@ public class Main {
 
         // Add listeners for specific events
         List.of(new MinimumDeathLevel(), new LootSplitter(), new RemovedChannel(), new RemovedGuild(),
-                        new CharacterRegistration(), new CharacterUnregistration())
+                        new CharacterRegistration(), new CharacterUnregistration(), new FilterSpamDeaths())
                 .forEach(Connector::addListener);
     }
 
@@ -77,6 +76,7 @@ public class Main {
                 .setRegistration()
                 .setUnregistration()
                 .clearUnusedCommands()
+                .setDeathSpamFilter()
                 .build();
     }
 
