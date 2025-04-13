@@ -143,7 +143,10 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         merged.addAll(guildsFiltered);
         if(merged.isEmpty()) return;
 
-        processEmbeddableData(guildChannel, merged.stream().toList());
+        List<DeathData> mergedSortedList = new ArrayList<>(merged);
+        mergedSortedList.sort(Comparator.comparing(DeathData::getKilledAtDate));
+
+        processEmbeddableData(guildChannel, mergedSortedList);
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {

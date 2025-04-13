@@ -32,7 +32,7 @@ public class DeathTrackerService implements Cacheable {
     private final ConcurrentHashMap<String, ArrayList<DeathResponse>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
     private final ConcurrentHashMap<String, Cache<String, List<Snowflake>>> spamDeaths; // stores all spam death characters for @antiSpamWaitHours hours
     private final int deathRangeAllowance = 15;
-    private final int maxDeathsAllowedAtOnce = 5;
+    private final int maxDeathsAllowedAtOnce = 4;
     @Getter
     private final int antiSpamWaitHours = 1;
     @Getter
