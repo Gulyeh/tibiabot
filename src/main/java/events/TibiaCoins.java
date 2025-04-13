@@ -43,7 +43,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(tibiaCoinsCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(tibiaCoinsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -85,15 +85,7 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
         PriceModel prices = tibiaCoinsService.getPrices();
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.channelsCache
-                    .get(guildId)
-                    .get(EventTypes.TIBIA_COINS);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.TIBIA_COINS);
             if(guildChannel == null) continue;
 
             processEmbeddableData(guildChannel, prices);

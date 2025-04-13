@@ -1,5 +1,6 @@
 package events.abstracts;
 
+import builders.commands.names.model.CommandOption;
 import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
@@ -8,20 +9,18 @@ import discord4j.core.event.domain.interaction.InteractionCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import events.interfaces.Listener;
 import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
-import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
-import org.slf4j.Logger;
 
 import java.util.Optional;
 
 import static cache.guilds.GuildCacheData.isGuildCached;
 import static discord.Connector.client;
-import static mongo.GuildDocumentActions.*;
 
 @Slf4j
 public abstract class EventsMethods implements Listener {
@@ -49,9 +48,27 @@ public abstract class EventsMethods implements Listener {
         return value.map(ApplicationCommandInteractionOptionValue::getRaw).orElse(null);
     }
 
+    protected String getTextParameter(ChatInputInteractionEvent event, CommandOption option) {
+        Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().stream()
+                .filter(x -> x.getName().equals(option.getOptionName())).findFirst().get().getValue();
+        return value.map(ApplicationCommandInteractionOptionValue::getRaw).orElse(null);
+    }
+
     protected Boolean getBooleanParameter(ChatInputInteractionEvent event) {
         Optional<ApplicationCommandInteractionOptionValue> value = event.getOptions().get(0).getValue();
         return value.map(ApplicationCommandInteractionOptionValue::asBoolean).orElse(false);
+    }
+
+    protected GuildMessageChannel getGuildChannel(Snowflake guildId, EventTypes eventTypes) {
+        Snowflake channel = GuildCacheData.channelsCache
+                .get(guildId)
+                .get(eventTypes);
+        if(channel == null || channel.asString().isEmpty()) return null;
+
+        Guild guild = client.getGuildById(guildId).block();
+        if(guild == null) return null;
+
+        return (GuildMessageChannel)guild.getChannelById(channel).block();
     }
 
     protected Snowflake getUserId(InteractionCreateEvent event) {
@@ -82,7 +99,6 @@ public abstract class EventsMethods implements Listener {
 
             if (!isGuildCached(guildId)) {
                 GuildModel model = new GuildModel();
-                model.setChannels(new ChannelModel());
                 model.setGuildId(guildId.asString());
                 model.getChannels().setByEventType(eventType, channelId.asString());
                 if(!guildDocumentActions.insertDocuments(guildDocumentActions.createDocument(model)))

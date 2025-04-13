@@ -18,6 +18,8 @@ public class CharacterInfo {
     @Getter
     private String name;
     @Getter
+    private String world;
+    @Getter
     private Integer level;
     private String vocation;
     @Getter

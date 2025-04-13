@@ -12,10 +12,6 @@ public class GuildModel {
     private String world;
     private int deathMinimumLevel = 8;
     private boolean filterDeaths = false;
-    private ChannelModel channels;
-
-    public ChannelModel getChannels() {
-        if(channels == null) return new ChannelModel();
-        return channels;
-    }
+    private ChannelModel channels = new ChannelModel();
+    private DeathFilter deathFilter = new DeathFilter();
 }

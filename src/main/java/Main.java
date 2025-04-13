@@ -3,11 +3,15 @@ import cache.characters.CharactersCaching;
 import cache.guilds.GuildCaching;
 import discord.Connector;
 import events.*;
+import events.commands.DeathFilters;
+import events.commands.FilterSpamDeaths;
+import events.commands.MinimumDeathLevel;
+import events.commands.TrackWorld;
 import events.guildEvents.RemovedChannel;
 import events.guildEvents.RemovedGuild;
 import events.lootSplitter.LootSplitter;
-import events.registration.CharacterRegistration;
-import events.registration.CharacterUnregistration;
+import events.commands.registration.CharacterRegistration;
+import events.commands.registration.CharacterUnregistration;
 import mongo.MongoConnector;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
@@ -55,27 +59,14 @@ public class Main {
 
         // Add listeners for specific events
         List.of(new MinimumDeathLevel(), new LootSplitter(), new RemovedChannel(), new RemovedGuild(),
-                        new CharacterRegistration(), new CharacterUnregistration(), new FilterSpamDeaths())
+                        new CharacterRegistration(), new CharacterUnregistration(), new FilterSpamDeaths(),
+                        new DeathFilters())
                 .forEach(Connector::addListener);
     }
 
     private static void buildCommands() {
         CommandsBuilder.builder()
-                .setEventsChannel()
-                .setHousesChannel()
-                .setKillingStatsChannel()
-                .setServerStatusChannel()
-                .setTibiaCoinsPricesChannel()
-                .setWorld()
-                .setBoostedsChannel()
-                .setMiniWorldChangeChannel()
-                .setDeathsChannel()
-                .setMinimumDeathsLevel()
-                .setOnlineTracker()
-                .setSplitLoot()
-                .setRegistration()
-                .setUnregistration()
-                .setDeathSpamFilter()
+                .addCommands()
                 .clearUnusedCommands()
                 .build();
     }

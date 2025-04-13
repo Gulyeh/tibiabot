@@ -4,6 +4,8 @@ import apis.WebClient;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.charactersOnline.World;
 import apis.tibiaData.model.deathtracker.CharacterResponse;
+import apis.tibiaData.model.deathtracker.GuildData;
+import apis.tibiaData.model.guilds.GuildModel;
 import apis.tibiaData.model.house.HouseBaseInfo;
 import apis.tibiaData.model.house.HouseInfo;
 import apis.tibiaData.model.houses.HouseBase;
@@ -47,6 +49,8 @@ public class TibiaDataAPI extends WebClient {
         return getUrl() + "worlds";
     }
 
+    private String getGuildsUrl(String name) { return getUrl() + "guild/" + URLEncoder.encode(name, StandardCharsets.UTF_8).replace("+", "%20"); }
+
 
     public List<CharacterData> getCharactersOnWorld(String world) {
         String response = sendRequest(getCustomRequest(getWorldUrl(world)));
@@ -88,5 +92,12 @@ public class TibiaDataAPI extends WebClient {
         HouseBaseInfo houseData = getModel(response, HouseBaseInfo.class);
         if(houseData == null) return new HouseInfo();
         return houseData.getHouse();
+    }
+
+    public GuildModel getGuild(String guildName) {
+        String response = sendRequest(getCustomRequest(getGuildsUrl(guildName)));
+        GuildModel guildData = getModel(response, GuildModel.class);
+        if(guildData == null) return new GuildModel();
+        return guildData;
     }
 }

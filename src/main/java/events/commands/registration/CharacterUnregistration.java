@@ -1,4 +1,4 @@
-package events.registration;
+package events.commands.registration;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import events.abstracts.EventsMethods;
@@ -24,7 +24,7 @@ public class CharacterUnregistration extends EventsMethods {
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(unregisterCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(unregisterCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 boolean unregistered = unregisterCharacter.unregisterCharacter(getTextParameter(event), getUserId(event));
                 return event.createFollowup(unregistered ? "Unregistered character successfully" : "Character could not be unregistered");

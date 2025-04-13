@@ -52,7 +52,7 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(killingStatsCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(killingStatsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -91,15 +91,7 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.channelsCache
-                    .get(guildId)
-                    .get(EventTypes.KILLED_BOSSES);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.KILLED_BOSSES);
             if(guildChannel == null) continue;
 
             processEmbeddableData(guildChannel, killStatisticsService.getStatistics(guildId));

@@ -1,4 +1,4 @@
-package events;
+package events.commands;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
 
-import static builders.commands.names.CommandsNames.setDeathSpamFilter;
+import static builders.commands.names.CommandsNames.setDeathSpamFilterCommand;
 import static cache.guilds.GuildCacheData.*;
 import static discord.Connector.client;
 import static events.utils.EventName.filterSpamDeaths;
@@ -20,7 +20,7 @@ public class FilterSpamDeaths extends EventsMethods {
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(setDeathSpamFilter)) return Mono.empty();
+                if (!event.getCommandName().equals(setDeathSpamFilterCommand.getCommandName())) return Mono.empty();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
                 event.deferReply().withEphemeral(true).subscribe();
                 return setFilterValue(event);

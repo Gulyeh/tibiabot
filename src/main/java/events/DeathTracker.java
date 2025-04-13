@@ -6,7 +6,6 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -21,16 +20,15 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
+import mongo.models.DeathFilter;
 import utils.Methods;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
 import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
+import static cache.guilds.GuildCacheData.deathTrackerFilters;
 import static discord.Connector.client;
 import static utils.Methods.formatToDiscordLink;
 import static utils.Methods.formatWikiGifLink;
@@ -48,7 +46,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(deathsCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(deathsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -63,10 +61,10 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        log.info("Activating " + getEventName());
+        log.info("Activating {}", getEventName());
         while (true) {
             try {
-                log.info("Executing thread " + getEventName());
+                log.info("Executing thread {}", getEventName());
                 deathTrackerService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
@@ -90,15 +88,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.channelsCache
-                    .get(guildId)
-                    .get(EventTypes.DEATH_TRACKER);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DEATH_TRACKER);
             if(guildChannel == null) continue;
 
             int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
@@ -113,6 +103,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
                 deathTrackerService.processAntiSpam(guildId, deaths);
 
             processEmbeddableData(guildChannel, deaths);
+            executeFilteredDeaths(guildId, deaths);
         }
     }
 
@@ -128,8 +119,31 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        addMinimumDeathLevelCache(getGuildId(event), 8);
+        addMinimumDeathLevelCache(getGuildId(event), deathTrackerService.getMinimumDefaultLevel());
         return event.createFollowup("Set default Death Tracker event channel to <#" + channelId.asString() + ">");
+    }
+
+
+    private void executeFilteredDeaths(Snowflake guildId, List<DeathData> model) {
+        GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.FILTERED_DEATH_TRACKER);
+        if(guildChannel == null) return;
+
+        DeathFilter filter = deathTrackerFilters.get(guildId);
+        if (filter == null) return;
+
+        List<DeathData> namesFiltered = model.stream()
+                .filter(x -> filter.getNames().contains(x.getCharacter().getName()))
+                .toList();
+
+        List<DeathData> guildsFiltered = model.stream()
+                .filter(x -> filter.getGuilds().contains(x.getGuild().getName()))
+                .toList();
+
+        Set<DeathData> merged = new HashSet<>(namesFiltered);
+        merged.addAll(guildsFiltered);
+        if(merged.isEmpty()) return;
+
+        processEmbeddableData(guildChannel, merged.stream().toList());
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {

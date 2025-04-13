@@ -8,9 +8,12 @@ import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
 import mongo.models.ChannelModel;
 import mongo.models.GuildModel;
+import mongo.models.DeathFilter;
 
 import java.util.List;
 
+import static cache.guilds.GuildCacheData.addDeathFilterGuildCache;
+import static cache.guilds.GuildCacheData.addDeathFilterNameCache;
 import static discord.Connector.client;
 
 @Slf4j
@@ -41,10 +44,17 @@ public class GuildCacheInitializer {
         GuildCacheData.addMinimumDeathLevelCache(guildId, model.getDeathMinimumLevel());
     }
 
-    public void addToDeathsFilterCache(GuildModel model) {
+    public void addToAntiSpamDeathsCache(GuildModel model) {
         if(!model.isFilterDeaths()) return;
         Snowflake guildId = Snowflake.of(model.getGuildId());
         GuildCacheData.addToAntiSpamDeath(guildId);
+    }
+
+    public void addDeathsFilterCache(GuildModel model) {
+        DeathFilter filter = model.getDeathFilter();
+        Snowflake guildId = Snowflake.of(model.getGuildId());
+        filter.getNames().forEach(x -> addDeathFilterNameCache(guildId, x));
+        filter.getGuilds().forEach(x -> addDeathFilterGuildCache(guildId, x));
     }
 
     public void addToChannelsCache(GuildModel model) {
@@ -93,6 +103,10 @@ public class GuildCacheInitializer {
                 case ONLINE_TRACKER -> {
                     if(channels.getOnlineTracker().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getOnlineTracker());
+                }
+                case FILTERED_DEATH_TRACKER -> {
+                    if(channels.getFilteredDeathTracker().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getFilteredDeathTracker());
                 }
             };
 

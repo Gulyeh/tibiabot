@@ -44,7 +44,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(serverStatusCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(serverStatusCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -82,15 +82,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            Snowflake channel = GuildCacheData.channelsCache
-                    .get(guildId)
-                    .get(EventTypes.SERVER_STATUS);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.SERVER_STATUS);
             if(guildChannel == null) continue;
 
             processEmbeddableData(guildChannel, worlds);

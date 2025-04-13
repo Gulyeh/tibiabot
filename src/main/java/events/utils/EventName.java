@@ -16,4 +16,5 @@ public final class EventName {
     public static final String registerCharacter = "Register Character Event";
     public static final String unregisterCharacter = "Unregister Character Event";
     public static final String filterSpamDeaths = "Filter Spam Deaths Event";
+    public static final String filterDeathTracker = "Filtered Death Tracker Event";
 }

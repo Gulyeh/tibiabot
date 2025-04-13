@@ -1,4 +1,4 @@
-package events;
+package events.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
@@ -19,7 +19,7 @@ public class MinimumDeathLevel extends EventsMethods {
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(setMinimumDeathsLevelCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(setMinimumDeathsLevelCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
                 return setLevel(event);

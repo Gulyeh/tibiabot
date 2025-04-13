@@ -1,4 +1,4 @@
-package events;
+package events.commands;
 
 import apis.tibiaData.model.worlds.WorldModel;
 import cache.guilds.GuildCacheData;
@@ -17,7 +17,6 @@ import services.worlds.WorldsService;
 import static builders.commands.names.CommandsNames.worldCommand;
 import static cache.guilds.GuildCacheData.isGuildCached;
 import static discord.Connector.client;
-import static mongo.GuildDocumentActions.*;
 
 @Slf4j
 public class TrackWorld extends EventsMethods implements Activable {
@@ -43,7 +42,7 @@ public class TrackWorld extends EventsMethods implements Activable {
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(worldCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(worldCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 

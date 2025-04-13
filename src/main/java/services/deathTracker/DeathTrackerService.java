@@ -35,6 +35,8 @@ public class DeathTrackerService implements Cacheable {
     private final int maxDeathsAllowedAtOnce = 5;
     @Getter
     private final int antiSpamWaitHours = 1;
+    @Getter
+    private final int minimumDefaultLevel = 8;
     private final TibiaDataAPI api;
 
     public DeathTrackerService() {

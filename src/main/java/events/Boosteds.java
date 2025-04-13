@@ -40,7 +40,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(boostedsCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(boostedsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -75,15 +75,7 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
     @Override
     protected void executeEventProcess() {
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
-            Snowflake channel = GuildCacheData.channelsCache
-                    .get(guildId)
-                    .get(EventTypes.BOOSTEDS);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.BOOSTEDS);
             if(guildChannel == null) continue;
 
             deleteMessages(guildChannel);

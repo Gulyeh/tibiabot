@@ -44,7 +44,7 @@ public class EventsCalendar extends ServerSaveEvent implements Channelable, Acti
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(eventsCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(eventsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -85,15 +85,7 @@ public class EventsCalendar extends ServerSaveEvent implements Channelable, Acti
     @Override
     protected void executeEventProcess() {
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
-            Snowflake channel = GuildCacheData.channelsCache
-                    .get(guildId)
-                    .get(EventTypes.EVENTS_CALENDAR);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.EVENTS_CALENDAR);
             if(guildChannel == null) continue;
 
             processData(guildChannel);

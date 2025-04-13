@@ -2,7 +2,10 @@ package cache.guilds;
 
 import cache.enums.EventTypes;
 import discord4j.common.util.Snowflake;
+import mongo.models.DeathFilter;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,6 +16,7 @@ public final class GuildCacheData {
     public static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
     public static Set<Snowflake> antiSpamDeathCache = ConcurrentHashMap.newKeySet();
+    public static ConcurrentHashMap<Snowflake, DeathFilter> deathTrackerFilters = new ConcurrentHashMap<>();
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
         if(guildId == null || worldName.isEmpty()) return;
@@ -34,6 +38,36 @@ public final class GuildCacheData {
         });
     }
 
+    public static void addDeathFilterNameCache(Snowflake guildId, String name) {
+        if(guildId == null || name == null || name.isEmpty()) return;
+        deathTrackerFilters
+                .computeIfAbsent(guildId, k -> new DeathFilter())
+                .getNames()
+                .add(name);
+    }
+
+    public static void addDeathFilterGuildCache(Snowflake guildId, String guild) {
+        if(guildId == null || guild == null || guild.isEmpty()) return;
+        deathTrackerFilters
+                .computeIfAbsent(guildId, k -> new DeathFilter())
+                .getGuilds()
+                .add(guild);
+    }
+
+    public static void removeDeathFilterNameCache(Snowflake guildId, String name) {
+        if(guildId == null || name == null || name.isEmpty()) return;
+        DeathFilter filter = deathTrackerFilters.get(guildId);
+        if(filter == null) return;
+        filter.getNames().remove(name);
+    }
+
+    public static void removeDeathFilterGuildCache(Snowflake guildId, String guild) {
+        if(guildId == null || guild == null || guild.isEmpty()) return;
+        DeathFilter filter = deathTrackerFilters.get(guildId);
+        if(filter == null) return;
+        filter.getGuilds().remove(guild);
+    }
+
     public static void addToAntiSpamDeath(Snowflake guildId) {
         if(guildId == null) return;
         antiSpamDeathCache.add(guildId);
@@ -46,10 +80,13 @@ public final class GuildCacheData {
 
     public static void removeGuild(Snowflake guildId) {
         if(guildId == null) return;
-        worldCache.remove(guildId);
-        channelsCache.remove(guildId);
-        minimumDeathLevelCache.remove(guildId);
-        antiSpamDeathCache.remove(guildId);
+        for(Field field : GuildCacheData.class.getDeclaredFields()) {
+            try {
+                Collection<?> map = (Collection<?>) field.get(GuildCacheData.class);
+                map.remove(guildId);
+            } catch (Exception ignore) {
+            }
+        }
     }
 
     public static void removeChannel(Snowflake guildId, Snowflake channelId) {
@@ -59,10 +96,13 @@ public final class GuildCacheData {
     }
 
     public static void resetCache() {
-        worldCache.clear();
-        channelsCache.clear();
-        minimumDeathLevelCache.clear();
-        antiSpamDeathCache.clear();
+        for(Field field : GuildCacheData.class.getDeclaredFields()) {
+            try {
+                Collection<?> map = (Collection<?>) field.get(GuildCacheData.class);
+                map.clear();
+            } catch (Exception ignore) {
+            }
+        }
     }
 
     public static boolean isGuildCached(Snowflake guildId) {

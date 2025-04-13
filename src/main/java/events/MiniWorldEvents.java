@@ -50,7 +50,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(miniWorldChangesCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(miniWorldChangesCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
 
@@ -132,16 +132,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     protected void executeEventProcess() {
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
             if(!serverStatusChangedForServer(guildId)) continue;
-
-            Snowflake channel = GuildCacheData.channelsCache
-                    .get(guildId)
-                    .get(EventTypes.MINI_WORLD_CHANGES);
-            if(channel == null || channel.asString().isEmpty()) continue;
-
-            Guild guild = client.getGuildById(guildId).block();
-            if(guild == null) continue;
-
-            GuildMessageChannel guildChannel = (GuildMessageChannel)guild.getChannelById(channel).block();
+            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.MINI_WORLD_CHANGES);
             if(guildChannel == null) continue;
 
             processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));

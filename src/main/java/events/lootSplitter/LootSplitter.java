@@ -55,7 +55,7 @@ public class LootSplitter extends InteractionEvent {
     private void subscribeCommandEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(splitLootCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(splitLootCommand.getCommandName())) return Mono.empty();
                 return event.presentModal(InteractionPresentModalSpec.builder()
                         .title("Loot Splitter")
                         .customId(splitModalId)

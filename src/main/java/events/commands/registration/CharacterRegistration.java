@@ -1,4 +1,4 @@
-package events.registration;
+package events.commands.registration;
 
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
@@ -29,7 +29,7 @@ public class CharacterRegistration extends EventsMethods {
     public void executeEvent() {
         client.on(ChatInputInteractionEvent.class, event -> {
             try {
-                if (!event.getCommandName().equals(registerCommand)) return Mono.empty();
+                if (!event.getCommandName().equals(registerCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 return registerCharacter(event);
             } catch (Exception e) {
