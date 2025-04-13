@@ -126,10 +126,10 @@ public class GuildCacheInitializer {
 
             if (removed > 0) {
                 guildDocumentActions.replaceDocument(guildDocumentActions.createDocument(model));
-                log.info("Removed " + removed + " channels from guild " + model.getGuildId());
+                log.info("Removed {} channels from guild {}", removed, model.getGuildId());
             }
         } catch (Exception e) {
-            log.info("Could not remove unused channels from guild " + model.getGuildId() + ": " + e.getMessage());
+            log.info("Could not remove unused channels from guild {}: {}", model.getGuildId(), e.getMessage());
         }
     }
 }

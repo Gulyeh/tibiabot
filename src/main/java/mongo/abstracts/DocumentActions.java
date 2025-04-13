@@ -7,6 +7,7 @@ import com.google.gson.JsonDeserializer;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import discord.Connector;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -49,6 +50,8 @@ public abstract class DocumentActions<T> extends Singleton {
     protected abstract Document createDocument(T model);
 
     public boolean insertDocuments(Document... document) {
+        if(Connector.client == null) return false;
+
         try {
             MongoCollection<Document> collection = getCollection();
             if (document.length == 1) collection.insertOne(document[0]);
@@ -56,7 +59,7 @@ public abstract class DocumentActions<T> extends Singleton {
             log.info("Inserted data to db");
             return true;
         } catch (Exception e) {
-            log.info("Could not insert data to database: " + e.getMessage());
+            log.info("Could not insert data to database: {}", e.getMessage());
             return false;
         }
     }
@@ -79,6 +82,8 @@ public abstract class DocumentActions<T> extends Singleton {
     }
 
     public boolean deleteDocument(Document... documents) {
+        if(Connector.client == null) return false;
+
         try {
             MongoCollection<Document> collection = getCollection();
             for (Document doc : documents) {
@@ -95,6 +100,8 @@ public abstract class DocumentActions<T> extends Singleton {
     }
 
     public boolean replaceDocument(Document document) {
+        if(Connector.client == null) return false;
+
         try {
             MongoCollection<Document> collection = getCollection();
             Bson query = eq(id, document.get(id));

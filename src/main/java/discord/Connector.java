@@ -8,8 +8,11 @@ import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.discordjson.Id;
 import events.interfaces.Listener;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import utils.Configurator;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public final class Connector {
@@ -18,6 +21,7 @@ public final class Connector {
     private final static String status = "Hello giga mates";
     private final static String key = Configurator.config.get(Configurator.ConfigPaths.BOT_KEY.getName());
 
+    @SneakyThrows
     public static void connect() {
         try {
             if(client != null) return;
@@ -34,12 +38,14 @@ public final class Connector {
 
             assert client != null;
         } catch (Exception e) {
-            log.info(e.getMessage());
+            log.info("Error while connecting to discord. Retry in 1 minute. - {}", e.getMessage());
+            TimeUnit.MINUTES.sleep(1);
+            connect();
         }
     }
 
     public static void addListener(Listener event) {
-        log.info("Listening to: " + event.getEventName());
+        log.info("Listening to: {}", event.getEventName());
         event.executeEvent();
     }
 
