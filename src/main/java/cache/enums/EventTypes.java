@@ -12,7 +12,6 @@ public enum EventTypes {
     HOUSES(EventName.houses),
     SERVER_STATUS(EventName.serverStatus),
     MINI_WORLD_CHANGES(EventName.miniWorldChanges),
-    EVENTS_CALENDAR(EventName.events),
     DEATH_TRACKER(EventName.deathTracker),
     ONLINE_TRACKER(EventName.onlineTracker),
     FILTERED_DEATH_TRACKER(EventName.filterDeathTracker),

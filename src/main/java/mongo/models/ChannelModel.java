@@ -13,7 +13,6 @@ import java.util.List;
 public class ChannelModel {
     private String serverStatus = "";
     private String killStatistics = "";
-    private String events = "";
     private String houses = "";
     private String tibiaCoins = "";
     private String miniWorldChanges = "";
@@ -28,7 +27,6 @@ public class ChannelModel {
             case TIBIA_COINS -> tibiaCoins = channelId;
             case KILLED_BOSSES -> killStatistics = channelId;
             case SERVER_STATUS -> serverStatus = channelId;
-            case EVENTS_CALENDAR -> events = channelId;
             case MINI_WORLD_CHANGES -> miniWorldChanges = channelId;
             case BOOSTEDS -> boosteds = channelId;
             case DEATH_TRACKER -> deathTracker = channelId;

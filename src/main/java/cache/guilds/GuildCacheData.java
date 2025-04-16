@@ -16,6 +16,7 @@ public final class GuildCacheData {
     public static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
     public static Set<Snowflake> antiSpamDeathCache = ConcurrentHashMap.newKeySet();
+    public static Set<Snowflake> globalEvents = ConcurrentHashMap.newKeySet();
     public static ConcurrentHashMap<Snowflake, DeathFilter> deathTrackerFilters = new ConcurrentHashMap<>();
 
     public static void addToWorldsCache(Snowflake guildId, String worldName) {
@@ -76,6 +77,16 @@ public final class GuildCacheData {
     public static void removeAntiSpamDeath(Snowflake guildId) {
         if(guildId == null) return;
         antiSpamDeathCache.remove(guildId);
+    }
+
+    public static void addGlobalEventsCache(Snowflake guildId) {
+        if(guildId == null) return;
+        globalEvents.add(guildId);
+    }
+
+    public static void removeGlobalEventsCache(Snowflake guildId) {
+        if(guildId == null) return;
+        globalEvents.remove(guildId);
     }
 
     public static void removeGuild(Snowflake guildId) {

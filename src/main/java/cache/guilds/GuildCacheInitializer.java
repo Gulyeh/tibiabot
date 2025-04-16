@@ -50,6 +50,12 @@ public class GuildCacheInitializer {
         GuildCacheData.addToAntiSpamDeath(guildId);
     }
 
+    public void addGlobalEventsCache(GuildModel model) {
+        if(!model.isGlobalEvents()) return;
+        Snowflake guildId = Snowflake.of(model.getGuildId());
+        GuildCacheData.addGlobalEventsCache(guildId);
+    }
+
     public void addDeathsFilterCache(GuildModel model) {
         DeathFilter filter = model.getDeathFilter();
         Snowflake guildId = Snowflake.of(model.getGuildId());
@@ -71,10 +77,6 @@ public class GuildCacheInitializer {
                 case MINI_WORLD_CHANGES -> {
                     if(channels.getMiniWorldChanges().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getMiniWorldChanges());
-                }
-                case EVENTS_CALENDAR -> {
-                    if(channels.getEvents().isEmpty()) yield null;
-                    yield Snowflake.of(model.getChannels().getEvents());
                 }
                 case SERVER_STATUS -> {
                     if(channels.getServerStatus().isEmpty()) yield null;

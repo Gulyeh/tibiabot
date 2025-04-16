@@ -10,7 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
@@ -28,6 +28,13 @@ public final class Methods {
 
     public static String getFormattedDate(LocalDateTime date) {
         return date.format(DateTimeFormatter.ofPattern("dd-MM-uuuu HH:mm"));
+    }
+
+    public static LocalDateTime formatToOffsetTime(String date) {
+        Instant utcInstant = Instant.parse(date);
+        ZoneId warsawTimeZone = ZoneId.of("Europe/Warsaw");
+        ZonedDateTime warsawTime = utcInstant.atZone(ZoneOffset.UTC).withZoneSameInstant(warsawTimeZone);
+        return warsawTime.toLocalDateTime();
     }
 
     public static String formatWikiGifLink(String name) {

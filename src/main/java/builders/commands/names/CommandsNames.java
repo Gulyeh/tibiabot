@@ -25,8 +25,8 @@ public final class CommandsNames {
     public final static Command houseCommand = new Command("set-houses", "Set default channel for houses",
             new CommandOption(CommandOptionNames.HOUSES, "Channel name", ApplicationCommandOption.Type.CHANNEL));
 
-    public final static Command eventsCommand = new Command("set-events", "Set default channel for events",
-            new CommandOption(CommandOptionNames.EVENTS, "Channel name", ApplicationCommandOption.Type.CHANNEL));
+    public final static Command eventsCommand = new Command("activate-events", "Activate global events",
+            new CommandOption(CommandOptionNames.EVENTS, "Action", ApplicationCommandOption.Type.BOOLEAN));
 
     public final static Command miniWorldChangesCommand = new Command("set-mini-world-changes", "Set default channel for mini world changes",
             new CommandOption(CommandOptionNames.MINI_WORLD_CHANGES, "Channel name", ApplicationCommandOption.Type.CHANNEL));
