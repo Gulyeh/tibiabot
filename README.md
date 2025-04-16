@@ -5,6 +5,7 @@
 ## 🚀 Features
 
 - Death tracker + Anti death spam + Minimum level filter
+- Tracking Online players on a server and their online time
 - Custom loot splitter
 - Events tracking
 - Auctionable houses tracking
