@@ -5,6 +5,8 @@ import lombok.Getter;
 import java.time.*;
 import java.util.List;
 
+import static utils.Methods.formatToOffsetTime;
+
 @Getter
 public class DeathResponse {
     private String time;
@@ -13,10 +15,7 @@ public class DeathResponse {
     private List<Killer> killers;
 
     public LocalDateTime getTimeLocal() {
-        Instant utcInstant = Instant.parse(time);
-        ZoneId warsawTimeZone = ZoneId.of("Europe/Warsaw");
-        ZonedDateTime warsawTime = utcInstant.atZone(ZoneId.of("UTC")).withZoneSameInstant(warsawTimeZone);
-        return warsawTime.toLocalDateTime();
+        return formatToOffsetTime(time);
     }
 
     public LocalDateTime getTimeUTC() {

@@ -95,6 +95,7 @@ public final class GuildCaching extends Singleton implements Cachable {
         initializer.addToMinimumDeathsLevelCache(model);
         initializer.addToAntiSpamDeathsCache(model);
         initializer.addDeathsFilterCache(model);
+        initializer.addGlobalEventsCache(model);
     }
 
     private void removeGuildDocument(GuildModel model) {
