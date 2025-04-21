@@ -154,8 +154,8 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
         String auctionLink = formatToDiscordLink("Auction", data.getHouseLink(world));
 
         return EmbedCreateFields.Field.of(data.getName() + " (" + data.getHouse_id() + ")",
-                "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n``Current bidder: " + data.getAuction().getCurrentBidder() +
-                        "\nCurrent bid: " + data.getAuction().getCurrent_bid() + " gold\nTime left: " + data.getAuction().getTime_left() +
+                "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n\n``Current bidder: " + data.getAuction().getCurrentBidder() +
+                        "``\n``Current bid: " + data.getAuction().getCurrent_bid() + " gold``\n``Time left: " + data.getAuction().getTime_left() +
                         "``\n\n" + data.getAuction().getAuctionInfo() + "\n\n" + auctionLink,
                 true);
     }
