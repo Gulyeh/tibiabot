@@ -2,11 +2,9 @@ package events;
 
 import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
-import cache.worlds.WorldsCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -36,13 +34,11 @@ import static utils.Methods.getFormattedDate;
 public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Activable {
 
     private final MiniWorldEventsService miniWorldEventsService;
-    private final ConcurrentHashMap<String, Status> beforeWorldsStatus;
     private LocalDateTime customServerSaveTime;
 
     public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService, WorldsService worldsService) {
         super(worldsService);
         this.miniWorldEventsService = miniWorldEventsService;
-        beforeWorldsStatus = new ConcurrentHashMap<>();
         customServerSaveTime = LocalDateTime.now().withHour(12).withMinute(0).withSecond(0);
     }
 
@@ -65,14 +61,12 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        log.info("Activating " + getEventName());
+        log.info("Activating {}", getEventName());
         while(true) {
             try {
-                log.info("Executing thread " + getEventName());
-                if(isAfterSaverSave()) {
+                log.info("Executing thread {}", getEventName());
+                if(isAfterSaverSave())
                     miniWorldEventsService.clearCache();
-                    beforeWorldsStatus.clear();
-                }
                 else if(isAfterDate(customServerSaveTime)) {
                     customServerSaveTime = customServerSaveTime.plusDays(1);
                     executeEventProcess();
@@ -81,7 +75,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(300000));
+                    wait(getWaitTime(180000));
                 }
             }
         }
@@ -105,7 +99,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
             sendEmbeddedMessages(channel,
                     null,
                     events.getMini_world_change_name(),
-                    "Mini world change from``\n" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
+                    "Mini world change from\n``" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
                     "",
                     events.getMini_world_change_icon(),
                     getRandomColor());
@@ -115,7 +109,7 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
-        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId(event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!GuildCacheData.worldCache.containsKey(guildId))
@@ -131,28 +125,14 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     @Override
     protected void executeEventProcess() {
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
-            if(!serverStatusChangedForServer(guildId)) continue;
             GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.MINI_WORLD_CHANGES);
             if(guildChannel == null) continue;
-
             processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
         }
-
-        beforeWorldsStatus.putAll(WorldsCache.getWorldsStatus());
     }
 
     @Override
     public String getEventName() {
         return EventName.miniWorldChanges;
-    }
-
-    private boolean serverStatusChangedForServer(Snowflake guildId) {
-        if(beforeWorldsStatus.isEmpty()) return true;
-
-        String serverName = GuildCacheData.worldCache.get(guildId);
-        Status actualStatus = WorldsCache.getWorldsStatus().get(serverName);
-        Status beforeStatus = beforeWorldsStatus.get(serverName);
-
-        return beforeStatus.equals(Status.OFFLINE) && actualStatus.equals(Status.ONLINE);
     }
 }

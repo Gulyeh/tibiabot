@@ -32,10 +32,8 @@ public class MiniWorldEventsService implements Cacheable {
 
     public MiniWorldEventsModel getMiniWorldChanges(Snowflake guildId) {
         String world = GuildCacheData.worldCache.get(guildId);
-        if(miniWorldEventsCache.containsKey(world)) {
-            log.info("Getting Mini world events from cache");
+        if(miniWorldEventsCache.containsKey(world))
             return miniWorldEventsCache.get(world);
-        }
 
         Optional<WorldData> worldModel = worldsService.getWorlds()
                 .getWorlds()

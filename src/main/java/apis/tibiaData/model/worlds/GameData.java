@@ -1,6 +1,7 @@
 package apis.tibiaData.model.worlds;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import java.util.List;
 import static utils.Methods.getFormattedDate;
 
 @Getter
+@Setter
 public class GameData {
     private String players_online;
     private String record_players;

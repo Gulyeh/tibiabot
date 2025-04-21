@@ -7,6 +7,7 @@ import discord4j.core.object.presence.ClientActivity;
 import discord4j.core.object.presence.ClientPresence;
 import discord4j.core.shard.ShardingStrategy;
 import discord4j.discordjson.Id;
+import discord4j.gateway.intent.IntentSet;
 import events.interfaces.Listener;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public final class Connector {
                     .setInitialPresence(x -> ClientPresence.online(ClientActivity.playing(status)))
                     .setAwaitConnections(true)
                     .setSharding(ShardingStrategy.recommended())
+                    .setEnabledIntents(IntentSet.all())
                     .login()
                     .doOnError(e -> log.error("Failed to authenticate with Discord", e))
                     .doOnSuccess(result -> log.info("Connected to Discord"))

@@ -61,21 +61,19 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        log.info("Activating " + getEventName());
+        log.info("Activating {}", getEventName());
         while (true) {
             try {
-                log.info("Executing thread " + getEventName());
+                log.info("Executing thread {}", getEventName());
                 onlineService.clearCache();
-                if(isAfterSaverSave()) {
+                if(isAfterSaverSave())
                     onlineService.clearCharStorageCache();
-                    adjustTimerByDays(1);
-                }
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(300000);
+                    wait(getWaitTime(330000));
                 }
             }
         }
@@ -97,19 +95,22 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
                     "",
                     "",
                     getRandomColor());
+            return;
         }
 
         LinkedHashMap<String, List<OnlineModel>> map = filterAndOrderData(model);
         Color color = getRandomColor();
         List<String> msgs = createDescription(map);
+        boolean isFirst = true;
         for(String msg : msgs) {
             sendEmbeddedMessages(channel,
                     null,
-                    "",
+                    isFirst ? model.get(0).getWorld() + " (" + model.size() + ")" : "",
                     msg,
                     "",
                     "",
                     color);
+            if(isFirst) isFirst = false;
         }
     }
 
@@ -122,7 +123,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
             GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
             if(guildChannel == null) continue;
 
-            processEmbeddableData(guildChannel, onlineService.getOnlinePlayers(guildId));
+            processEmbeddableData(guildChannel, serverSaveOccurs ? new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
         }
     }
 

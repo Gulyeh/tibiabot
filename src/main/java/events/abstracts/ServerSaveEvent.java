@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public abstract class ServerSaveEvent extends TimerEvent {
-    private final WorldsService worldsService;
+    protected final WorldsService worldsService;
     private final long defaultTime = 120000;
 
     public ServerSaveEvent(WorldsService worldsService) {

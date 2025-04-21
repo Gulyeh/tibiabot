@@ -7,13 +7,13 @@ import apis.tibiaData.model.worlds.WorldModel;
 import apis.tibiaTrade.TibiaTradeAPI;
 import apis.tibiaTrade.model.world.TibiaTradeWorld;
 import apis.tibiaTrade.model.world.TibiaTradeWorldsModel;
-import interfaces.Cacheable;
 import lombok.extern.slf4j.Slf4j;
+import services.worlds.enums.Status;
 
 import java.util.Optional;
 
 @Slf4j
-public final class WorldsService extends Singleton implements Cacheable {
+public final class WorldsService extends Singleton {
     private WorldModel worldsData;
     private TibiaTradeWorldsModel worldsCache;
     private final TibiaDataAPI tibiaDataAPI;
@@ -22,19 +22,43 @@ public final class WorldsService extends Singleton implements Cacheable {
     public WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
         tibiaTradeAPI = new TibiaTradeAPI();
-        clearCache();
+        refreshCache();
     }
 
     public static WorldsService getInstance() {
         return getInstance(WorldsService.class);
     }
 
-    @Override
-    public void clearCache() {
-        worldsData = null;
-        worldsCache = null;
-    }
+    private void refreshCache() {
+        new Thread(() -> {
+            while(true) {
+                try {
+                    log.info("Caching worlds data");
+                    worldsData = null;
+                    getWorlds();
+                    synchronized (this) {
+                        wait(120000);
+                    }
+                } catch (Exception e) {
+                    log.info("Could not get worlds data - {}", e.getMessage());
+                }
+            }
+        }).start();
 
+        //resets tibia trade cache
+        new Thread(() -> {
+            while(true) {
+                try {
+                    synchronized (this) {
+                        wait(21600000);
+                    }
+                    log.info("Resetting tibia trade cache");
+                    worldsCache = null;
+                } catch (Exception ignore) {
+                }
+            }
+        }).start();
+    }
 
     public WorldModel getWorlds() {
         if(worldsData != null) return worldsData;
@@ -46,6 +70,16 @@ public final class WorldsService extends Singleton implements Cacheable {
         }
 
         return worldsData;
+    }
+
+    public WorldModel getServerSaveWorlds() {
+        WorldModel worlds = worldsData;
+        worlds.getWorlds().setPlayers_online("0");
+        worlds.getWorlds().getRegular_worlds().forEach(x -> {
+            x.setStatus(Status.OFFLINE.name());
+            x.setPlayers_online(0);
+        });
+        return worlds;
     }
 
     private void setWorldsIds() {
@@ -74,7 +108,7 @@ public final class WorldsService extends Singleton implements Cacheable {
                 .findFirst();
 
         if(world.isPresent()) return world.get().getId();
-        log.info("Could not find world " + worldName);
+        log.info("Could not find world {}", worldName);
         return 0;
     }
 }

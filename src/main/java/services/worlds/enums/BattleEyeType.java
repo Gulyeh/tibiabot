@@ -9,7 +9,6 @@ import static utils.Emojis.getYellowBEEmoji;
 @AllArgsConstructor
 @Getter
 public enum BattleEyeType {
-    OFF(":no_entry_sign:", "No Protection"),
     GBE(getGreenBEEmoji(), "Green Battleye"),
     YBE(getYellowBEEmoji(), "Yellow Battleye");
 

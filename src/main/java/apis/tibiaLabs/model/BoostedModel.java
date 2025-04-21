@@ -3,8 +3,8 @@ package apis.tibiaLabs.model;
 import lombok.Getter;
 import lombok.Setter;
 
-import static utils.Methods.formatWikiGifLink;
-import static utils.Methods.formatWikiLink;
+import static utils.TibiaWiki.formatWikiGifLink;
+import static utils.TibiaWiki.formatWikiLink;
 
 @Setter
 @Getter

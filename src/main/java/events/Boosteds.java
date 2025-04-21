@@ -10,15 +10,27 @@ import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
+import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.object.entity.channel.ThreadChannel;
+import discord4j.core.spec.StartThreadSpec;
+import discord4j.core.spec.StartThreadSpecGenerator;
+import discord4j.core.spec.StartThreadWithoutMessageSpec;
+import discord4j.core.spec.ThreadChannelEditSpec;
+import discord4j.discordjson.json.MessageData;
 import events.abstracts.ServerSaveEvent;
 import events.interfaces.Activable;
 import events.interfaces.Channelable;
+import events.interfaces.Threadable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
 import services.worlds.WorldsService;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
@@ -27,12 +39,16 @@ import static utils.Emojis.getBlankEmoji;
 import static utils.Methods.formatToDiscordLink;
 
 @Slf4j
-public class Boosteds extends ServerSaveEvent implements Channelable, Activable {
+public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
     private final BoostedsService boostedsService;
 
     public Boosteds(BoostedsService boostedsService, WorldsService worldsService) {
         super(worldsService);
         this.boostedsService = boostedsService;
+        timer = LocalDateTime.now()
+                .withHour(10)
+                .withMinute(6)
+                .withSecond(0);
     }
 
 
@@ -43,7 +59,6 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
                 if (!event.getCommandName().equals(boostedsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
                 if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
-
                 return setDefaultChannel(event);
             } catch (Exception e) {
                 log.error(e.getMessage());
@@ -55,10 +70,10 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        log.info("Activating " + getEventName());
+        log.info("Activating {}", getEventName());
         while (true) {
             try {
-                log.info("Executing thread " + getEventName());
+                log.info("Executing thread {}", getEventName());
                 if(!isAfterSaverSave()) continue;
                 boostedsService.clearCache();
                 executeEventProcess();
@@ -77,7 +92,6 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
             GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.BOOSTEDS);
             if(guildChannel == null) continue;
-
             deleteMessages(guildChannel);
             processEmbeddableData(guildChannel, boostedsService.getBoostedCreature());
             processEmbeddableData(guildChannel, boostedsService.getBoostedBoss());
@@ -85,6 +99,13 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, BoostedModel model) {
+        boolean isBoss = model.getBoostedTypeText().contains("boss");
+        String name = isBoss ? "Boss: " : "Creature: ";
+        channel.getGuild().block().getActiveThreads().retry(3)
+                .flatMapMany(threads -> archiveRelevantThreads(threads.getThreads(), name))
+                .then()
+                .block();
+
         if(model.getName() == null || model.getName().isEmpty())
             sendEmbeddedMessages(channel,
                     null,
@@ -93,15 +114,31 @@ public class Boosteds extends ServerSaveEvent implements Channelable, Activable 
                     "",
                     "",
                     getRandomColor());
-        else
-            sendEmbeddedMessages(channel,
+        else {
+            MessageData data = sendEmbeddedMessages(channel,
                     null,
                     model.getBoostedTypeText(),
                     "### " + getBlankEmoji() + getBlankEmoji() +
                             ":star: " + formatToDiscordLink(model.getName(), model.getBoosted_data_link()),
                     "",
                     model.getIcon_link(),
-                    getRandomColor());
+                    getRandomColor()).get(0);
+
+            createThreadWithMention(channel.getMessageById(Snowflake.of(data.id())).block(), StartThreadSpec.builder()
+                    .name(name + model.getName())
+                    .autoArchiveDuration(ThreadChannel.AutoArchiveDuration.DURATION2)
+                    .build());
+        }
+    }
+
+    private Mono<Void> archiveRelevantThreads(List<ThreadChannel> threads, String name) {
+        return Flux.fromIterable(threads)
+                .filter(thread -> !thread.isArchived() && thread.getName().contains(name))
+                .flatMap(thread ->
+                        thread.edit(ThreadChannelEditSpec.builder().archived(true).build())
+                                .retry(3)
+                )
+                .then();
     }
 
     @Override

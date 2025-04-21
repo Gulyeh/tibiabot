@@ -59,10 +59,10 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        log.info("Activating " + getEventName());
+        log.info("Activating {}", getEventName());
         while (true) {
             try {
-                log.info("Executing thread " + getEventName());
+                log.info("Executing thread {}", getEventName());
                 housesService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
@@ -88,6 +88,17 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
                 .filter(x -> x.getHouse_list() != null &&
                         !x.getHouse_list().isEmpty())
                 .toList();
+
+        if(list.isEmpty()) {
+            sendEmbeddedMessages(channel,
+                    null,
+                    "",
+                    "There are no biddable houses at the moment",
+                    "",
+                    "",
+                    getRandomColor());
+            return;
+        }
 
         for (HousesModel house : list) {
             sendEmbeddedMessages(channel,
@@ -116,7 +127,7 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
     @Override
     public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
-        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId(event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!GuildCacheData.worldCache.containsKey(guildId))
@@ -143,7 +154,7 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
         String auctionLink = formatToDiscordLink("Auction", data.getHouseLink(world));
 
         return EmbedCreateFields.Field.of(data.getName() + " (" + data.getHouse_id() + ")",
-                "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n\n``Current bidder: " + data.getAuction().getCurrentBidder() +
+                "SQM: " + data.getSize() + "\nRent: " + data.getRent() + " gold\n``Current bidder: " + data.getAuction().getCurrentBidder() +
                         "\nCurrent bid: " + data.getAuction().getCurrent_bid() + " gold\nTime left: " + data.getAuction().getTime_left() +
                         "``\n\n" + data.getAuction().getAuctionInfo() + "\n\n" + auctionLink,
                 true);

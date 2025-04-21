@@ -20,11 +20,13 @@ public class OnlineModel implements CharacterLink, Cloneable {
         guild = characterInfo.getGuild();
         leveled = Leveled.NONE;
         loggedSince = characterInfo.getLoggedSince();
+        world = characterInfo.getWorld();
     }
 
     @Setter
     private int level;
     private final String name;
+    private final String world;
     private final Vocation vocation;
     private final LocalDateTime loggedSince;
     private final GuildData guild;

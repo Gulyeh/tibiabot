@@ -10,11 +10,14 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
+import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
+import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import events.abstracts.EmbeddableEvent;
 import events.interfaces.Activable;
 import events.interfaces.Channelable;
+import events.interfaces.Threadable;
 import events.utils.EventName;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +35,7 @@ import static discord.Connector.client;
 import static discord.messages.DeleteMessages.deleteMessages;
 
 @Slf4j
-public class TibiaCoins extends EmbeddableEvent implements Channelable, Activable {
+public class TibiaCoins extends EmbeddableEvent implements Threadable, Activable {
     private final TibiaCoinsService tibiaCoinsService;
 
     public TibiaCoins(TibiaCoinsService tibiaCoinsService) {
@@ -63,10 +66,10 @@ public class TibiaCoins extends EmbeddableEvent implements Channelable, Activabl
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        log.info("Activating " + getEventName());
+        log.info("Activating {}", getEventName());
         while(true) {
             try {
-                log.info("Executing thread " + getEventName());
+                log.info("Executing thread {}", getEventName());
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());

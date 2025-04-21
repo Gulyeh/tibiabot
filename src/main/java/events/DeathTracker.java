@@ -22,6 +22,7 @@ import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
 import mongo.models.DeathFilter;
 import utils.Methods;
+import utils.TibiaWiki;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,7 +32,7 @@ import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static cache.guilds.GuildCacheData.deathTrackerFilters;
 import static discord.Connector.client;
 import static utils.Methods.formatToDiscordLink;
-import static utils.Methods.formatWikiGifLink;
+import static utils.TibiaWiki.formatWikiGifLink;
 
 @Slf4j
 public class DeathTracker extends EmbeddableEvent implements Channelable, Activable {
@@ -194,7 +195,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
     private String getThumbnail(DeathData data) {
         Optional<Killer> killer = data.getKilledBy().stream().filter(x -> !x.isPlayer()).findFirst();
-        return killer.map(value -> formatWikiGifLink(value.getName())).orElseGet(Methods::getPlayerIcon);
+        return killer.map(value -> formatWikiGifLink(value.getName())).orElseGet(TibiaWiki::getPlayerIcon);
     }
 
     private EmbedCreateFields.Footer getFooter(DeathData data) {

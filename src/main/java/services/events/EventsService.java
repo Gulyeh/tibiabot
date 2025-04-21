@@ -44,45 +44,55 @@ public class EventsService implements Cacheable {
     }
 
     public List<EventModel> getEvents(int month, int year, @NonNull List<EventModel> previousModel) {
-        if(!cachedEvents.isEmpty()) return cachedEvents.stream().toList();
+        if(!cachedEvents.isEmpty()) return new ArrayList<>(cachedEvents);
 
-        List<Node> calendar = tibiaOfficial.getEvents(month, year);
+        List<Node> calendarNodes = tibiaOfficial.getEvents(month, year);
         Map<String, EventModel> existingEvents = previousModel.stream()
                 .collect(Collectors.toMap(EventModel::getName, Function.identity(), (a, b) -> b));
 
-        for (Node node : calendar) {
-            try {
-                List<Node> eventNodes = node.childNodes().stream()
-                        .filter(child -> !child.attr("style").contains("D4C0A1"))
-                        .filter(child -> child.lastChild() != null && !child.lastChild().childNodes().isEmpty())
-                        .toList();
-
-                for (Node eventNode : eventNodes) {
-                    List<String> eventNames = extractEventNames(eventNode.lastChild());
-                    if (eventNames.isEmpty()) continue;
-
-                    int day = Integer.parseInt(((Element) eventNode.firstChild().firstChild()).text().trim());
-                    LocalDate eventDate = LocalDate.of(year, month, day);
-                    Map<String, String> descriptions = getDescription((Element) eventNode.lastChild());
-
-                    for (String name : eventNames) {
-                        EventModel model = existingEvents.getOrDefault(name, new EventModel());
-                        if (model.getStartDate() == null) {
-                            model.setName(name);
-                            model.setStartDate(eventDate);
-                            model.setDescription(descriptions.getOrDefault(name, ""));
-                            existingEvents.put(name, model);
-                        } else {
-                            model.setEndDate(eventDate);
-                        }
-                    }
-                }
-
-            } catch (Exception ignore) {
+        for (Node node : calendarNodes) {
+            List<Node> validEventNodes = getValidEventNodes(node);
+            for (Node eventNode : validEventNodes) {
+                processEventNode(eventNode, month, year, existingEvents);
             }
         }
 
         return new ArrayList<>(existingEvents.values());
+    }
+
+    private void processEventNode(Node eventNode, int month, int year, Map<String, EventModel> eventMap) {
+        try {
+            List<String> eventNames = extractEventNames(eventNode.lastChild());
+            if (eventNames.isEmpty()) return;
+
+            int day = Integer.parseInt(((Element) eventNode.firstChild().firstChild()).text().trim());
+            LocalDate eventDate = LocalDate.of(year, month, day);
+            Map<String, String> descriptions = getDescription((Element) eventNode.lastChild());
+
+            for (String name : eventNames) {
+                EventModel model = eventMap.getOrDefault(name, new EventModel());
+                if (model.getStartDate() == null) {
+                    model.setName(name);
+                    model.setStartDate(eventDate);
+                    model.setDescription(descriptions.getOrDefault(name, ""));
+                    eventMap.put(name, model);
+                } else if (model.getEndDate() == null)
+                    model.setEndDate(eventDate);
+            }
+        } catch (Exception e) {
+            log.warn(e.getMessage());
+        }
+    }
+
+    private List<Node> getValidEventNodes(Node node) {
+        try {
+            return node.childNodes().stream()
+                    .filter(child -> !child.attr("style").contains("D4C0A1"))
+                    .filter(child -> child.lastChild() != null && !child.lastChild().childNodes().isEmpty())
+                    .toList();
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 
     private List<String> extractEventNames(Node node) {

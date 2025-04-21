@@ -4,11 +4,9 @@ import apis.tibiaData.model.worlds.WorldData;
 import apis.tibiaData.model.worlds.WorldModel;
 import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
-import cache.worlds.WorldsCache;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -21,6 +19,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.worlds.WorldsService;
+import services.worlds.enums.Status;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,11 +32,9 @@ import static discord.messages.DeleteMessages.deleteMessages;
 
 @Slf4j
 public class ServerStatus extends ServerSaveEvent implements Channelable, Activable {
-    private final WorldsService worldsService;
 
     public ServerStatus(WorldsService worldsService) {
         super(worldsService);
-        this.worldsService = worldsService;
     }
 
     @Override
@@ -59,25 +56,27 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void activatableEvent() {
-        log.info("Activating " + getEventName());
+        log.info("Activating {}", getEventName());
 
         while(true) {
             try {
-                log.info("Executing thread " + getEventName());
-                worldsService.clearCache();
+                log.info("Executing thread {}", getEventName());
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(180000));
+                    wait(getWaitTime(330000));
                 }
             }
         }
     }
 
     protected void executeEventProcess() {
-        WorldModel worlds = getAndCacheWorlds();
+        WorldModel worlds;
+        if(serverSaveOccurs) worlds = worldsService.getServerSaveWorlds();
+        else worlds = worldsService.getWorlds();
+
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if(guildIds.isEmpty()) return;
 
@@ -106,6 +105,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     private void processEmbeddableData(GuildMessageChannel channel, WorldModel model) {
         deleteMessages(channel);
+        addChannelSuffix(channel, model.getWorlds().getPlayers_online());
         sendEmbeddedMessages(channel,
                 createEmbedFields(model),
                 "Servers Status",
@@ -128,12 +128,6 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
         processEmbeddableData(channel, worldsService.getWorlds());
         return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
-    }
-
-    private WorldModel getAndCacheWorlds() {
-        WorldModel worlds = worldsService.getWorlds();
-        WorldsCache.setWorldsStatus(worlds);
-        return worlds;
     }
 
     private EmbedCreateFields.Field buildEmbedField(WorldData data) {
