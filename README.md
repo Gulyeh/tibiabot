@@ -1,10 +1,11 @@
 # Gigaman
 
-**Gigaman** is a Discord bot for [Tibia](https://www.tibia.com/), designed to help players track in-game trends with real-time data — all within your Discord server.
+**Gigaman** is a Discord bot for [Tibia](https://www.tibia.com/), designed to help players track in-game trends with real-time data — all within your Discord server. Each Discord server can be assigned to 1 tibia server only.
 
 ## 🚀 Features
 
 - Death tracker + Anti death spam + Minimum level filter
+- Tracking Online players on a server and their online time
 - Custom loot splitter
 - Events tracking
 - Auctionable houses tracking
