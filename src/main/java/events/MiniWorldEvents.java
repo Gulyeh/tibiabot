@@ -19,11 +19,9 @@ import services.miniWorldEvents.MiniWorldEventsService;
 import services.miniWorldEvents.models.MiniWorldEvent;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
 import services.worlds.WorldsService;
-import services.worlds.enums.Status;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static builders.commands.names.CommandsNames.miniWorldChangesCommand;
 import static discord.Connector.client;
@@ -82,8 +80,8 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, MiniWorldEventsModel model) {
-        deleteMessages(channel);
         List<MiniWorldEvent> miniWorldChanges = model.getActive_mini_world_changes();
+
         if(miniWorldChanges.isEmpty()) {
             sendEmbeddedMessages(channel,
                     null,
@@ -118,7 +116,10 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
+
+        deleteMessages(channel);
         processEmbeddableData(channel, miniWorldEventsService.getMiniWorldChanges(guildId));
+
         return event.createFollowup("Set default Mini World Changes event channel to <#" + channelId.asString() + ">");
     }
 
@@ -127,6 +128,8 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
             GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.MINI_WORLD_CHANGES);
             if(guildChannel == null) continue;
+
+            deleteMessages(guildChannel);
             processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
         }
     }

@@ -93,6 +93,7 @@ public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
             GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.BOOSTEDS);
             if(guildChannel == null) continue;
             deleteMessages(guildChannel);
+            removeAllChannelThreads(guildChannel);
             processEmbeddableData(guildChannel, boostedsService.getBoostedCreature());
             processEmbeddableData(guildChannel, boostedsService.getBoostedBoss());
         }
@@ -101,10 +102,6 @@ public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
     private void processEmbeddableData(GuildMessageChannel channel, BoostedModel model) {
         boolean isBoss = model.getBoostedTypeText().contains("boss");
         String name = isBoss ? "Boss: " : "Creature: ";
-        channel.getGuild().block().getActiveThreads().retry(3)
-                .flatMapMany(threads -> archiveRelevantThreads(threads.getThreads(), name))
-                .then()
-                .block();
 
         if(model.getName() == null || model.getName().isEmpty())
             sendEmbeddedMessages(channel,
@@ -124,21 +121,10 @@ public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
                     model.getIcon_link(),
                     getRandomColor()).get(0);
 
-            createThreadWithMention(channel.getMessageById(Snowflake.of(data.id())).block(), StartThreadSpec.builder()
-                    .name(name + model.getName())
-                    .autoArchiveDuration(ThreadChannel.AutoArchiveDuration.DURATION2)
-                    .build());
+            createMessageThreadWithMention(channel.getMessageById(Snowflake.of(data.id())).block(),
+                    name + model.getName(),
+                    ThreadChannel.AutoArchiveDuration.DURATION2);
         }
-    }
-
-    private Mono<Void> archiveRelevantThreads(List<ThreadChannel> threads, String name) {
-        return Flux.fromIterable(threads)
-                .filter(thread -> !thread.isArchived() && thread.getName().contains(name))
-                .flatMap(thread ->
-                        thread.edit(ThreadChannelEditSpec.builder().archived(true).build())
-                                .retry(3)
-                )
-                .then();
     }
 
     @Override

@@ -1,11 +1,12 @@
 package events.interfaces;
 
-import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.core.spec.MessageEditSpec;
 import discord4j.core.spec.StartThreadSpec;
+import discord4j.core.spec.ThreadChannelEditSpec;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -13,8 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface Threadable extends Channelable {
-    default void createThreadWithMention(Message msg, StartThreadSpec spec) {
-        ThreadChannel thread = msg.startThread(spec).block();
+    default void createMessageThreadWithMention(Message msg, String name, ThreadChannel.AutoArchiveDuration duration) {
+        ThreadChannel thread = msg.startThread(StartThreadSpec.builder()
+                .name(name)
+                .autoArchiveDuration(ThreadChannel.AutoArchiveDuration.DURATION2)
+                .build()).block();
         Message threadMsg = thread.createMessage("empty").block(Duration.ofSeconds(10));
 
         StringBuilder builder = new StringBuilder();
@@ -43,5 +47,21 @@ public interface Threadable extends Channelable {
                                 .then())
                         .toArray(Mono[]::new)
         ).then(threadMsg.delete()).subscribe();
+    }
+
+    default void removeAllChannelThreads(GuildMessageChannel guildChannel) {
+        guildChannel.getGuild().block()
+                .getActiveThreads()
+                .retry(3)
+                .flatMapMany(threads -> Flux.fromIterable(threads.getThreads()))
+                .filter(thread ->
+                        !thread.isArchived() &&
+                                thread.getParentId().isPresent() &&
+                                thread.getParentId().get().equals(guildChannel.getId())
+                )
+                .flatMap(thread ->
+                        thread.edit(ThreadChannelEditSpec.builder().archived(true).build()).retry(3)
+                )
+                .subscribe();
     }
 }
