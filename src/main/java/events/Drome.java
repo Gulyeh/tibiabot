@@ -157,7 +157,7 @@ public class Drome extends ServerSaveEvent implements Activable, Threadable {
 
     private void sendRoleNotification(GuildMessageChannel channel, DromeRotationModel model) {
         findRole(channel.getGuild().block()).ifPresentOrElse(x -> {
-            channel.createMessage("<@" + x.getId().asString() + "> " +
+            channel.createMessage("<@&" + x.getId().asString() + "> " +
                             "Drome rotation finishes <t:" + model.getEndDateOffset().getEpochSecond() + ":R>")
                     .subscribe();
         }, () -> {
