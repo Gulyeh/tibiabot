@@ -47,7 +47,7 @@ public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
         this.boostedsService = boostedsService;
         timer = LocalDateTime.now()
                 .withHour(10)
-                .withMinute(6)
+                .withMinute(10)
                 .withSecond(0);
     }
 

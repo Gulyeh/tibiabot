@@ -73,7 +73,7 @@ public final class WorldsService extends Singleton {
     }
 
     public WorldModel getServerSaveWorlds() {
-        WorldModel worlds = worldsData;
+        WorldModel worlds = tibiaDataAPI.getWorlds();
         worlds.getWorlds().setPlayers_online("0");
         worlds.getWorlds().getRegular_worlds().forEach(x -> {
             x.setStatus(Status.OFFLINE.name());
