@@ -19,4 +19,5 @@ public final class CommandOptionNames {
     public static final String FILTER_ACTION = "filteraction";
     public static final String FILTER_VALUE = "filtervalue";
     public static final String FILTER_DEATHS = "filterdeaths";
+    public static final String DROME = "drome";
 }

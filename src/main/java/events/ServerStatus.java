@@ -74,7 +74,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     protected void executeEventProcess() {
         WorldModel worlds;
-        if(serverSaveOccurs) worlds = worldsService.getServerSaveWorlds();
+        if(timerEventOccurs) worlds = worldsService.getServerSaveWorlds();
         else worlds = worldsService.getWorlds();
 
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();

@@ -61,10 +61,6 @@ public abstract class InteractionEvent extends EmbeddableEvent {
         return event.getCustomId();
     }
 
-    protected GuildMessageChannel getChannel(ButtonInteractionEvent event) {
-        return (GuildMessageChannel) event.getInteraction().getChannel().block();
-    }
-
     protected Message getMessage(ButtonInteractionEvent event) {
         return event.getInteraction().getMessage().get();
     }

@@ -1,9 +1,12 @@
 package events.abstracts;
 
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.discordjson.json.MessageData;
+import discord4j.core.spec.MessageCreateSpec;
+import discord4j.discordjson.json.*;
 import discord4j.rest.util.Color;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,30 +23,49 @@ public abstract class EmbeddableEvent extends ProcessEvent {
     }
 
     protected List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color) {
-        return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, null);
+        return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, null, null);
     }
 
-    protected List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description,
-                                                         String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
+    protected List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
+        return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, footer, null);
+    }
+
+    protected List<MessageData> sendEmbeddedMessages(Channel channel,
+                                                     List<EmbedCreateFields.Field> fields,
+                                                     String title,
+                                                     String description,
+                                                     String imageUrl,
+                                                     String thumbnailUrl,
+                                                     Color color,
+                                                     EmbedCreateFields.Footer footer,
+                                                     ActionRow components) {
+        List<MessageData> sentMessages = new ArrayList<>();
+
         try {
             List<EmbedCreateSpec> messages = createEmbeddedMessages(fields, title, description, imageUrl, thumbnailUrl, color, footer);
-            List<MessageData> sentMessages = new ArrayList<>();
 
             for (EmbedCreateSpec msg : messages) {
-                MessageData msgData = channel.getRestChannel().createMessage(msg.asRequest()).block();
-                sentMessages.add(msgData);
-            }
+                EmbedData embedData = msg.asRequest();
 
-            return sentMessages;
-        } catch (Exception msg) {
-            log.info("Could not send embedded messages - " + msg);
-            return new ArrayList<>();
+                MessageCreateRequest request;
+                ImmutableMessageCreateRequest.Builder builder = MessageCreateRequest.builder()
+                        .embed(embedData);
+                if(components != null) builder.addComponent(components.getData());
+                request = builder.build();
+
+                MessageData msgData = channel.getRestChannel().createMessage(request).block();
+                if (msgData != null)
+                    sentMessages.add(msgData);
+            }
+        } catch (Exception e) {
+            log.warn("Could not send embedded messages - {}", e.getMessage());
         }
+
+        return sentMessages;
     }
 
     protected List<EmbedCreateSpec> createEmbeddedMessages(List<EmbedCreateFields.Field> fields, String title, String description,
                                                      String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
-
         EmbedCreateSpec template = buildEmbedTemplate(title, description, imageUrl, thumbnailUrl, color, footer);
         return new ArrayList<>(splitEmbeddedMessage(fields, template));
     }

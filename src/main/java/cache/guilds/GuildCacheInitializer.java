@@ -110,6 +110,10 @@ public class GuildCacheInitializer {
                     if(channels.getFilteredDeathTracker().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getFilteredDeathTracker());
                 }
+                case DROME -> {
+                    if(channels.getDromeTracker().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getDromeTracker());
+                }
             };
 
             GuildCacheData.addToChannelsCache(guildId, channelId, eventType);

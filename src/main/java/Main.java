@@ -15,6 +15,7 @@ import events.commands.registration.CharacterUnregistration;
 import mongo.MongoConnector;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
+import services.drome.DromeService;
 import services.events.EventsService;
 import services.houses.HousesService;
 import services.killStatistics.KillStatisticsService;
@@ -51,7 +52,8 @@ public class Main {
                 new MiniWorldEvents(new MiniWorldEventsService(worldsService), worldsService),
                 new Boosteds(new BoostedsService(), worldsService),
                 new DeathTracker(new DeathTrackerService()),
-                new OnlineTracker(new OnlineService(), worldsService)
+                new OnlineTracker(new OnlineService(), worldsService),
+                new Drome(new DromeService(), worldsService)
         ).forEach(x -> {
             Connector.addListener(x);
             x.activate();

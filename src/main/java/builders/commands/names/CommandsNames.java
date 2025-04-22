@@ -66,6 +66,10 @@ public final class CommandsNames {
     public final static Command setFilteredDeathsCommand = new Command("set-filter-deaths", "Set Filtered Deaths channel",
             new CommandOption(CommandOptionNames.FILTER_DEATHS, "Channel name", ApplicationCommandOption.Type.CHANNEL));
 
+    public final static Command setDromeCommand = new Command("set-drome", "Set Drome channel",
+            new CommandOption(CommandOptionNames.DROME, "Channel name", ApplicationCommandOption.Type.CHANNEL));
+
+
     public static List<Command> getCommands() {
         List<Command> cmds = new ArrayList<>();
         for (Field field : CommandsNames.class.getDeclaredFields()) {

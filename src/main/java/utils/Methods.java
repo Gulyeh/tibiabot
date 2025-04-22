@@ -34,6 +34,7 @@ public final class Methods {
     }
 
     public static LocalDateTime formatToOffsetTime(String date) {
+
         Instant utcInstant = Instant.parse(date);
         ZoneId warsawTimeZone = ZoneId.of("Europe/Warsaw");
         ZonedDateTime warsawTime = utcInstant.atZone(ZoneOffset.UTC).withZoneSameInstant(warsawTimeZone);

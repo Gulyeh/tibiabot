@@ -20,6 +20,14 @@ public abstract class ServerSaveEvent extends TimerEvent {
         this.worldsService = worldsService;
     }
 
+    public ServerSaveEvent(WorldsService worldsService, String buttonId) {
+        super(LocalDateTime.now()
+                .withHour(10)
+                .withMinute(3)
+                .withSecond(0), buttonId);
+        this.worldsService = worldsService;
+    }
+
     protected long getWaitTime(int specifiedMillis) {
         if(!isServerOnline()) return specifiedMillis;
         LocalDateTime now = LocalDateTime.now();

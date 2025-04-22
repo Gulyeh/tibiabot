@@ -123,7 +123,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
             GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
             if(guildChannel == null) continue;
 
-            processEmbeddableData(guildChannel, serverSaveOccurs ? new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
+            processEmbeddableData(guildChannel, timerEventOccurs ? new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
         }
     }
 
