@@ -90,13 +90,14 @@ public final class TibiaWiki {
     private static String extractBestMatch(Elements elements, String name) {
         String output = "";
         for(Element element : elements) {
-            if(!element.attr("data-title").toLowerCase().contains(name.toLowerCase())) continue;
+            String title = element.attr("data-title").toLowerCase();
+            if(title.contains("soul core") || !title.contains(name.toLowerCase())) continue;
             output = element.attr("href").split("File:")[1];
             break;
         }
 
         if (output.isEmpty())
-            output = elements.first().attr("href").trim();
+            output = elements.first().attr("href").split("File:")[1].trim();
 
         return output;
     }
