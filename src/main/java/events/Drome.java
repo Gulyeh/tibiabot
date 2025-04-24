@@ -85,6 +85,7 @@ public class Drome extends ServerSaveEvent implements Activable, Threadable {
         while (true) {
             try {
                 log.info("Executing thread {}", getEventName());
+                if(!isAfterSaverSave()) continue;
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
