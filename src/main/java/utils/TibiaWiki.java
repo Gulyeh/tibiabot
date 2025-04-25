@@ -71,6 +71,8 @@ public final class TibiaWiki {
             put("earth", "Poison Gas");
             put("energy", "Energy Field (Field)");
             put("death", "Death Effect");
+            put("agony", "Darkfield");
+            put("drowning", "Water Vortex");
         }};
 
         if(replaceable.containsKey(name.toLowerCase())) name = replaceable.get(name.toLowerCase());
