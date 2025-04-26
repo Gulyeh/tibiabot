@@ -162,7 +162,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {
-        List<Message> msgs = isFirstRun ? getChannelMessages(channel) : new ArrayList<>();
+        List<Message> msgs = isFirstRun ? getChannelMessages(channel, 30) : new ArrayList<>();
 
         for (DeathData death : model) {
             String description = getDescription(death);

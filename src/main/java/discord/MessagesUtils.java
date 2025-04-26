@@ -29,16 +29,24 @@ public final class MessagesUtils {
         }
     }
 
+    public static List<Message> getChannelMessages(GuildMessageChannel channel, int maxMessages) {
+        return getChannelMessages(channel, Instant.now(), maxMessages);
+    }
+
     public static List<Message> getChannelMessages(GuildMessageChannel channel) {
         return getChannelMessages(channel, Instant.now());
     }
 
     public static List<Message> getChannelMessages(GuildMessageChannel channel, Instant from) {
+        return getChannelMessages(channel, from, 100);
+    }
+
+    public static List<Message> getChannelMessages(GuildMessageChannel channel, Instant from, int messages) {
         try {
             Snowflake now = Snowflake.of(from);
 
             return channel.getMessagesBefore(now)
-                    .take(100)
+                    .take(messages)
                     .filter(message -> message.getAuthor()
                             .map(user -> user.getId().equals(Snowflake.of(getId())))
                             .orElse(false))
