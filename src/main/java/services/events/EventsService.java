@@ -10,6 +10,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import services.events.models.EventModel;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -57,7 +58,11 @@ public class EventsService implements Cacheable {
             }
         }
 
-        return new ArrayList<>(existingEvents.values());
+        return new ArrayList<>(existingEvents.values().stream().filter(x -> {
+            if(x.getEndDate() == null) return true;
+            LocalDateTime now = LocalDateTime.now();
+            return now.isBefore(x.getEndDate());
+        }).toList());
     }
 
     private void processEventNode(Node eventNode, int month, int year, Map<String, EventModel> eventMap) {

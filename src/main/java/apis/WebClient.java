@@ -2,19 +2,28 @@ package apis;
 
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.util.Timeout;
 
 
 @Slf4j
 public abstract class WebClient {
-    private final HttpClient httpClient;
+    private final CloseableHttpClient httpClient;
 
     public WebClient() {
-        httpClient = HttpClients.createDefault();
+        Timeout timeout = Timeout.ofSeconds(10);
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(timeout)
+                .setConnectionRequestTimeout(timeout)
+                .build();
+        httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(config)
+                .build();
     }
 
     protected String sendRequest(ClassicHttpRequest request) {
@@ -32,10 +41,6 @@ public abstract class WebClient {
 
     protected abstract String getUrl();
 
-    protected ClassicHttpRequest getRequest() {
-        return new HttpGet(getUrl());
-    }
-
     protected ClassicHttpRequest getCustomRequest(String url) {
         return new HttpGet(url);
     }
@@ -50,7 +55,7 @@ public abstract class WebClient {
             Gson g = new Gson();
             return g.fromJson(response, classType);
         } catch (Exception e) {
-            log.info("Could not parse json data - " + e.getMessage());
+            log.info("Could not parse json data - {}", e.getMessage());
             return null;
         }
     }
