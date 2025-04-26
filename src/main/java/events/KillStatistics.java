@@ -73,6 +73,7 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
         while(true) {
             try {
                 log.info("Executing thread {}", getEventName());
+                if(!timerHandler.isAfterTimer()) continue;
                 killStatisticsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {

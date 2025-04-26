@@ -31,6 +31,7 @@ import static builders.commands.names.CommandsNames.deathsCommand;
 import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static cache.guilds.GuildCacheData.deathTrackerFilters;
 import static discord.Connector.client;
+import static discord.MessagesUtils.getChannelMessages;
 import static utils.Methods.formatToDiscordLink;
 import static utils.TibiaWiki.formatWikiGifLink;
 
@@ -39,6 +40,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
     private final DeathTrackerService deathTrackerService;
     private final EmbeddedHandler embeddedHandler;
+    private boolean isFirstRun = true; //to avoid death duplicates after bot restart
 
     public DeathTracker(DeathTrackerService deathTrackerService) {
         this.deathTrackerService = deathTrackerService;
@@ -90,8 +92,9 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if(guildIds.isEmpty()) return;
 
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Snowflake guildId : guildIds) {
-            CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DEATH_TRACKER);
                 if(guildChannel == null) return;
 
@@ -109,7 +112,12 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
                 processEmbeddableData(guildChannel, deaths);
                 executeFilteredDeaths(guildId, deaths);
             });
+            futures.add(future);
         }
+
+        if(isFirstRun)
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .thenRun(() -> isFirstRun = false);
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
@@ -154,12 +162,20 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {
+        List<Message> msgs = isFirstRun ? getChannelMessages(channel) : new ArrayList<>();
+
         for (DeathData death : model) {
+            String description = getDescription(death);
+            if(msgs.stream().anyMatch(x -> {
+                String embedDescription = x.getEmbeds().get(0).getData().description().get();
+                return description.equals(embedDescription);
+            })) continue;
+
             embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     death.isSpamDeath() ? "Death Spam detected!\n" +
                             "Blocked " + death.getCharacter().getName() + "'s deaths for " + deathTrackerService.getAntiSpamWaitHours() + " hour(s)\n" : "",
-                    getDescription(death),
+                    description,
                     "",
                     getThumbnail(death),
                     death.isSpamDeath() ? Color.RED: Color.DARK_GRAY,

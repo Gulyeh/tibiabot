@@ -229,9 +229,8 @@ public final class LootSplitter extends EventMethods {
 
     private boolean isComparableData(ModalSubmitInteractionEvent event, SplitLootModel model) {
         if(model.getSpotName().isEmpty()) return false;
-        List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block())
-                .collectList()
-                .block();
+
+        List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block());
         if(msgs == null || msgs.isEmpty()) return false;
 
         List<Message> embeddedMsgs = msgs.stream().filter(x ->

@@ -55,9 +55,7 @@ public final class SplitterComparatorHandler extends EventMethods {
                     .subscribe();
 
             try {
-                List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block(), message.getTimestamp())
-                        .collectList()
-                        .block();
+                List<Message> msgs = getChannelMessages((GuildMessageChannel) event.getInteraction().getChannel().block(), message.getTimestamp());
                 if (msgs == null) throw new Exception("No messages found");
 
                 List<Message> embeddedMsgs = msgs.stream().filter(x ->

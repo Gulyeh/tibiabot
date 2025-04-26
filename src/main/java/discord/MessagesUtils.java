@@ -8,6 +8,7 @@ import reactor.core.publisher.Flux;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static discord.Connector.getId;
@@ -18,7 +19,7 @@ public final class MessagesUtils {
 
     public static void deleteMessages(GuildMessageChannel channel) {
         try {
-            List<Message> messages = getChannelMessages(channel).collectList().block();
+            List<Message> messages = getChannelMessages(channel);
             int size = messages.size();
             if(size == 1) messages.get(0).delete().subscribe();
             else channel.bulkDeleteMessages(Flux.fromIterable(messages)).subscribe();
@@ -28,11 +29,11 @@ public final class MessagesUtils {
         }
     }
 
-    public static Flux<Message> getChannelMessages(GuildMessageChannel channel) {
+    public static List<Message> getChannelMessages(GuildMessageChannel channel) {
         return getChannelMessages(channel, Instant.now());
     }
 
-    public static Flux<Message> getChannelMessages(GuildMessageChannel channel, Instant from) {
+    public static List<Message> getChannelMessages(GuildMessageChannel channel, Instant from) {
         try {
             Snowflake now = Snowflake.of(from);
 
@@ -44,10 +45,10 @@ public final class MessagesUtils {
                     .filter(message -> {
                         Instant time = Instant.now().minus(Duration.ofDays(13));
                         return message.getTimestamp().isAfter(time);
-                    });
+                    }).collectList().block();
         } catch (Exception ignore) {
             log.info("Could not get messages from channel");
-            return Flux.empty();
+            return new ArrayList<>();
         }
     }
 }

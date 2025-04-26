@@ -15,7 +15,7 @@ public class TimerHandler {
 
     public TimerHandler(LocalDateTime timer, String eventName) {
         this.timer = timer;
-        if(LocalDateTime.now().isAfter(timer)) this.timer = timer.plusDays(1);
+        if(isAfterTimer()) this.timer = timer.plusDays(1);
         this.eventName = eventName;
     }
 
