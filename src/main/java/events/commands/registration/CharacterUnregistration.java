@@ -1,7 +1,7 @@
 package events.commands.registration;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import events.abstracts.EventsMethods;
+import events.abstracts.EventMethods;
 import events.utils.EventName;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -11,7 +11,7 @@ import static builders.commands.names.CommandsNames.unregisterCommand;
 import static discord.Connector.client;
 
 @Slf4j
-public class CharacterUnregistration extends EventsMethods {
+public final class CharacterUnregistration extends EventMethods {
 
     private final UnregisterCharacter unregisterCharacter;
 

@@ -15,8 +15,7 @@ public final class Configurator {
         DB_NAME("DB_NAME"),
         DB_COLLECTION_GUILDS("DB_COLLECTION_GUILDS"),
         DB_COLLECTION_CHARACTERS("DB_COLLECTION_CHARACTERS"),
-        CHROMEDRIVER_PATH("CHROMEDRIVER_PATH"),
-        EVENTS_PATH("EVENTS_PATH");
+        CHROMEDRIVER_PATH("CHROMEDRIVER_PATH");
 
         private final String name;
     }

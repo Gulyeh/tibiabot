@@ -7,18 +7,14 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.EmbeddableEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
-import events.interfaces.Threadable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -29,17 +25,21 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 
 @Slf4j
-public class TibiaCoins extends EmbeddableEvent implements Threadable, Activable {
+public final class TibiaCoins extends ExecutableEvent implements Activable {
+
     private final TibiaCoinsService tibiaCoinsService;
+    private final EmbeddedHandler embeddedHandler;
 
     public TibiaCoins(TibiaCoinsService tibiaCoinsService) {
         this.tibiaCoinsService = tibiaCoinsService;
+        this.embeddedHandler = new EmbeddedHandler();
     }
 
     @Override
@@ -65,7 +65,7 @@ public class TibiaCoins extends EmbeddableEvent implements Threadable, Activable
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
+    public void _activableEvent() {
         log.info("Activating {}", getEventName());
         while(true) {
             try {
@@ -88,15 +88,15 @@ public class TibiaCoins extends EmbeddableEvent implements Threadable, Activable
         PriceModel prices = tibiaCoinsService.getPrices();
 
         for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.TIBIA_COINS);
-            if(guildChannel == null) continue;
-
-            processEmbeddableData(guildChannel, prices);
+            CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.TIBIA_COINS);
+                if (guildChannel == null) return;
+                processEmbeddableData(guildChannel, prices);
+            });
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
         if(id == null) return event.createFollowup("Could not find channel");
 
@@ -133,13 +133,13 @@ public class TibiaCoins extends EmbeddableEvent implements Threadable, Activable
             String title = isFirstMessage ? "Tibia Coins Prices\n``" + eye.getName() + "``" : "``" + eye.getName() + "``";
             String desc = isFirstMessage ? "(Buy price / Sell price)\n(checked at)" : "";
 
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     createEmbedFields(servers),
                     title,
                     desc,
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor());
 
             if(isFirstMessage) isFirstMessage = false;
         }

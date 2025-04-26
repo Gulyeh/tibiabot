@@ -19,9 +19,9 @@ public class MiniWorldEventsService implements Cacheable {
     private final WorldsService worldsService;
     private final TibiaTradeAPI tibiaTradeAPI;
 
-    public MiniWorldEventsService(WorldsService worldsService) {
+    public MiniWorldEventsService() {
         clearCache();
-        this.worldsService = worldsService;
+        this.worldsService = WorldsService.getInstance();
         tibiaTradeAPI = new TibiaTradeAPI();
     }
 

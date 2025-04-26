@@ -2,11 +2,11 @@ package events.lootSplitter;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ComponentData;
-import events.abstracts.InteractionEvent;
+import events.abstracts.EventMethods;
+import handlers.InteractionHandler;
 import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -29,28 +29,29 @@ import static cache.characters.CharactersCacheData.getRegisteredCharacterUser;
 import static cache.characters.CharactersCacheData.isCharacterRegisteredToUser;
 import static discord.Connector.client;
 
-public class SplitterTransfersHandler extends InteractionEvent {
+public final class SplitterTransfersHandler extends EventMethods {
     private final int interactionTimeoutDays = 2;
+    private final InteractionHandler interactionHandler;
 
-    protected SplitterTransfersHandler(InteractionObserver observer) {
-        super("transfer", observer);
+    public SplitterTransfersHandler(InteractionObserver observer) {
+        interactionHandler = new InteractionHandler("transfer", observer);
     }
 
     @Override
     public void executeEvent() {
         client.on(ButtonInteractionEvent.class, event -> {
-            if (!event.getCustomId().contains(getButtonId())) return Mono.empty();
+            if (!event.getCustomId().contains(interactionHandler.getButtonId())) return Mono.empty();
 
-            String id = getId(event),
+            String id = interactionHandler.getId(event),
                     splitterName = id.split("_")[1];
             if (!isCharacterRegisteredToUser(splitterName, getUserId(event)))
                 return event.reply("User who is registered to character **" + splitterName + "** can click this button only")
                         .withEphemeral(true);
 
-            Message message = getMessage(event);
-            if(!observer.add(message.getId())) return Mono.empty();
-            List<ComponentData> interactionButtons = getInteractionButtons(message);
-            message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(interactionButtons, true)))
+            Message message = interactionHandler.getMessage(event);
+            if(!interactionHandler.getObserver().add(message.getId())) return Mono.empty();
+            List<ComponentData> interactionButtons = interactionHandler.getInteractionButtons(message);
+            message.edit().withComponentsOrNull(interactionHandler.splitActionRows(interactionHandler.toggleLockButton(interactionButtons, true)))
                     .subscribe();
 
             try {
@@ -58,7 +59,7 @@ public class SplitterTransfersHandler extends InteractionEvent {
                 String response = buildSplittingResponse(id, splitterName);
 
                 message.edit()
-                        .withComponentsOrNull(splitActionRows(updateButtons(interactionButtons, id, splitterName, isTimeout)))
+                        .withComponentsOrNull(interactionHandler.splitActionRows(updateButtons(interactionButtons, id, splitterName, isTimeout)))
                         .subscribe();
 
                 return isTimeout ?
@@ -67,11 +68,11 @@ public class SplitterTransfersHandler extends InteractionEvent {
                         event.reply(response);
             } catch (Exception ignore) {
                 message.edit()
-                        .withComponentsOrNull(splitActionRows(toggleLockButton(interactionButtons, false)))
+                        .withComponentsOrNull(interactionHandler.splitActionRows(interactionHandler.toggleLockButton(interactionButtons, false)))
                         .subscribe();
                 return Mono.empty();
             } finally {
-                observer.remove(message.getId());
+                interactionHandler.getObserver().remove(message.getId());
             }
         }).subscribe();
     }
@@ -95,7 +96,7 @@ public class SplitterTransfersHandler extends InteractionEvent {
                     .append(data.getTransferAmount())
                     .append("]");
         }
-        return getButtonId() + "_" + buttonId;
+        return interactionHandler.getButtonId() + "_" + buttonId;
     }
 
     private List<Button> updateButtons(List<ComponentData> interactionButtons, String customId, String splitterName, boolean isTimeout) {
@@ -156,10 +157,5 @@ public class SplitterTransfersHandler extends InteractionEvent {
     @Override
     public String getEventName() {
         return "";
-    }
-
-    @Override
-    protected void executeEventProcess() {
-
     }
 }

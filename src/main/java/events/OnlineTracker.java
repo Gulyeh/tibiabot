@@ -5,40 +5,43 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.rest.util.Color;
-import events.abstracts.ServerSaveEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.ServerSaveHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
-import services.worlds.WorldsService;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.setOnlineTrackerCommand;
 import static discord.Connector.client;
-import static discord.channels.ChannelUtils.addChannelSuffix;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.ChannelUtils.addChannelSuffix;
+import static discord.MessagesUtils.deleteMessages;
 import static java.util.UUID.randomUUID;
 import static utils.Methods.formatToDiscordLink;
 
 @Slf4j
-public class OnlineTracker extends ServerSaveEvent implements Channelable, Activable {
+public final class OnlineTracker extends ExecutableEvent implements Activable {
     private final OnlineService onlineService;
+    private final ServerSaveHandler serverSaveHandler;
+    private final EmbeddedHandler embeddedHandler;
     private final String othersKey;
 
-    public OnlineTracker(OnlineService onlineService, WorldsService worldsService) {
-        super(worldsService);
+    public OnlineTracker(OnlineService onlineService) {
         this.onlineService = onlineService;
+        serverSaveHandler = new ServerSaveHandler(getEventName());
+        embeddedHandler = new EmbeddedHandler();
         othersKey = randomUUID().toString();
     }
 
@@ -60,20 +63,20 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
+    public void _activableEvent() {
         log.info("Activating {}", getEventName());
         while (true) {
             try {
                 log.info("Executing thread {}", getEventName());
                 onlineService.clearCache();
-                if(isAfterSaverSave())
+                if(serverSaveHandler.isAfterSaverSave())
                     onlineService.clearCharStorageCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(330000));
+                    wait(serverSaveHandler.getTimeAdjustedToServerSave(330000));
                 }
             }
         }
@@ -88,22 +91,22 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
         deleteMessages(channel);
         addChannelSuffix(channel, model.size());
         if(model.isEmpty()) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "",
                     "There are no online players",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor());
             return;
         }
 
         LinkedHashMap<String, List<OnlineModel>> map = filterAndOrderData(model);
-        Color color = getRandomColor();
+        Color color = embeddedHandler.getRandomColor();
         List<String> msgs = createDescription(map);
         boolean isFirst = true;
         for(String msg : msgs) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     isFirst ? model.get(0).getWorld() + " (" + model.size() + ")" : "",
                     msg,
@@ -120,15 +123,15 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
-            if(guildChannel == null) continue;
-
-            processEmbeddableData(guildChannel, timerEventOccurs ? new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
+            CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
+                if (guildChannel == null) return;
+                processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ? new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
+            });
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId(event);
 

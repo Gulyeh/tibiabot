@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 import static discord.Connector.client;
 
 @Slf4j
-public class RemovedGuild extends DiscordEvent {
+public final class RemovedGuild extends DiscordEvent {
     @Override
     public void executeEvent() {
         client.on(GuildDeleteEvent.class, event -> {

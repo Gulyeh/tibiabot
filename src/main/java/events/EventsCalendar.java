@@ -1,6 +1,5 @@
 package events;
 
-import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Guild;
@@ -9,25 +8,24 @@ import discord4j.core.object.entity.ScheduledEvent;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.ScheduledEventCreateSpec;
 import discord4j.core.spec.ScheduledEventEntityMetadataSpec;
-import events.abstracts.ServerSaveEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
+import handlers.ServerSaveHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.GuildModel;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import services.events.EventsService;
 import services.events.models.EventModel;
 import services.worlds.WorldsService;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.eventsCommand;
@@ -35,13 +33,14 @@ import static cache.guilds.GuildCacheData.*;
 import static discord.Connector.client;
 
 @Slf4j
-public class EventsCalendar extends ServerSaveEvent implements Activable {
+public final class EventsCalendar extends ExecutableEvent implements Activable {
 
     private final EventsService eventsService;
+    private final ServerSaveHandler serverSaveHandler;
 
-    public EventsCalendar(EventsService eventsService, WorldsService worldsService) {
-        super(worldsService);
+    public EventsCalendar(EventsService eventsService) {
         this.eventsService = eventsService;
+        this.serverSaveHandler = new ServerSaveHandler(getEventName());
     }
 
     @Override
@@ -66,20 +65,20 @@ public class EventsCalendar extends ServerSaveEvent implements Activable {
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
+    public void _activableEvent() {
         log.info("Activating {}", getEventName());
 
         while (true) {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(!isAfterSaverSave()) continue;
+                if(!serverSaveHandler.isAfterSaverSave()) continue;
                 eventsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime());
+                    wait(serverSaveHandler.getTimeAdjustedToServerSave(120000));
                 }
             }
         }
@@ -113,7 +112,7 @@ public class EventsCalendar extends ServerSaveEvent implements Activable {
     @Override
     protected void executeEventProcess() {
         for (Snowflake guildId : globalEvents) {
-            createServerEvent(guildId, getEvents());
+            CompletableFuture.runAsync(() -> createServerEvent(guildId, getEvents()));
         }
     }
 

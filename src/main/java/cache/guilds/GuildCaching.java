@@ -19,7 +19,7 @@ public final class GuildCaching extends Singleton implements Cachable {
     private final GuildCacheInitializer initializer;
     private final GuildDocumentActions guildDocumentActions;
 
-    public GuildCaching() {
+    private GuildCaching() {
         initializer = new GuildCacheInitializer();
         guildDocumentActions = GuildDocumentActions.getInstance();
     }

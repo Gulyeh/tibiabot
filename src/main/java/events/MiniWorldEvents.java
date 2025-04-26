@@ -8,36 +8,41 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import events.abstracts.ServerSaveEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.ServerSaveHandler;
+import handlers.TimerHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.miniWorldEvents.MiniWorldEventsService;
 import services.miniWorldEvents.models.MiniWorldEvent;
 import services.miniWorldEvents.models.MiniWorldEventsModel;
-import services.worlds.WorldsService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.miniWorldChangesCommand;
 import static discord.Connector.client;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 import static utils.Methods.getFormattedDate;
 
 @Slf4j
-public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Activable {
+public final class MiniWorldEvents extends ExecutableEvent implements Activable {
 
     private final MiniWorldEventsService miniWorldEventsService;
-    private LocalDateTime customServerSaveTime;
+    private final ServerSaveHandler serverSaveHandler;
+    private final TimerHandler timerHandler;
+    private final EmbeddedHandler embeddedHandler;
 
-    public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService, WorldsService worldsService) {
-        super(worldsService);
+    public MiniWorldEvents(MiniWorldEventsService miniWorldEventsService) {
         this.miniWorldEventsService = miniWorldEventsService;
-        customServerSaveTime = LocalDateTime.now().withHour(12).withMinute(0).withSecond(0);
+        embeddedHandler = new EmbeddedHandler();
+        serverSaveHandler = new ServerSaveHandler(getEventName());
+        timerHandler = new TimerHandler(LocalDateTime.now().withHour(12).withMinute(0).withSecond(0), getEventName());
     }
 
     @Override
@@ -58,22 +63,22 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
+    public void _activableEvent() {
         log.info("Activating {}", getEventName());
         while(true) {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(isAfterSaverSave())
+                if(serverSaveHandler.isAfterSaverSave())
                     miniWorldEventsService.clearCache();
-                else if(isAfterDate(customServerSaveTime)) {
-                    customServerSaveTime = customServerSaveTime.plusDays(1);
+                else if(timerHandler.isAfterTimer()) {
+                    timerHandler.adjustTimerByDays(1);
                     executeEventProcess();
                 }
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(180000));
+                    wait(serverSaveHandler.getTimeAdjustedToServerSave(180000));
                 }
             }
         }
@@ -83,29 +88,28 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
         List<MiniWorldEvent> miniWorldChanges = model.getActive_mini_world_changes();
 
         if(miniWorldChanges.isEmpty()) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "There are no active mini world changes on this world currently",
                     "",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor());
             return;
         }
 
         for (MiniWorldEvent events : miniWorldChanges) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     events.getMini_world_change_name(),
                     "Mini world change from\n``" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
                     "",
                     events.getMini_world_change_icon(),
-                    getRandomColor());
+                    embeddedHandler.getRandomColor());
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId(event);
 
@@ -126,11 +130,13 @@ public class MiniWorldEvents extends ServerSaveEvent implements Channelable, Act
     @Override
     protected void executeEventProcess() {
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.MINI_WORLD_CHANGES);
-            if(guildChannel == null) continue;
+            CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.MINI_WORLD_CHANGES);
+                if (guildChannel == null) return;
 
-            deleteMessages(guildChannel);
-            processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
+                deleteMessages(guildChannel);
+                processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
+            });
         }
     }
 

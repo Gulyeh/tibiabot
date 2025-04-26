@@ -10,7 +10,9 @@ import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.ComponentData;
 import discord4j.rest.util.Color;
-import events.abstracts.InteractionEvent;
+import events.abstracts.EventMethods;
+import handlers.EmbeddedHandler;
+import handlers.InteractionHandler;
 import lombok.extern.slf4j.Slf4j;
 import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
@@ -20,33 +22,36 @@ import services.lootSplitter.model.HuntComparatorModel;
 import services.lootSplitter.model.SplitLootModel;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static discord.Connector.client;
-import static discord.messages.GetMessages.getChannelMessages;
+import static discord.MessagesUtils.getChannelMessages;
 import static utils.Emojis.getBlankEmoji;
 
 @Slf4j
-public class SplitterComparatorHandler extends InteractionEvent {
+public final class SplitterComparatorHandler extends EventMethods {
     private final LootSplitterService lootSplitterService;
+    private final InteractionHandler interactionHandler;
+    private final EmbeddedHandler embeddedHandler;
 
-    protected SplitterComparatorHandler(LootSplitterService lootSplitterService, InteractionObserver observer) {
-        super("comparePreviousHunts", observer);
+    public SplitterComparatorHandler(LootSplitterService lootSplitterService, InteractionObserver observer) {
+        embeddedHandler = new EmbeddedHandler();
+        interactionHandler = new InteractionHandler("comparePreviousHunts", observer);
         this.lootSplitterService = lootSplitterService;
     }
 
     @Override
     public void executeEvent() {
         client.on(ButtonInteractionEvent.class, event -> {
-            if (!event.getCustomId().contains(getButtonId()) || !observer.add(getMessage(event).getId())) return Mono.empty();
+            if (!event.getCustomId().contains(interactionHandler.getButtonId()) ||
+                    !interactionHandler.getObserver().add(interactionHandler.getMessage(event).getId())) return Mono.empty();
 
-            Message message = getMessage(event);
+            Message message = interactionHandler.getMessage(event);
             event.deferReply().subscribe();
-            List<ComponentData> buttons = getInteractionButtons(message);
-            message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(buttons, true)))
+            List<ComponentData> buttons = interactionHandler.getInteractionButtons(message);
+            message.edit().withComponentsOrNull(interactionHandler.splitActionRows(interactionHandler.toggleLockButton(buttons, true)))
                     .subscribe();
 
             try {
@@ -62,26 +67,30 @@ public class SplitterComparatorHandler extends InteractionEvent {
                                 x.getEmbeds().get(0).getTitle().get().equals(message.getEmbeds().get(0).getTitle().get())).toList();
 
                 List<EmbedCreateSpec> comparedMessages = buildCompareData(message, embeddedMsgs);
-                message.edit().withComponentsOrNull(splitActionRows(updateButtons(buttons, !embeddedMsgs.isEmpty())))
+                message.edit().withComponentsOrNull(interactionHandler.splitActionRows(updateButtons(buttons, !embeddedMsgs.isEmpty())))
                         .subscribe();
                 if (embeddedMsgs.isEmpty())
                     return event.createFollowup().withEphemeral(true)
                             .withContent("There is no previous data to compare with");
                 return event.createFollowup().withEmbeds(comparedMessages);
             } catch (Exception e) {
-                message.edit().withComponentsOrNull(splitActionRows(toggleLockButton(buttons, false)))
+                message.edit().withComponentsOrNull(interactionHandler.splitActionRows(interactionHandler.toggleLockButton(buttons, false)))
                         .subscribe();
                 return event.createFollowup("Something went wrong").withEphemeral(true);
             } finally {
-                observer.remove(message.getId());
+                interactionHandler.getObserver().remove(message.getId());
             }
         }).subscribe();
+    }
+
+    public String getButtonId() {
+        return interactionHandler.getButtonId();
     }
 
     private List<Button> updateButtons(List<ComponentData> buttons, boolean isValid) {
         List<Button> buttonsList = new ArrayList<>();
         for(ComponentData component : buttons) {
-            if(!component.customId().get().equals(getButtonId())) {
+            if(!component.customId().get().equals(interactionHandler.getButtonId())) {
                 buttonsList.add((Button) Button.fromData(component));
                 continue;
             }
@@ -110,7 +119,7 @@ public class SplitterComparatorHandler extends InteractionEvent {
         HuntComparatorModel comparedData = lootSplitterService.compareHunts(currentHuntModel, previousHunts);
         List<EmbedCreateFields.Field> fields = fieldsBuilder(comparedData);
 
-        return createEmbeddedMessages(fields,
+        return embeddedHandler.createEmbeddedMessages(fields,
                 previousHunts.size() + " Hunt session(s) comparison - " + comparedData.getComparedMembers().size() + " members (per hour)",
                 "",
                 "",
@@ -121,8 +130,8 @@ public class SplitterComparatorHandler extends InteractionEvent {
 
     private List<EmbedCreateFields.Field> fieldsBuilder(HuntComparatorModel data) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>(buildHuntInfoComparison(data));
-        fields.add(emptyField(false));
-        fields.add(emptyField(false));
+        fields.add(embeddedHandler.emptyField(false));
+        fields.add(embeddedHandler.emptyField(false));
         fields.add(EmbedCreateFields.Field.of("", "**Members**", false));
         fields.addAll(buildHuntMembersComparison(data.getComparedMembers()));
         return fields;
@@ -144,7 +153,7 @@ public class SplitterComparatorHandler extends InteractionEvent {
                 "Difference: **" + data.getIndividualBalancePerHourDifference() + "** (" + data.getIndividualBalancePerHourDifferencePercentage() + ")";
         fields.add(EmbedCreateFields.Field.of("", String.join("\n", lootBuilder, suppliesBuilder), true));
         fields.add(EmbedCreateFields.Field.of("", String.join("\n", balanceBuilder, individualBalanceBuilder), true));
-        fields.add(emptyField(true));
+        fields.add(embeddedHandler.emptyField(true));
         return fields;
     }
 
@@ -165,7 +174,7 @@ public class SplitterComparatorHandler extends InteractionEvent {
                     getBlankEmoji() + getBlankEmoji() + "Difference: **" + member.getHealingDifference() + "** (" + member.getHealingDifferencePercentage() + ")";
             fields.add(EmbedCreateFields.Field.of("‣ " + member.getName(), String.join("\n", loot, supplies), true));
             fields.add(EmbedCreateFields.Field.of(getBlankEmoji(), String.join("\n", damage, healing), true));
-            fields.add(emptyField(true));
+            fields.add(embeddedHandler.emptyField(true));
         }
         return fields;
     }
@@ -182,9 +191,5 @@ public class SplitterComparatorHandler extends InteractionEvent {
     @Override
     public String getEventName() {
         return "";
-    }
-
-    @Override
-    protected void executeEventProcess() {
     }
 }

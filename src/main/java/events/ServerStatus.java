@@ -11,30 +11,37 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.ServerSaveEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.ServerSaveHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.worlds.WorldsService;
-import services.worlds.enums.Status;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
 import static discord.Connector.client;
-import static discord.channels.ChannelUtils.addChannelSuffix;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.ChannelUtils.addChannelSuffix;
+import static discord.MessagesUtils.deleteMessages;
 
 @Slf4j
-public class ServerStatus extends ServerSaveEvent implements Channelable, Activable {
+public final class ServerStatus extends ExecutableEvent implements Activable {
 
-    public ServerStatus(WorldsService worldsService) {
-        super(worldsService);
+    private final ServerSaveHandler serverSaveHandler;
+    private final EmbeddedHandler embeddedHandler;
+    private final WorldsService worldsService;
+
+    public ServerStatus() {
+        serverSaveHandler = new ServerSaveHandler(getEventName());
+        embeddedHandler = new EmbeddedHandler();
+        worldsService = WorldsService.getInstance();
     }
 
     @Override
@@ -55,7 +62,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
+    public void _activableEvent() {
         log.info("Activating {}", getEventName());
 
         while(true) {
@@ -66,25 +73,25 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(getWaitTime(330000));
+                    wait(serverSaveHandler.getTimeAdjustedToServerSave(330000));
                 }
             }
         }
     }
 
     protected void executeEventProcess() {
-        WorldModel worlds;
-        if(timerEventOccurs) worlds = worldsService.getServerSaveWorlds();
-        else worlds = worldsService.getWorlds();
+        WorldModel worlds = serverSaveHandler.isServerSaveInProgress() ?
+                worldsService.getServerSaveWorlds() : worldsService.getWorlds();
 
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.SERVER_STATUS);
-            if(guildChannel == null) continue;
-
-            processEmbeddableData(guildChannel, worlds);
+            CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.SERVER_STATUS);
+                if (guildChannel == null) return;
+                processEmbeddableData(guildChannel, worlds);
+            });
         }
     }
 
@@ -106,7 +113,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     private void processEmbeddableData(GuildMessageChannel channel, WorldModel model) {
         deleteMessages(channel);
         addChannelSuffix(channel, model.getWorlds().getPlayers_online());
-        sendEmbeddedMessages(channel,
+        embeddedHandler.sendEmbeddedMessages(channel,
                 createEmbedFields(model),
                 "Servers Status",
                 "```Players online: " + model.getWorlds().getPlayers_online() +
@@ -114,11 +121,10 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
                         "\nRecord date: " + model.getWorlds().getRecord_date() + "``",
                 "",
                 "",
-                getRandomColor());
+                embeddedHandler.getRandomColor());
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
         if(id == null) return event.createFollowup("Could not find channel");
 

@@ -34,7 +34,6 @@ public abstract class DocumentActions<T> extends Singleton {
         collectionName = config.get(collection.getName());
     }
 
-
     protected T getDocument(String id, String fieldNameId, Class<T> classType) {
         Gson gson = getGson();
         Document doc = getDocument(id, fieldNameId);

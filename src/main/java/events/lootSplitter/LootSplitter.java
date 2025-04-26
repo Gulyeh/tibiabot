@@ -15,8 +15,10 @@ import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.core.spec.MessageCreateFields;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.rest.util.Color;
-import events.abstracts.InteractionEvent;
+import events.abstracts.EventMethods;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.InteractionHandler;
 import lombok.extern.slf4j.Slf4j;
 import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
@@ -34,22 +36,26 @@ import java.util.List;
 
 import static builders.commands.names.CommandsNames.splitLootCommand;
 import static discord.Connector.client;
-import static discord.messages.GetMessages.getChannelMessages;
+import static discord.MessagesUtils.getChannelMessages;
 import static utils.Emojis.getBlankEmoji;
 import static utils.Emojis.getCoinEmoji;
 
 @Slf4j
-public class LootSplitter extends InteractionEvent {
+public final class LootSplitter extends EventMethods {
+
     private final LootSplitterService service;
     private final SplitterTransfersHandler splitterTransfersHandler;
     private final SplitterComparatorHandler splitterComparatorHandler;
+    private final InteractionHandler interactionHandler;
+    private final EmbeddedHandler embeddedHandler;
     private final String splitModalId = "lootSplitterModal", spotModalId = "spotModal", splitterModalId = "splitterModal";
 
     public LootSplitter() {
-        super("", new InteractionObserver());
         service = new LootSplitterService();
-        splitterTransfersHandler = new SplitterTransfersHandler(observer);
-        splitterComparatorHandler = new SplitterComparatorHandler(service, observer);
+        interactionHandler = new InteractionHandler();
+        embeddedHandler = new EmbeddedHandler();
+        splitterTransfersHandler = new SplitterTransfersHandler(interactionHandler.getObserver());
+        splitterComparatorHandler = new SplitterComparatorHandler(service, interactionHandler.getObserver());
     }
 
     private void subscribeCommandEvent() {
@@ -98,7 +104,7 @@ public class LootSplitter extends InteractionEvent {
                                 MessageCreateFields.File.of("session.txt",
                                         new ByteArrayInputStream(analyzer.getBytes(StandardCharsets.UTF_8))))
                         .withEmbeds(createMessage(model))
-                        .withComponents(splitActionRows(buttons));
+                        .withComponents(interactionHandler.splitActionRows(buttons));
             } catch (Exception ignore) {
                 return event.createFollowup("Wrong parsing data");
             }
@@ -120,7 +126,7 @@ public class LootSplitter extends InteractionEvent {
         Color color = model.isNegative() ? Color.RED : Color.GREEN;
         String footer = model.getHuntTime() + " hunt from " + model.getHuntFrom() + " to " + model.getHuntTo();
 
-        return createEmbeddedMessages(
+        return embeddedHandler.createEmbeddedMessages(
                 createFields(model),
                 title,
                 "",
@@ -180,15 +186,15 @@ public class LootSplitter extends InteractionEvent {
         List<EmbedCreateFields.Field> fields = new ArrayList<>(createDescriptionFields(model));
         fields.add(createDamageSortField(model));
         fields.add(createHealingSortField(model));
-        fields.add(emptyField(true));
-        fields.add(emptyField(false));
+        fields.add(embeddedHandler.emptyField(true));
+        fields.add(embeddedHandler.emptyField(false));
         fields.add(EmbedCreateFields.Field.of("", "**Members**", false));
 
         int iterations = 1;
         for(SplittingMember member : model.getMembers()) {
             if(model.getMembers().size() <= 8)
                 fields.add(buildEmbedField(member));
-            if(iterations % 2 == 0) fields.add(emptyField(true));
+            if(iterations % 2 == 0) fields.add(embeddedHandler.emptyField(true));
             iterations++;
             if(member.getTransfers().isEmpty()) continue;
 
@@ -206,7 +212,7 @@ public class LootSplitter extends InteractionEvent {
             splitting.append("\n");
         }
 
-        fields.add(emptyField(false));
+        fields.add(embeddedHandler.emptyField(false));
         fields.add(EmbedCreateFields.Field.of("**Splitting Instructions**", splitting.toString(), false));
         return fields;
     }
@@ -249,9 +255,5 @@ public class LootSplitter extends InteractionEvent {
     @Override
     public String getEventName() {
         return EventName.lootSplitter;
-    }
-
-    @Override
-    protected void executeEventProcess() {
     }
 }

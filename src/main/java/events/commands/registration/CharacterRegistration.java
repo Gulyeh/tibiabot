@@ -6,7 +6,7 @@ import apis.tibiaData.model.deathtracker.CharacterResponse;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import events.abstracts.EventsMethods;
+import events.abstracts.EventMethods;
 import events.utils.EventName;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -16,7 +16,7 @@ import static builders.commands.names.CommandsNames.registerCommand;
 import static discord.Connector.client;
 
 @Slf4j
-public class CharacterRegistration extends EventsMethods {
+public final class CharacterRegistration extends EventMethods {
     private final RegisterCharacter registerService;
     private final TibiaDataAPI api;
 

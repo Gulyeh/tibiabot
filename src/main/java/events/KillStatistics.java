@@ -7,16 +7,15 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.EmbeddableEvent;
-import events.abstracts.TimerEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.TimerHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -24,27 +23,29 @@ import services.killStatistics.KillStatisticsService;
 import services.killStatistics.models.BossType;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.killingStatsCommand;
+import static discord.ChannelUtils.addChannelSuffix;
 import static discord.Connector.client;
-import static discord.channels.ChannelUtils.addChannelSuffix;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 
 @Slf4j
-public class KillStatistics extends TimerEvent implements Channelable, Activable {
+public final class KillStatistics extends ExecutableEvent implements Activable {
 
     private final KillStatisticsService killStatisticsService;
+    private final TimerHandler timerHandler;
+    private final EmbeddedHandler embeddedHandler;
 
     public KillStatistics(KillStatisticsService killStatisticsService) {
-        super(LocalDateTime.now()
+        timerHandler = new TimerHandler(LocalDateTime.now()
                 .withHour(8)
                 .withMinute(0)
-                .withSecond(0));
+                .withSecond(0), getEventName());
+        embeddedHandler = new EmbeddedHandler();
         this.killStatisticsService = killStatisticsService;
     }
 
@@ -66,20 +67,19 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
-        log.info("Activating " + getEventName());
+    public void _activableEvent() {
+        log.info("Activating {}", getEventName());
 
         while(true) {
             try {
-                log.info("Executing thread " + getEventName());
+                log.info("Executing thread {}", getEventName());
                 killStatisticsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
-                adjustTimerByDays(1);
                 synchronized (this) {
-                    wait(getWaitTime());
+                    wait(timerHandler.getWaitTimeUntilTimer(1));
                 }
             }
         }
@@ -91,10 +91,11 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.KILLED_BOSSES);
-            if(guildChannel == null) continue;
-
-            processEmbeddableData(guildChannel, killStatisticsService.getStatistics(guildId));
+            CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.KILLED_BOSSES);
+                if (guildChannel == null) return;
+                processEmbeddableData(guildChannel, killStatisticsService.getStatistics(guildId));
+            });
         }
     }
 
@@ -103,10 +104,9 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
         return EventName.killStatistics;
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
-        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId(event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!GuildCacheData.worldCache.containsKey(guildId))
@@ -120,29 +120,29 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
         return event.createFollowup("Set default Killing Statistics channel to <#" + channelId.asString() + ">");
     }
 
-    protected void processEmbeddableData(GuildMessageChannel channel, KillingStatsModel model) {
+    private void processEmbeddableData(GuildMessageChannel channel, KillingStatsModel model) {
         deleteMessages(channel);
         List<KillingStatsData> bosses = model.getEntries();
         addChannelSuffix(channel, model.getAllLastDayKilled());
 
 
-        sendEmbeddedMessages(channel, null,
+        embeddedHandler.sendEmbeddedMessages(channel, null,
                 "Killed Bosses Statistics",
                 "Last day killed: " + model.getAllLastDayKilled() + " / Last day players killed: " + model.getAllLastDayPlayersKilled() + "\nLast week killed: " +
                         model.getAllLastWeekKilled() + " / Last week players killed: " + model.getAllLastWeekPlayersKilled() + "\n\n Killed: (last day) / (last week)",
                 "",
                 "",
-                getRandomColor());
+                embeddedHandler.getRandomColor());
 
         for (BossType type : BossType.values()) {
-            sendEmbeddedMessages(channel, createEmbedFields(bosses.stream()
+            embeddedHandler.sendEmbeddedMessages(channel, createEmbedFields(bosses.stream()
                             .filter(x -> x.getBossType().equals(type))
                             .toList()),
                     "--- " + type.getName() + " ---",
                     "",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor());
         }
     }
 

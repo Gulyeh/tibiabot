@@ -1,4 +1,4 @@
-package events.interfaces;
+package handlers;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
@@ -17,9 +17,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface Threadable extends Channelable {
-
-    default void createWithoutMessageThreadWithMention(TextChannel channel, String name, ThreadChannel.AutoArchiveDuration duration) {
+public class ThreadHandler {
+    public void createWithoutMessageThreadWithMention(TextChannel channel, String name, ThreadChannel.AutoArchiveDuration duration) {
         channel.startThread(StartThreadWithoutMessageSpec.builder()
                         .name(name)
                         .type(ThreadChannel.Type.GUILD_PUBLIC_THREAD)
@@ -34,7 +33,7 @@ public interface Threadable extends Channelable {
                 ).subscribe();
     }
 
-    default void createMessageThreadWithMention(Message msg, String name, ThreadChannel.AutoArchiveDuration duration) {
+    public void createMessageThreadWithMention(Message msg, String name, ThreadChannel.AutoArchiveDuration duration) {
         ThreadChannel thread = msg.startThread(StartThreadSpec.builder()
                 .name(name)
                 .autoArchiveDuration(duration)
@@ -42,7 +41,7 @@ public interface Threadable extends Channelable {
         mentionAllMembers(thread, msg.getGuild().block());
     }
 
-    default void mentionAllMembers(ThreadChannel thread, Guild guild) {
+    public void mentionAllMembers(ThreadChannel thread, Guild guild) {
         Message threadMsg = thread.createMessage("empty").block(Duration.ofSeconds(10));
 
         StringBuilder builder = new StringBuilder();
@@ -72,7 +71,7 @@ public interface Threadable extends Channelable {
         ).then(threadMsg.delete()).subscribe();
     }
 
-    default void removeAllChannelThreads(GuildMessageChannel guildChannel) {
+    public void removeAllChannelThreads(GuildMessageChannel guildChannel) {
         guildChannel.getGuild().block()
                 .getActiveThreads()
                 .retry(3)

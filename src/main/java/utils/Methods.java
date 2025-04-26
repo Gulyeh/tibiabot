@@ -6,17 +6,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 public final class Methods {
-    public static <K, V> K getKey(Map<K, V> map, V value) {
-        for (Map.Entry<K, V> entry : map.entrySet()) {
-            if (entry.getValue().equals(value)) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
+    private Methods() {}
 
     public static String getFormattedDate(LocalDateTime date) {
         return date.format(DateTimeFormatter.ofPattern("dd-MM-uuuu HH:mm"));
@@ -34,7 +26,6 @@ public final class Methods {
     }
 
     public static LocalDateTime formatToOffsetTime(String date) {
-
         Instant utcInstant = Instant.parse(date);
         ZoneId warsawTimeZone = ZoneId.of("Europe/Warsaw");
         ZonedDateTime warsawTime = utcInstant.atZone(ZoneOffset.UTC).withZoneSameInstant(warsawTimeZone);

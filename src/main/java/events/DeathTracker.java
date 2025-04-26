@@ -11,20 +11,20 @@ import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.rest.util.Color;
-import events.abstracts.EmbeddableEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
 import mongo.models.DeathFilter;
-import utils.Methods;
 import utils.TibiaWiki;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
@@ -35,12 +35,14 @@ import static utils.Methods.formatToDiscordLink;
 import static utils.TibiaWiki.formatWikiGifLink;
 
 @Slf4j
-public class DeathTracker extends EmbeddableEvent implements Channelable, Activable {
+public final class DeathTracker extends ExecutableEvent implements Activable {
 
     private final DeathTrackerService deathTrackerService;
+    private final EmbeddedHandler embeddedHandler;
 
     public DeathTracker(DeathTrackerService deathTrackerService) {
         this.deathTrackerService = deathTrackerService;
+        this.embeddedHandler = new EmbeddedHandler();
     }
 
     @Override
@@ -61,7 +63,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
+    public void _activableEvent() {
         log.info("Activating {}", getEventName());
         while (true) {
             try {
@@ -89,27 +91,28 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DEATH_TRACKER);
-            if(guildChannel == null) continue;
+            CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DEATH_TRACKER);
+                if(guildChannel == null) return;
 
-            int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
-            boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guildId);
+                int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
+                boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guildId);
 
-            List<DeathData> deaths = deathTrackerService.getDeaths(guildId)
-                    .stream()
-                    .filter(x -> x.getKilledAtLevel() >= minimumLevel)
-                    .collect(Collectors.toCollection(ArrayList::new));
+                List<DeathData> deaths = deathTrackerService.getDeaths(guildId)
+                        .stream()
+                        .filter(x -> x.getKilledAtLevel() >= minimumLevel)
+                        .collect(Collectors.toCollection(ArrayList::new));
 
-            if(isAntiSpam)
-                deathTrackerService.processAntiSpam(guildId, deaths);
+                if(isAntiSpam)
+                    deathTrackerService.processAntiSpam(guildId, deaths);
 
-            processEmbeddableData(guildChannel, deaths);
-            executeFilteredDeaths(guildId, deaths);
+                processEmbeddableData(guildChannel, deaths);
+                executeFilteredDeaths(guildId, deaths);
+            });
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId(event);
 
@@ -152,7 +155,7 @@ public class DeathTracker extends EmbeddableEvent implements Channelable, Activa
 
     private void processEmbeddableData(GuildMessageChannel channel, List<DeathData> model) {
         for (DeathData death : model) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     death.isSpamDeath() ? "Death Spam detected!\n" +
                             "Blocked " + death.getCharacter().getName() + "'s deaths for " + deathTrackerService.getAntiSpamWaitHours() + " hour(s)\n" : "",

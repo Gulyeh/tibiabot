@@ -19,7 +19,7 @@ public final class WorldsService extends Singleton {
     private final TibiaDataAPI tibiaDataAPI;
     private final TibiaTradeAPI tibiaTradeAPI;
 
-    public WorldsService() {
+    private WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
         tibiaTradeAPI = new TibiaTradeAPI();
         refreshCache();

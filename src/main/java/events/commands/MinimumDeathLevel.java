@@ -2,7 +2,7 @@ package events.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import events.abstracts.EventsMethods;
+import events.abstracts.EventMethods;
 import events.utils.EventName;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.GuildModel;
@@ -13,7 +13,7 @@ import static cache.guilds.GuildCacheData.addMinimumDeathLevelCache;
 import static discord.Connector.client;
 
 @Slf4j
-public class MinimumDeathLevel extends EventsMethods {
+public final class MinimumDeathLevel extends EventMethods {
 
     @Override
     public void executeEvent() {

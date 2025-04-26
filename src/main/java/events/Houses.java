@@ -7,15 +7,14 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.EmbeddableEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -24,19 +23,22 @@ import services.houses.HousesService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 import static utils.Methods.formatToDiscordLink;
 
 @Slf4j
-public class Houses extends EmbeddableEvent implements Channelable, Activable {
+public final class Houses extends ExecutableEvent implements Activable {
 
     private final HousesService housesService;
+    private final EmbeddedHandler embeddedHandler;
 
     public Houses(HousesService housesService) {
         this.housesService = housesService;
+        this.embeddedHandler = new EmbeddedHandler();
     }
 
 
@@ -58,7 +60,7 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
 
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
+    public void _activableEvent() {
         log.info("Activating {}", getEventName());
         while (true) {
             try {
@@ -90,24 +92,24 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
                 .toList();
 
         if(list.isEmpty()) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "",
                     "There are no biddable houses at the moment",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor());
             return;
         }
 
         for (HousesModel house : list) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     createEmbedFields(house),
                     house.getTown(),
                     "",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor());
         }
     }
 
@@ -117,15 +119,15 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
         if(guildIds.isEmpty()) return;
 
         for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.HOUSES);
-            if(guildChannel == null) continue;
-
-            processEmbeddableData(guildChannel, housesService.getHouses(guildId));
+            CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.HOUSES);
+                if (guildChannel == null) return;
+                processEmbeddableData(guildChannel, housesService.getHouses(guildId));
+            });
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId(event);
 

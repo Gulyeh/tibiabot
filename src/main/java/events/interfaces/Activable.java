@@ -2,8 +2,8 @@ package events.interfaces;
 
 public interface Activable {
     default void activate() {
-        new Thread(this::activatableEvent).start();
+        new Thread(this::_activableEvent).start();
     }
 
-    void activatableEvent();
+    void _activableEvent();
 }

@@ -5,7 +5,7 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import events.abstracts.EventsMethods;
+import events.abstracts.EventMethods;
 import events.interfaces.Activable;
 import events.utils.EventName;
 import lombok.extern.slf4j.Slf4j;
@@ -19,22 +19,22 @@ import static cache.guilds.GuildCacheData.isGuildCached;
 import static discord.Connector.client;
 
 @Slf4j
-public class TrackWorld extends EventsMethods implements Activable {
+public final class TrackWorld extends EventMethods implements Activable {
 
     private WorldModel worlds;
     private final WorldsService worldsService;
 
-    public TrackWorld(WorldsService worldsService) {
-        this.worldsService = worldsService;
+    public TrackWorld() {
+        this.worldsService = WorldsService.getInstance();
     }
 
-    public void activatableEvent() {
-        log.info("Getting available worlds for " + getEventName());
+    public void _activableEvent() {
+        log.info("Getting available worlds for {}", getEventName());
 
         try {
             worlds = worldsService.getWorlds();
         } catch (Exception e) {
-            log.warn("Error while getting worlds: " + e.getMessage());
+            log.warn("Error while getting worlds: {}", e.getMessage());
         }
     }
 
@@ -102,7 +102,7 @@ public class TrackWorld extends EventsMethods implements Activable {
             log.info("Saved server world");
             return true;
         } catch (Exception e) {
-            log.info("Could not save world: " + e.getMessage());
+            log.info("Could not save world: {}", e.getMessage());
             return false;
         }
     }

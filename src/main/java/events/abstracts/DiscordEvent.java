@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
 import mongo.models.GuildModel;
 import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slf4j
 public abstract class DiscordEvent implements Listener {
@@ -29,7 +27,7 @@ public abstract class DiscordEvent implements Listener {
             GuildCacheData.removeGuild(guildId);
             log.info("Successfully removed guild");
         } catch (Exception e) {
-            log.info("Could not remove guild: " + e.getMessage());
+            log.info("Could not remove guild: {}", e.getMessage());
         }
     }
 
@@ -48,7 +46,7 @@ public abstract class DiscordEvent implements Listener {
             GuildCacheData.removeChannel(guildId, channelId);
             log.info("Successfully removed channel");
         } catch (Exception e) {
-            log.info("Could not remove channel: " + e.getMessage());
+            log.info("Could not remove channel: {}", e.getMessage());
         }
     }
 }

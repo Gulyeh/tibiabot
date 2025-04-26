@@ -1,12 +1,13 @@
-package events.abstracts;
+package handlers;
 
 import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.LayoutComponent;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.core.spec.MessageCreateSpec;
-import discord4j.discordjson.json.*;
+import discord4j.discordjson.json.EmbedData;
+import discord4j.discordjson.json.ImmutableMessageCreateRequest;
+import discord4j.discordjson.json.MessageCreateRequest;
+import discord4j.discordjson.json.MessageData;
 import discord4j.rest.util.Color;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,21 +17,22 @@ import java.util.List;
 import java.util.Random;
 
 @Slf4j
-public abstract class EmbeddableEvent extends ProcessEvent {
-    protected Color getRandomColor() {
+public class EmbeddedHandler {
+
+    public Color getRandomColor() {
         Random rand = new Random();
         return Color.of(rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
     }
 
-    protected List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color) {
+    public List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color) {
         return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, null, null);
     }
 
-    protected List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
+    public List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
         return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, footer, null);
     }
 
-    protected List<MessageData> sendEmbeddedMessages(Channel channel,
+    public List<MessageData> sendEmbeddedMessages(Channel channel,
                                                      List<EmbedCreateFields.Field> fields,
                                                      String title,
                                                      String description,
@@ -64,13 +66,13 @@ public abstract class EmbeddableEvent extends ProcessEvent {
         return sentMessages;
     }
 
-    protected List<EmbedCreateSpec> createEmbeddedMessages(List<EmbedCreateFields.Field> fields, String title, String description,
-                                                     String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
+    public List<EmbedCreateSpec> createEmbeddedMessages(List<EmbedCreateFields.Field> fields, String title, String description,
+                                                           String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
         EmbedCreateSpec template = buildEmbedTemplate(title, description, imageUrl, thumbnailUrl, color, footer);
         return new ArrayList<>(splitEmbeddedMessage(fields, template));
     }
 
-    protected EmbedCreateFields.Field emptyField(boolean inline) {
+    public EmbedCreateFields.Field emptyField(boolean inline) {
         return EmbedCreateFields.Field.of("\t", "\t", inline);
     }
 
@@ -118,8 +120,7 @@ public abstract class EmbeddableEvent extends ProcessEvent {
         return copy.build();
     }
 
-    private EmbedCreateSpec buildEmbedTemplate(String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer)
-    {
+    private EmbedCreateSpec buildEmbedTemplate(String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
         return EmbedCreateSpec.builder()
                 .title(title)
                 .description(description)

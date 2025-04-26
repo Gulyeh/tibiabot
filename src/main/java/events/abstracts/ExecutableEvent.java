@@ -1,5 +1,5 @@
 package events.abstracts;
 
-public abstract class ProcessEvent extends EventsMethods {
+public abstract class ExecutableEvent extends EventMethods {
     protected abstract void executeEventProcess();
 }

@@ -18,7 +18,7 @@ import static cache.characters.CharactersCacheData.addRegisteredCharacter;
 public class CharactersCaching extends Singleton implements Cachable {
     protected final CharactersDocumentActions charactersDocumentActions;
 
-    public CharactersCaching() {
+    private CharactersCaching() {
         charactersDocumentActions = CharactersDocumentActions.getInstance();
     }
 

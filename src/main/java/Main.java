@@ -40,26 +40,25 @@ public class Main {
     }
 
     private static void initializeServices() {
-        WorldsService worldsService = WorldsService.getInstance();
-
+        //Add listeners for events
         List.of(
-                new TibiaCoins(new TibiaCoinsService(worldsService)),
-                new ServerStatus(worldsService),
-                new TrackWorld(worldsService),
+                new TibiaCoins(new TibiaCoinsService()),
+                new ServerStatus(),
+                new TrackWorld(),
                 new KillStatistics(new KillStatisticsService()),
                 new Houses(new HousesService()),
-                new EventsCalendar(new EventsService(), worldsService),
-                new MiniWorldEvents(new MiniWorldEventsService(worldsService), worldsService),
-                new Boosteds(new BoostedsService(), worldsService),
+                new EventsCalendar(new EventsService()),
+                new MiniWorldEvents(new MiniWorldEventsService()),
+                new Boosteds(new BoostedsService()),
                 new DeathTracker(new DeathTrackerService()),
-                new OnlineTracker(new OnlineService(), worldsService),
-                new Drome(new DromeService(), worldsService)
+                new OnlineTracker(new OnlineService()),
+                new Drome(new DromeService())
         ).forEach(x -> {
             Connector.addListener(x);
             x.activate();
         });
 
-        // Add listeners for specific events
+        // Add listeners for commands
         List.of(new MinimumDeathLevel(), new LootSplitter(), new RemovedChannel(), new RemovedGuild(),
                         new CharacterRegistration(), new CharacterUnregistration(), new FilterSpamDeaths(),
                         new DeathFilters())

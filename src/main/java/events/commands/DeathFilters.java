@@ -9,8 +9,7 @@ import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEven
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import events.abstracts.EventsMethods;
-import events.interfaces.Channelable;
+import events.abstracts.EventMethods;
 import events.utils.EventName;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.GuildModel;
@@ -25,7 +24,7 @@ import static cache.guilds.GuildCacheData.*;
 import static discord.Connector.client;
 
 @Slf4j
-public class DeathFilters extends EventsMethods implements Channelable {
+public final class DeathFilters extends EventMethods {
 
     private final TibiaDataAPI api;
 
@@ -86,8 +85,7 @@ public class DeathFilters extends EventsMethods implements Channelable {
         };
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake guildId = getGuildId(event);
         GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DEATH_TRACKER);
         if(guildChannel == null) return event.createFollowup("You have to set deaths channel first to be able to use death filter");
