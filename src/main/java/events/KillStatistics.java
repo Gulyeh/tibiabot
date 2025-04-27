@@ -68,19 +68,18 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void _activableEvent() {
-        log.info("Activating {}", getEventName());
-
         while(true) {
             try {
                 log.info("Executing thread {}", getEventName());
                 if(!timerHandler.isAfterTimer()) continue;
+                timerHandler.adjustTimerByDays(1);
                 killStatisticsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(timerHandler.getWaitTimeUntilTimer(1));
+                    wait(timerHandler.getWaitTimeUntilTimer());
                 }
             }
         }

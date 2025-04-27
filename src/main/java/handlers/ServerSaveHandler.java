@@ -14,14 +14,10 @@ public class ServerSaveHandler {
     private boolean serverSaveInProgress = false;
 
     public ServerSaveHandler(String eventName) {
-        this(LocalDateTime.now()
+        this.timerHandler = new TimerHandler(LocalDateTime.now()
                 .withHour(10)
                 .withMinute(3)
                 .withSecond(0), eventName);
-    }
-
-    public ServerSaveHandler(LocalDateTime time, String eventName) {
-        this.timerHandler = new TimerHandler(time, eventName);
         this.worldsService = WorldsService.getInstance();
         this.eventName = eventName;
     }
@@ -30,21 +26,23 @@ public class ServerSaveHandler {
      * Returns @defaultWaitTime unless server save time is earlier than specified millis
      */
     public long getTimeAdjustedToServerSave(int defaultWaitTime) {
-        if (isServerOffline()) {
-            log.info("Servers are offline. Waiting for them to go back online");
-            return defaultWaitTime;
-        }
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(timerHandler.getTimer()) || now.isEqual(timerHandler.getTimer())) {
-            timerHandler.adjustTimerByDays(1);
-        }
+        long serverSaveTimer = isServerSaveTimer();
+        if(serverSaveTimer > 0) return serverSaveTimer;
+
         return timerHandler.getWaitTime(defaultWaitTime);
+    }
+
+    public long getTimeUntilServerSave() {
+        long serverSaveTimer = isServerSaveTimer();
+        if(serverSaveTimer > 0) return serverSaveTimer;
+
+        return timerHandler.getWaitTimeUntilTimer();
     }
 
     /**
      * Relies on 'getTimeAdjustedToServerSave'
      */
-    public boolean isAfterSaverSave() {
+    public boolean checkAfterSaverSave() {
         LocalDateTime now = LocalDateTime.now();
 
         if (isServerOffline()) {
@@ -65,6 +63,25 @@ public class ServerSaveHandler {
         }
 
         return false;
+    }
+
+
+    private long isServerSaveTimer() {
+        int serverSaveWaiting = 60000;
+
+        if (isServerOffline()) {
+            log.info("[{}] Servers are offline. Waiting for them to go back online - Forced wait time to {} seconds", eventName, serverSaveWaiting / 1000);
+            return serverSaveWaiting;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(timerHandler.getTimer()) || now.isEqual(timerHandler.getTimer())) {
+            log.info("{} timer has finished. Forced waiting time to {} seconds", eventName, serverSaveWaiting / 1000);
+            timerHandler.adjustTimerByDays(1);
+            return serverSaveWaiting;
+        }
+
+        return 0;
     }
 
     private boolean isServerOffline() {

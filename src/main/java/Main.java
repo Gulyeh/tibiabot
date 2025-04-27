@@ -12,6 +12,7 @@ import events.guildEvents.RemovedGuild;
 import events.lootSplitter.LootSplitter;
 import events.commands.registration.CharacterRegistration;
 import events.commands.registration.CharacterUnregistration;
+import lombok.extern.slf4j.Slf4j;
 import mongo.MongoConnector;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
@@ -29,13 +30,14 @@ import java.util.concurrent.CountDownLatch;
 
 import static discord.Connector.client;
 
+@Slf4j
 public class Main {
     public static void main(String[] args) {
         Connector.connect();
         MongoConnector.connect();
+        buildCommands();
         initializeCache();
         initializeServices();
-        buildCommands();
         client.onDisconnect().block();
     }
 
@@ -55,6 +57,7 @@ public class Main {
                 new Drome(new DromeService())
         ).forEach(x -> {
             Connector.addListener(x);
+            log.info("Activating {}", x.getEventName());
             x.activate();
         });
 

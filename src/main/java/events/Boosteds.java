@@ -1,6 +1,6 @@
 package events;
 
-import apis.tibiaLabs.model.BoostedModel;
+import apis.tibiaOfficial.models.BoostedModel;
 import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
@@ -10,23 +10,20 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
+import discord4j.core.spec.EmbedCreateFields;
 import discord4j.discordjson.json.MessageData;
-import events.abstracts.EventMethods;
 import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
 import handlers.EmbeddedHandler;
 import handlers.ServerSaveHandler;
 import handlers.ThreadHandler;
-import handlers.TimerHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
+import utils.Emojis;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.boostedsCommand;
@@ -46,10 +43,7 @@ public final class Boosteds extends ExecutableEvent implements Activable {
         this.embeddedHandler = new EmbeddedHandler();
         this.boostedsService = boostedsService;
         threadHandler = new ThreadHandler();
-        serverSaveHandler = new ServerSaveHandler(LocalDateTime.now()
-                .withHour(10)
-                .withMinute(10)
-                .withSecond(0), getEventName());
+        serverSaveHandler = new ServerSaveHandler(getEventName());
     }
 
 
@@ -71,18 +65,17 @@ public final class Boosteds extends ExecutableEvent implements Activable {
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void _activableEvent() {
-        log.info("Activating {}", getEventName());
         while (true) {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(!serverSaveHandler.isAfterSaverSave()) continue;
+                if(!serverSaveHandler.checkAfterSaverSave()) continue;
                 boostedsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(serverSaveHandler.getTimeAdjustedToServerSave(120000));
+                    wait(serverSaveHandler.getTimeUntilServerSave());
                 }
             }
         }
@@ -105,6 +98,7 @@ public final class Boosteds extends ExecutableEvent implements Activable {
     private void processEmbeddableData(GuildMessageChannel channel, BoostedModel model) {
         boolean isBoss = model.getBoostedTypeText().contains("boss");
         String name = isBoss ? "Boss: " : "Creature: ";
+        String hpData = model.getExp() > 0 ? getCreatureBoostData(model) : "";
 
         if(model.getName() == null || model.getName().isEmpty())
             embeddedHandler.sendEmbeddedMessages(channel,
@@ -122,7 +116,8 @@ public final class Boosteds extends ExecutableEvent implements Activable {
                             ":star: " + formatToDiscordLink(model.getName(), model.getBoosted_data_link()),
                     "",
                     model.getIcon_link(),
-                    embeddedHandler.getRandomColor()).get(0);
+                    embeddedHandler.getRandomColor(),
+                    EmbedCreateFields.Footer.of(hpData, "")).get(0);
 
             threadHandler.createMessageThreadWithMention(channel.getMessageById(Snowflake.of(data.id())).block(),
                     name + model.getName(),
@@ -146,6 +141,10 @@ public final class Boosteds extends ExecutableEvent implements Activable {
         processEmbeddableData(channel, boostedsService.getBoostedCreature());
         processEmbeddableData(channel, boostedsService.getBoostedBoss());
         return event.createFollowup("Set default Boosteds event channel to <#" + channelId.asString() + ">");
+    }
+
+    private String getCreatureBoostData(BoostedModel model) {
+        return "HP: " + model.getHp() + "\nBase Exp: " + model.getExp() / 2 + "\nBoosted Exp: " + model.getExp();
     }
 
     @Override

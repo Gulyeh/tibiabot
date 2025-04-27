@@ -91,17 +91,16 @@ public final class Drome extends ExecutableEvent implements Activable {
     @SuppressWarnings("InfiniteLoopStatement")
     @Override
     public void _activableEvent() {
-        log.info("Activating {}", getEventName());
         while (true) {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(!serverSaveHandler.isAfterSaverSave()) continue;
+                if(!serverSaveHandler.checkAfterSaverSave()) continue;
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(serverSaveHandler.getTimeAdjustedToServerSave(120000));
+                    wait(serverSaveHandler.getTimeUntilServerSave());
                 }
             }
         }

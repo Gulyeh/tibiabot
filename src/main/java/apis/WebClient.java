@@ -16,14 +16,7 @@ public abstract class WebClient {
     private final CloseableHttpClient httpClient;
 
     public WebClient() {
-        Timeout timeout = Timeout.ofSeconds(10);
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(timeout)
-                .setConnectionRequestTimeout(timeout)
-                .build();
-        httpClient = HttpClients.custom()
-                .setDefaultRequestConfig(config)
-                .build();
+        httpClient = HttpClients.createDefault();
     }
 
     protected String sendRequest(ClassicHttpRequest request) {

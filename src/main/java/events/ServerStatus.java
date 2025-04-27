@@ -63,11 +63,10 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void _activableEvent() {
-        log.info("Activating {}", getEventName());
-
         while(true) {
             try {
                 log.info("Executing thread {}", getEventName());
+                serverSaveHandler.checkAfterSaverSave();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());

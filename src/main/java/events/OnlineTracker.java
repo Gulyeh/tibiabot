@@ -64,12 +64,11 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void _activableEvent() {
-        log.info("Activating {}", getEventName());
         while (true) {
             try {
                 log.info("Executing thread {}", getEventName());
                 onlineService.clearCache();
-                if(serverSaveHandler.isAfterSaverSave())
+                if(serverSaveHandler.checkAfterSaverSave())
                     onlineService.clearCharStorageCache();
                 executeEventProcess();
             } catch (Exception e) {
@@ -126,7 +125,8 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
             CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
                 if (guildChannel == null) return;
-                processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ? new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
+                processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ?
+                        new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
             });
         }
     }

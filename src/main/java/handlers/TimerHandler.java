@@ -12,6 +12,7 @@ public class TimerHandler {
     @Getter
     private LocalDateTime timer;
     private final String eventName;
+    private final int offsetTime = 1000;
 
     public TimerHandler(LocalDateTime timer, String eventName) {
         this.timer = timer;
@@ -29,17 +30,13 @@ public class TimerHandler {
                     TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft), eventName, TimeUnit.of(ChronoUnit.MILLIS).toMinutes(specifiedMillis));
         }
 
-        return timeLeft <= specifiedMillis ? timeLeft : specifiedMillis;
+        return timeLeft <= specifiedMillis ? timeLeft + offsetTime : specifiedMillis;
     }
 
-    /**
-     * Returns wait time until timer time and adjust timer by @adjustTimerDays
-     */
-    public long getWaitTimeUntilTimer(int adjustTimerDays) {
+    public long getWaitTimeUntilTimer() {
         long timeLeft = LocalDateTime.now().until(timer, ChronoUnit.MILLIS);
-        adjustTimerByDays(adjustTimerDays);
         log.info("{} minutes left to {} execution!", TimeUnit.of(ChronoUnit.MILLIS).toMinutes(timeLeft), eventName);
-        return timeLeft;
+        return timeLeft + offsetTime;
     }
 
     public boolean isAfterTimer() {

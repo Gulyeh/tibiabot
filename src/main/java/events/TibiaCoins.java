@@ -66,7 +66,6 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
     @SneakyThrows
     @SuppressWarnings("InfiniteLoopStatement")
     public void _activableEvent() {
-        log.info("Activating {}", getEventName());
         while(true) {
             try {
                 log.info("Executing thread {}", getEventName());
