@@ -1,13 +1,11 @@
 package cache.characters;
 
 import discord4j.common.util.Snowflake;
-import lombok.Getter;
 import mongo.models.CharacterModel;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;

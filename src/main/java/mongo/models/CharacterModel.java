@@ -2,7 +2,6 @@ package mongo.models;
 
 import discord4j.common.util.Snowflake;
 import lombok.Getter;
-import lombok.Setter;
 import org.bson.types.ObjectId;
 
 @Getter

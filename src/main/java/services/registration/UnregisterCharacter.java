@@ -5,7 +5,8 @@ import mongo.CharactersDocumentActions;
 import org.bson.Document;
 import reactor.util.function.Tuple2;
 
-import static cache.characters.CharactersCacheData.*;
+import static cache.characters.CharactersCacheData.getRegisteredCharacterUser;
+import static cache.characters.CharactersCacheData.removeRegisteredCharacter;
 
 public class UnregisterCharacter {
     private final CharactersDocumentActions charactersDocumentActions;

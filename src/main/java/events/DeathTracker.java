@@ -17,10 +17,10 @@ import events.utils.EventName;
 import handlers.EmbeddedHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import mongo.models.DeathFilter;
 import reactor.core.publisher.Mono;
 import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
-import mongo.models.DeathFilter;
 import utils.TibiaWiki;
 
 import java.util.*;

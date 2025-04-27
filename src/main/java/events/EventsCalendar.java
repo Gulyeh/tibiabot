@@ -18,7 +18,6 @@ import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
 import services.events.EventsService;
 import services.events.models.EventModel;
-import services.worlds.WorldsService;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;

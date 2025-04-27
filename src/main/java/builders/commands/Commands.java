@@ -1,7 +1,7 @@
 package builders.commands;
 
-import builders.commands.names.model.Command;
 import builders.commands.names.CommandsNames;
+import builders.commands.names.model.Command;
 import builders.commands.names.model.CommandChoice;
 import builders.commands.names.model.CommandOption;
 import discord4j.discordjson.json.*;

@@ -19,7 +19,8 @@ import services.deathTracker.enums.DeathFilterType;
 
 import java.util.Optional;
 
-import static builders.commands.names.CommandsNames.*;
+import static builders.commands.names.CommandsNames.filterDeathsCommand;
+import static builders.commands.names.CommandsNames.setFilteredDeathsCommand;
 import static cache.guilds.GuildCacheData.*;
 import static discord.Connector.client;
 

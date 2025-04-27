@@ -6,7 +6,6 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
-import mongo.MongoConnector;
 import mongo.models.GuildModel;
 
 import java.util.List;

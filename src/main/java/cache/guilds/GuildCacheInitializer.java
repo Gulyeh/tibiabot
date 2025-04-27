@@ -7,8 +7,8 @@ import discord4j.core.object.entity.channel.TextChannel;
 import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
 import mongo.models.ChannelModel;
-import mongo.models.GuildModel;
 import mongo.models.DeathFilter;
+import mongo.models.GuildModel;
 
 import java.util.List;
 

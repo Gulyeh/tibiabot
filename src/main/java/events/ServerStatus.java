@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
-import static discord.Connector.client;
 import static discord.ChannelUtils.addChannelSuffix;
+import static discord.Connector.client;
 import static discord.MessagesUtils.deleteMessages;
 
 @Slf4j

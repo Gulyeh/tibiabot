@@ -25,8 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.setOnlineTrackerCommand;
-import static discord.Connector.client;
 import static discord.ChannelUtils.addChannelSuffix;
+import static discord.Connector.client;
 import static discord.MessagesUtils.deleteMessages;
 import static java.util.UUID.randomUUID;
 import static utils.Methods.formatToDiscordLink;

@@ -4,7 +4,6 @@ import apis.WebClient;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.charactersOnline.World;
 import apis.tibiaData.model.deathtracker.CharacterResponse;
-import apis.tibiaData.model.deathtracker.GuildData;
 import apis.tibiaData.model.guilds.GuildModel;
 import apis.tibiaData.model.house.HouseBaseInfo;
 import apis.tibiaData.model.house.HouseInfo;

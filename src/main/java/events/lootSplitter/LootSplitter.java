@@ -20,7 +20,6 @@ import events.utils.EventName;
 import handlers.EmbeddedHandler;
 import handlers.InteractionHandler;
 import lombok.extern.slf4j.Slf4j;
-import observers.InteractionObserver;
 import reactor.core.publisher.Mono;
 import services.lootSplitter.LootSplitterService;
 import services.lootSplitter.model.SplitLootModel;
