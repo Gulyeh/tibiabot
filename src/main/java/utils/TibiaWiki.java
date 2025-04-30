@@ -73,6 +73,8 @@ public final class TibiaWiki {
             put("death", "Death Effect");
             put("agony", "Darkfield");
             put("drowning", "Water Vortex");
+            put("sabretooth", "Sabretooth (Creature)");
+            put("nomad", "Nomad (Basic)");
         }};
 
         if(replaceable.containsKey(name.toLowerCase())) name = replaceable.get(name.toLowerCase());
