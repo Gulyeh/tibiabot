@@ -9,12 +9,18 @@ import java.time.temporal.ChronoUnit;
 public class DromeService implements Cacheable {
     private final LocalDateTime firstDromeCycleFinished = LocalDateTime.of(2021, 7, 28, 10, 0);
     private final int rotationDurationWeeks = 2;
+    private int previousRotation;
     private DromeRotationModel modelCache;
 
+    public DromeService() {
+        previousRotation = getCompletedRotationsCount() + 1;
+    }
+
     public boolean isRotationFinished() {
-        LocalDateTime rotationFinishDate = getRotationStartDate(getCompletedRotationsCount() + 1);
-        LocalDateTime now = LocalDateTime.now();
-        return now.isAfter(rotationFinishDate) || now.isEqual(rotationFinishDate);
+        int currentRotation = getCompletedRotationsCount() + 1;
+        boolean isFinished = previousRotation < currentRotation;
+        if(isFinished) previousRotation = currentRotation;
+        return isFinished;
     }
 
     public DromeRotationModel getRotationData() {

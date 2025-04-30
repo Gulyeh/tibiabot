@@ -111,9 +111,9 @@ public final class Drome extends ExecutableEvent implements Activable {
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if (guildIds.isEmpty()) return;
 
-        DromeRotationModel model = dromeService.getRotationData();
         boolean rotationFinished = dromeService.isRotationFinished();
         if (rotationFinished) dromeService.clearCache();
+        DromeRotationModel model = dromeService.getRotationData();
         long hoursUntilEnd = LocalDateTime.now().until(model.getEndDate(), ChronoUnit.HOURS);
 
         for (Snowflake guildId : guildIds) {
