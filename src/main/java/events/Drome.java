@@ -17,10 +17,7 @@ import discord4j.rest.util.Color;
 import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
-import handlers.EmbeddedHandler;
-import handlers.InteractionHandler;
-import handlers.ServerSaveHandler;
-import handlers.ThreadHandler;
+import handlers.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -46,7 +43,7 @@ public final class Drome extends ExecutableEvent implements Activable {
 
     private final DromeService dromeService;
     private final InteractionHandler interactionHandler;
-    private final ServerSaveHandler serverSaveHandler;
+    private final TimerHandler timerHandler;
     private final ThreadHandler threadHandler;
     private final EmbeddedHandler embeddedHandler;
 
@@ -54,7 +51,11 @@ public final class Drome extends ExecutableEvent implements Activable {
         this.dromeService = dromeService;
         this.embeddedHandler = new EmbeddedHandler();
         this.threadHandler = new ThreadHandler();
-        this.serverSaveHandler = new ServerSaveHandler(getEventName());
+        this.timerHandler = new TimerHandler(LocalDateTime.now()
+                                .withHour(10)
+                                .withMinute(0)
+                                .withSecond(5),
+                getEventName());
         this.interactionHandler = new InteractionHandler("dromeNotification");
     }
 
@@ -94,13 +95,13 @@ public final class Drome extends ExecutableEvent implements Activable {
         while (true) {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(!serverSaveHandler.checkAfterSaverSave()) continue;
+                if(!timerHandler.isAfterTimer()) continue;
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
             } finally {
                 synchronized (this) {
-                    wait(serverSaveHandler.getTimeUntilServerSave());
+                    wait(timerHandler.getWaitTimeUntilTimer());
                 }
             }
         }
@@ -111,8 +112,7 @@ public final class Drome extends ExecutableEvent implements Activable {
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
         if (guildIds.isEmpty()) return;
 
-        boolean rotationFinished = dromeService.isRotationFinished();
-        if (rotationFinished) dromeService.clearCache();
+        if (dromeService.isRotationFinished()) dromeService.clearCache();
         DromeRotationModel model = dromeService.getRotationData();
         long hoursUntilEnd = LocalDateTime.now().until(model.getEndDate(), ChronoUnit.HOURS);
 
@@ -122,10 +122,9 @@ public final class Drome extends ExecutableEvent implements Activable {
                     GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DROME);
                     if (guildChannel == null) return;
 
-                    if (rotationFinished) {
-                        deleteMessages(guildChannel);
-                        sendDromeMessage(guildChannel, model);
-                    } else if (hoursUntilEnd <= 24)
+                    deleteMessages(guildChannel);
+                    sendDromeMessage(guildChannel, model);
+                    if (hoursUntilEnd <= 24)
                         sendRoleNotification(guildChannel, model);
 
                     threadHandler.removeAllChannelThreads(guildChannel);

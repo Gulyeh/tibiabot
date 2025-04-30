@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 public class DromeService implements Cacheable {
-    private final LocalDateTime firstDromeCycleFinished = LocalDateTime.of(2021, 7, 28, 10, 0);
+    private final LocalDateTime firstDromeCycleFinished = LocalDateTime.of(2021, 7, 28, 10, 0, 0);
     private final int rotationDurationWeeks = 2;
     private int previousRotation;
     private DromeRotationModel modelCache;
