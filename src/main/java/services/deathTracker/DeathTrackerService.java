@@ -121,7 +121,7 @@ public class DeathTrackerService implements Cacheable {
 
         try {
             executor.shutdown();
-            if (!executor.awaitTermination(1, TimeUnit.MINUTES))
+            if (!executor.awaitTermination(2, TimeUnit.MINUTES))
                 log.info("Some tasks did not finish within the timeout.");
         } catch (InterruptedException ignore) {
             Thread.currentThread().interrupt();
