@@ -52,8 +52,8 @@ public final class Drome extends ExecutableEvent implements Activable {
         this.embeddedHandler = new EmbeddedHandler();
         this.threadHandler = new ThreadHandler();
         this.timerHandler = new TimerHandler(LocalDateTime.now()
-                                .withHour(10)
-                                .withMinute(0)
+                                .withHour(17)
+                                .withMinute(25)
                                 .withSecond(5),
                 getEventName());
         this.interactionHandler = new InteractionHandler("dromeNotification");
@@ -96,6 +96,7 @@ public final class Drome extends ExecutableEvent implements Activable {
             try {
                 log.info("Executing thread {}", getEventName());
                 if(!timerHandler.isAfterTimer()) continue;
+                timerHandler.adjustTimerByDays(1);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
