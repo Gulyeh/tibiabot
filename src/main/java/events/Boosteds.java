@@ -136,9 +136,11 @@ public final class Boosteds extends ExecutableEvent implements Activable {
         if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        deleteMessages(channel);
-        processEmbeddableData(channel, boostedsService.getBoostedCreature());
-        processEmbeddableData(channel, boostedsService.getBoostedBoss());
+        CompletableFuture.runAsync(() -> {
+            processEmbeddableData(channel, boostedsService.getBoostedCreature());
+            processEmbeddableData(channel, boostedsService.getBoostedBoss());
+        });
+
         return event.createFollowup("Set default Boosteds event channel to <#" + channelId.asString() + ">");
     }
 

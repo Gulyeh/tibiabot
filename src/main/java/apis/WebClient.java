@@ -3,10 +3,13 @@ package apis;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
+
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
@@ -14,7 +17,14 @@ public abstract class WebClient {
     private final CloseableHttpClient httpClient;
 
     public WebClient() {
-        httpClient = HttpClients.createDefault();
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(10, TimeUnit.SECONDS)
+                .setResponseTimeout(30, TimeUnit.SECONDS)
+                .build();
+
+        httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(config)
+                .build();
     }
 
     protected String sendRequest(ClassicHttpRequest request) {

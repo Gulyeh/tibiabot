@@ -19,10 +19,7 @@ import services.deathTracker.model.DeathData;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -114,17 +111,24 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
-        List<DeathData> deaths = new ArrayList<>();
+        List<DeathData> deaths = Collections.synchronizedList(new ArrayList<>());
 
-        ExecutorService executor = Executors.newFixedThreadPool(chars.size());
-        chars.forEach(x -> executor.submit(() -> processCharacter(x, world, deaths)));
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        List<CompletableFuture<Void>> futures = chars.stream()
+                .map(character -> CompletableFuture.runAsync(() -> processCharacter(character, world, deaths), executor))
+                .toList();
+        executor.shutdown();
 
         try {
-            executor.shutdown();
-            if (!executor.awaitTermination(2, TimeUnit.MINUTES))
-                log.info("Some tasks did not finish within the timeout.");
-        } catch (InterruptedException ignore) {
+            CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            allOf.get(4, TimeUnit.MINUTES);
+        }  catch (TimeoutException e) {
+            log.error("Some tasks timed out.", e);
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            log.error("Thread was interrupted while waiting for tasks to complete.", e);
+        } catch (ExecutionException e) {
+            log.error("Error occurred while executing tasks.", e);
         }
 
         deaths.sort(Comparator.comparing(DeathData::getKilledAtDate));

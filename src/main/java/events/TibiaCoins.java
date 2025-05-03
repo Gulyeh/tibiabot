@@ -103,7 +103,7 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + id.asString() + ">");
 
-        processEmbeddableData(channel, tibiaCoinsService.getPrices());
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, tibiaCoinsService.getPrices()));
         return event.createFollowup("Set default Tibia Coins channel to <#" + id.asString() + ">");
     }
 

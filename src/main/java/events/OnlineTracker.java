@@ -142,7 +142,8 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processEmbeddableData(channel, onlineService.getOnlinePlayers(guildId));
+
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, onlineService.getOnlinePlayers(guildId)));
         return event.createFollowup("Set default Online players event channel to <#" + channelId.asString() + ">");
     }
 

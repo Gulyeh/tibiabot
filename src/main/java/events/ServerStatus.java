@@ -131,7 +131,7 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + id.asString() + ">");
 
-        processEmbeddableData(channel, worldsService.getWorlds());
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, worldsService.getWorlds()));
         return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
     }
 

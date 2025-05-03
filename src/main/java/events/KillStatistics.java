@@ -116,7 +116,7 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        processEmbeddableData(channel, killStatisticsService.getStatistics(guildId));
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, killStatisticsService.getStatistics(guildId)));
         return event.createFollowup("Set default Killing Statistics channel to <#" + channelId.asString() + ">");
     }
 

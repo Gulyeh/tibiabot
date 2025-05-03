@@ -120,9 +120,7 @@ public final class MiniWorldEvents extends ExecutableEvent implements Activable 
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        deleteMessages(channel);
-        processEmbeddableData(channel, miniWorldEventsService.getMiniWorldChanges(guildId));
-
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, miniWorldEventsService.getMiniWorldChanges(guildId)));
         return event.createFollowup("Set default Mini World Changes event channel to <#" + channelId.asString() + ">");
     }
 

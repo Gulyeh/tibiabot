@@ -98,7 +98,7 @@ public final class EventsCalendar extends ExecutableEvent implements Activable {
 
          if(value) {
              addGlobalEventsCache(guildId);
-             createServerEvent(guildId, getEvents());
+             CompletableFuture.runAsync(() -> createServerEvent(guildId, getEvents()));
              return event.createFollowup("Global events have been activated successfully!");
          }
 

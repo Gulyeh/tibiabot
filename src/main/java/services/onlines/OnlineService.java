@@ -6,17 +6,16 @@ import apis.tibiaData.model.deathtracker.CharacterInfo;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import interfaces.Cacheable;
+import lombok.extern.slf4j.Slf4j;
 import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
+@Slf4j
 public class OnlineService implements Cacheable {
     private final TibiaDataAPI tibiaDataAPI;
     private ConcurrentHashMap<String, List<OnlineModel>> onlineCache;
@@ -90,23 +89,27 @@ public class OnlineService implements Cacheable {
         if(notOnlinePreviously.isEmpty()) return new ArrayList<>();
         List<OnlineModel> online = new ArrayList<>();
 
-        ExecutorService executor = Executors.newFixedThreadPool(notOnlinePreviously.size());
-        try {
-            for (CharacterData data : notOnlinePreviously) {
-                executor.submit(() -> {
-                    try {
-                        CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(data.getName())
-                                .getCharacter()
-                                .getCharacter();
-                        online.add(new OnlineModel(characterInfo));
-                    } catch (Exception ignore) {}
-                });
-            }
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        List<CompletableFuture<Void>> futures = notOnlinePreviously.stream()
+                .map(character -> CompletableFuture.runAsync(() -> {
+                    CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(character.getName())
+                            .getCharacter()
+                            .getCharacter();
+                    online.add(new OnlineModel(characterInfo));
+                }, executor))
+                .toList();
+        executor.shutdown();
 
-            executor.shutdown();
-            executor.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException ignore) {
+        try {
+            CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            allOf.get(4, TimeUnit.MINUTES);
+        } catch (TimeoutException e) {
+            log.error("Some tasks timed out.", e);
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            log.error("Thread was interrupted while waiting for tasks to complete.", e);
+        } catch (ExecutionException e) {
+            log.error("Error occurred while executing tasks.", e);
         }
 
         return online;

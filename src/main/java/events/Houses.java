@@ -137,7 +137,8 @@ public final class Houses extends ExecutableEvent implements Activable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processEmbeddableData(channel, housesService.getHouses(guildId));
+
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, housesService.getHouses(guildId)));
         return event.createFollowup("Set default Houses event channel to <#" + channelId.asString() + ">");
     }
 
