@@ -21,7 +21,7 @@ import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.setOnlineTrackerCommand;
@@ -70,6 +70,7 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
                 onlineService.clearCache();
                 if(serverSaveHandler.checkAfterSaverSave())
                     onlineService.clearCharStorageCache();
+                addToCacheForEachWorld();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -125,10 +126,30 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
             CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
                 if (guildChannel == null) return;
+                String world = GuildCacheData.worldCache.get(guildId);
                 processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ?
-                        new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
+                        new ArrayList<>() : onlineService.getOnlinePlayers(world));
             });
         }
+    }
+
+    private void addToCacheForEachWorld() throws ExecutionException, InterruptedException, TimeoutException {
+        Set<String> worlds = new HashSet<>();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
+
+        for(Snowflake guildId : guildIds) {
+            worlds.add(GuildCacheData.worldCache.get(guildId));
+        }
+
+        worlds.forEach(x -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                onlineService.getOnlinePlayers(x);
+            });
+            futures.add(future);
+        });
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(4, TimeUnit.MINUTES);
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
@@ -143,7 +164,8 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        CompletableFuture.runAsync(() -> processEmbeddableData(channel, onlineService.getOnlinePlayers(guildId)));
+        String world = GuildCacheData.worldCache.get(guildId);
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, onlineService.getOnlinePlayers(world)));
         return event.createFollowup("Set default Online players event channel to <#" + channelId.asString() + ">");
     }
 

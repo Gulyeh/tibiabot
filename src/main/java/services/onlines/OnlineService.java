@@ -36,8 +36,7 @@ public class OnlineService implements Cacheable {
         charInfoCache = new ConcurrentHashMap<>();
     }
 
-    public List<OnlineModel> getOnlinePlayers(Snowflake guildId) {
-        String world = GuildCacheData.worldCache.get(guildId);
+    public List<OnlineModel> getOnlinePlayers(String world) {
         if(onlineCache.get(world) != null) return onlineCache.get(world);
         List<OnlineModel> online = new ArrayList<>();
         List<OnlineModel> onlineCacheData = charInfoCache.get(world) == null ? new ArrayList<>() : charInfoCache.get(world);

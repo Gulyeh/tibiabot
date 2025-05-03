@@ -25,6 +25,9 @@ import utils.TibiaWiki;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
@@ -70,6 +73,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
             try {
                 log.info("Executing thread {}", getEventName());
                 deathTrackerService.clearCache();
+                cacheDeathsForEachWorld();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -99,8 +103,9 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
                 int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
                 boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guildId);
+                String world = GuildCacheData.worldCache.get(guildId);
 
-                List<DeathData> deaths = deathTrackerService.getDeaths(guildId)
+                List<DeathData> deaths = deathTrackerService.getDeaths(world)
                         .stream()
                         .filter(x -> x.getKilledAtLevel() >= minimumLevel)
                         .collect(Collectors.toCollection(ArrayList::new));
@@ -117,6 +122,25 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         if(isFirstRun)
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                     .thenRun(() -> isFirstRun = false);
+    }
+
+    private void cacheDeathsForEachWorld() throws ExecutionException, InterruptedException, TimeoutException {
+        Set<String> worlds = new HashSet<>();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
+
+        for(Snowflake guildId : guildIds) {
+            worlds.add(GuildCacheData.worldCache.get(guildId));
+        }
+
+        worlds.forEach(x -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                deathTrackerService.getDeaths(x);
+            });
+            futures.add(future);
+        });
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(4, TimeUnit.MINUTES);
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {

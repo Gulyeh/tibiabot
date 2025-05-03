@@ -49,8 +49,7 @@ public class DeathTrackerService implements Cacheable {
         deathsCache = new ConcurrentHashMap<>();
     }
 
-    public List<DeathData> getDeaths(Snowflake guildId) {
-        String world = GuildCacheData.worldCache.get(guildId);
+    public List<DeathData> getDeaths(String world) {
         if(deathsCache.containsKey(world)) return deathsCache.get(world);
 
         List<CharacterData> checkableCharacters = new ArrayList<>(api.getCharactersOnWorld(world));

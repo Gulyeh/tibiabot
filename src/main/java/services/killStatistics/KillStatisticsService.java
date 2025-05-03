@@ -28,12 +28,8 @@ public class KillStatisticsService implements Cacheable {
         mapCache = new ConcurrentHashMap<>();
     }
 
-    public KillingStatsModel getStatistics(Snowflake guildId) {
-        String world = GuildCacheData.worldCache.get(guildId);
-        if(mapCache.containsKey(world)) {
-            log.info("Getting Killed bosses from cache");
-            return mapCache.get(world);
-        }
+    public KillingStatsModel getStatistics(String world) {
+        if(mapCache.containsKey(world)) return mapCache.get(world);
 
         KillingStatsModel model = getMoreInformations(api.getKillStatistics(world), world);
         mapCache.put(world, model);
