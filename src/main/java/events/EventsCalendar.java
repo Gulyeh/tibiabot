@@ -108,8 +108,9 @@ public final class EventsCalendar extends ExecutableEvent implements Activable {
 
     @Override
     protected void executeEventProcess() {
+        List<EventModel> events = getEvents();
         for (Snowflake guildId : globalEvents) {
-            CompletableFuture.runAsync(() -> createServerEvent(guildId, getEvents()));
+            CompletableFuture.runAsync(() -> createServerEvent(guildId, events));
         }
     }
 

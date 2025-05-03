@@ -78,7 +78,7 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
                 if(!timerHandler.isAfterTimer()) continue;
                 timerHandler.adjustTimerByDays(1);
                 killStatisticsService.clearCache();
-                addToCacheForEachWorld();
+                addToCacheBeforeExecution(killStatisticsService::getStatistics);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -108,25 +108,6 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
     @Override
     public String getEventName() {
         return EventName.killStatistics;
-    }
-
-    private void addToCacheForEachWorld() throws ExecutionException, InterruptedException, TimeoutException {
-        Set<String> worlds = new HashSet<>();
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-
-        for(Snowflake guildId : guildIds) {
-            worlds.add(GuildCacheData.worldCache.get(guildId));
-        }
-
-        worlds.forEach(x -> {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                killStatisticsService.getStatistics(x);
-            });
-            futures.add(future);
-        });
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(4, TimeUnit.MINUTES);
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {

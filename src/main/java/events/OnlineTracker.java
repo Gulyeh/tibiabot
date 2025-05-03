@@ -70,7 +70,7 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
                 onlineService.clearCache();
                 if(serverSaveHandler.checkAfterSaverSave())
                     onlineService.clearCharStorageCache();
-                addToCacheForEachWorld();
+                addToCacheBeforeExecution(onlineService::getOnlinePlayers);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -131,25 +131,6 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
                         new ArrayList<>() : onlineService.getOnlinePlayers(world));
             });
         }
-    }
-
-    private void addToCacheForEachWorld() throws ExecutionException, InterruptedException, TimeoutException {
-        Set<String> worlds = new HashSet<>();
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-
-        for(Snowflake guildId : guildIds) {
-            worlds.add(GuildCacheData.worldCache.get(guildId));
-        }
-
-        worlds.forEach(x -> {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                onlineService.getOnlinePlayers(x);
-            });
-            futures.add(future);
-        });
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(4, TimeUnit.MINUTES);
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {

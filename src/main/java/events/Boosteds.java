@@ -69,6 +69,10 @@ public final class Boosteds extends ExecutableEvent implements Activable {
                 log.info("Executing thread {}", getEventName());
                 if(!serverSaveHandler.checkAfterSaverSave()) continue;
                 boostedsService.clearCache();
+                addToCacheBeforeExecution(x -> {
+                    boostedsService.getBoostedBoss();
+                    return boostedsService.getBoostedCreature();
+                });
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());

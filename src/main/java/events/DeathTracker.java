@@ -73,7 +73,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
             try {
                 log.info("Executing thread {}", getEventName());
                 deathTrackerService.clearCache();
-                cacheDeathsForEachWorld();
+                addToCacheBeforeExecution(deathTrackerService::getDeaths);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -122,25 +122,6 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         if(isFirstRun)
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                     .thenRun(() -> isFirstRun = false);
-    }
-
-    private void cacheDeathsForEachWorld() throws ExecutionException, InterruptedException, TimeoutException {
-        Set<String> worlds = new HashSet<>();
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-
-        for(Snowflake guildId : guildIds) {
-            worlds.add(GuildCacheData.worldCache.get(guildId));
-        }
-
-        worlds.forEach(x -> {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                deathTrackerService.getDeaths(x);
-            });
-            futures.add(future);
-        });
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(4, TimeUnit.MINUTES);
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {

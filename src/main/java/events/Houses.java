@@ -65,6 +65,7 @@ public final class Houses extends ExecutableEvent implements Activable {
             try {
                 log.info("Executing thread {}", getEventName());
                 housesService.clearCache();
+                addToCacheBeforeExecution(housesService::getHouses);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -121,7 +122,8 @@ public final class Houses extends ExecutableEvent implements Activable {
             CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.HOUSES);
                 if (guildChannel == null) return;
-                processEmbeddableData(guildChannel, housesService.getHouses(guildId));
+                String world = GuildCacheData.worldCache.get(guildId);
+                processEmbeddableData(guildChannel, housesService.getHouses(world));
             });
         }
     }
@@ -138,7 +140,8 @@ public final class Houses extends ExecutableEvent implements Activable {
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        CompletableFuture.runAsync(() -> processEmbeddableData(channel, housesService.getHouses(guildId)));
+        String world = GuildCacheData.worldCache.get(guildId);
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, housesService.getHouses(world)));
         return event.createFollowup("Set default Houses event channel to <#" + channelId.asString() + ">");
     }
 
