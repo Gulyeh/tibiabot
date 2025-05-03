@@ -30,9 +30,7 @@ public abstract class ExecutableEvent extends EventMethods {
         }
 
         worlds.forEach(x -> {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                consumer.apply(x);
-            });
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> consumer.apply(x));
             futures.add(future);
         });
 
