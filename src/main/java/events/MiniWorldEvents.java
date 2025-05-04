@@ -23,6 +23,7 @@ import services.miniWorldEvents.models.MiniWorldEventsModel;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.miniWorldChangesCommand;
@@ -120,21 +121,28 @@ public final class MiniWorldEvents extends ExecutableEvent implements Activable 
         if(!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        CompletableFuture.runAsync(() -> processEmbeddableData(channel, miniWorldEventsService.getMiniWorldChanges(guildId)));
+        String world = GuildCacheData.worldCache.get(guildId);
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, miniWorldEventsService.getMiniWorldChanges(world)));
+
         return event.createFollowup("Set default Mini World Changes event channel to <#" + channelId.asString() + ">");
     }
 
     @Override
     protected void executeEventProcess() {
-        for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
-            CompletableFuture.runAsync(() -> {
-                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.MINI_WORLD_CHANGES);
-                if (guildChannel == null) return;
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
 
-                deleteMessages(guildChannel);
-                processEmbeddableData(guildChannel, miniWorldEventsService.getMiniWorldChanges(guildId));
+        channelWorlds.forEach((world, guildIds) -> {
+            CompletableFuture.runAsync(() -> {
+                MiniWorldEventsModel events = miniWorldEventsService.getMiniWorldChanges(world);
+                guildIds.forEach(guild -> CompletableFuture.runAsync(() -> {
+                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.MINI_WORLD_CHANGES);
+                    if (guildChannel == null) return;
+
+                    deleteMessages(guildChannel);
+                    processEmbeddableData(guildChannel, events);
+                }));
             });
-        }
+        });
     }
 
     @Override

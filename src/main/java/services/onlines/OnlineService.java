@@ -3,8 +3,6 @@ package services.onlines;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
-import cache.guilds.GuildCacheData;
-import discord4j.common.util.Snowflake;
 import interfaces.Cacheable;
 import lombok.extern.slf4j.Slf4j;
 import services.onlines.enums.Leveled;

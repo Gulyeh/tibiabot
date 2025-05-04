@@ -69,10 +69,6 @@ public final class Boosteds extends ExecutableEvent implements Activable {
                 log.info("Executing thread {}", getEventName());
                 if(!serverSaveHandler.checkAfterSaverSave()) continue;
                 boostedsService.clearCache();
-                addToCacheBeforeExecution(x -> {
-                    boostedsService.getBoostedBoss();
-                    return boostedsService.getBoostedCreature();
-                });
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -86,14 +82,17 @@ public final class Boosteds extends ExecutableEvent implements Activable {
 
     @Override
     protected void executeEventProcess() {
+        BoostedModel creature = boostedsService.getBoostedCreature();
+        BoostedModel boss = boostedsService.getBoostedBoss();
+
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
             CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.BOOSTEDS);
                 if (guildChannel == null) return;
                 deleteMessages(guildChannel);
                 threadHandler.removeAllChannelThreads(guildChannel);
-                processEmbeddableData(guildChannel, boostedsService.getBoostedCreature());
-                processEmbeddableData(guildChannel, boostedsService.getBoostedBoss());
+                processEmbeddableData(guildChannel, creature);
+                processEmbeddableData(guildChannel, boss);
             });
         }
     }

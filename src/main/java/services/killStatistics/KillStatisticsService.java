@@ -3,8 +3,6 @@ package services.killStatistics;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.killstats.KillingStatsData;
 import apis.tibiaData.model.killstats.KillingStatsModel;
-import cache.guilds.GuildCacheData;
-import discord4j.common.util.Snowflake;
 import interfaces.Cacheable;
 import lombok.extern.slf4j.Slf4j;
 import services.killStatistics.models.BossModel;

@@ -24,13 +24,9 @@ import services.killStatistics.models.BossType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static builders.commands.names.CommandsNames.killingStatsCommand;
 import static discord.ChannelUtils.addChannelSuffix;
@@ -78,7 +74,6 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
                 if(!timerHandler.isAfterTimer()) continue;
                 timerHandler.adjustTimerByDays(1);
                 killStatisticsService.clearCache();
-                addToCacheBeforeExecution(killStatisticsService::getStatistics);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -92,17 +87,18 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
 
-        for (Snowflake guildId : guildIds) {
+        channelWorlds.forEach((world, guildIds) -> {
             CompletableFuture.runAsync(() -> {
-                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.KILLED_BOSSES);
-                if (guildChannel == null) return;
-                String world = GuildCacheData.worldCache.get(guildId);
-                processEmbeddableData(guildChannel, killStatisticsService.getStatistics(world));
+                KillingStatsModel killStats = killStatisticsService.getStatistics(world);
+                guildIds.forEach(guild -> CompletableFuture.runAsync(() -> {
+                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.KILLED_BOSSES);
+                    if (guildChannel == null) return;
+                    processEmbeddableData(guildChannel, killStats);
+                }));
             });
-        }
+        });
     }
 
     @Override

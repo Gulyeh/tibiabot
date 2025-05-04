@@ -21,7 +21,7 @@ import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.setOnlineTrackerCommand;
@@ -70,7 +70,6 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
                 onlineService.clearCache();
                 if(serverSaveHandler.checkAfterSaverSave())
                     onlineService.clearCharStorageCache();
-                addToCacheBeforeExecution(onlineService::getOnlinePlayers);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -119,18 +118,20 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
 
-        for (Snowflake guildId : guildIds) {
-            CompletableFuture.runAsync(() -> {
-                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
-                if (guildChannel == null) return;
-                String world = GuildCacheData.worldCache.get(guildId);
-                processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ?
-                        new ArrayList<>() : onlineService.getOnlinePlayers(world));
+        channelWorlds.forEach((key, value) ->
+                CompletableFuture.runAsync(() -> {
+                    List<OnlineModel> model = onlineService.getOnlinePlayers(key);
+                    value.forEach(guild -> {
+                        CompletableFuture.runAsync(() -> {
+                            GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.ONLINE_TRACKER);
+                            if (guildChannel == null) return;
+                            processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ?
+                                    new ArrayList<>() : model);
+                        });
             });
-        }
+        }));
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {

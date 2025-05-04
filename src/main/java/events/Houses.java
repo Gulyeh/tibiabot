@@ -22,7 +22,7 @@ import services.houses.HousesService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static builders.commands.names.CommandsNames.houseCommand;
@@ -65,7 +65,6 @@ public final class Houses extends ExecutableEvent implements Activable {
             try {
                 log.info("Executing thread {}", getEventName());
                 housesService.clearCache();
-                addToCacheBeforeExecution(housesService::getHouses);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -115,17 +114,18 @@ public final class Houses extends ExecutableEvent implements Activable {
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
 
-        for (Snowflake guildId : guildIds) {
+        channelWorlds.forEach((world, guildIds) -> {
             CompletableFuture.runAsync(() -> {
-                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.HOUSES);
-                if (guildChannel == null) return;
-                String world = GuildCacheData.worldCache.get(guildId);
-                processEmbeddableData(guildChannel, housesService.getHouses(world));
+                List<HousesModel> houses = housesService.getHouses(world);
+                guildIds.forEach(guild -> CompletableFuture.runAsync(() -> {
+                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.HOUSES);
+                    if (guildChannel == null) return;
+                    processEmbeddableData(guildChannel, houses);
+                }));
             });
-        }
+        });
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {

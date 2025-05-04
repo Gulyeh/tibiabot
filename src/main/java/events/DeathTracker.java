@@ -25,9 +25,6 @@ import utils.TibiaWiki;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
@@ -73,7 +70,6 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
             try {
                 log.info("Executing thread {}", getEventName());
                 deathTrackerService.clearCache();
-                addToCacheBeforeExecution(deathTrackerService::getDeaths);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
@@ -92,32 +88,32 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
-
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
-        for (Snowflake guildId : guildIds) {
+
+        channelWorlds.forEach((world, guildIds) -> {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DEATH_TRACKER);
-                if(guildChannel == null) return;
+                List<DeathData> deaths = deathTrackerService.getDeaths(world);
+                guildIds.forEach(guild -> CompletableFuture.runAsync(() -> {
+                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.DEATH_TRACKER);
+                    if(guildChannel == null) return;
 
-                int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guildId);
-                boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guildId);
-                String world = GuildCacheData.worldCache.get(guildId);
+                    int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guild);
+                    boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guild);
 
-                List<DeathData> deaths = deathTrackerService.getDeaths(world)
-                        .stream()
-                        .filter(x -> x.getKilledAtLevel() >= minimumLevel)
-                        .collect(Collectors.toCollection(ArrayList::new));
+                    List<DeathData> deathsFiltered = deaths.stream()
+                            .filter(x -> x.getKilledAtLevel() >= minimumLevel)
+                            .collect(Collectors.toCollection(ArrayList::new));
 
-                if(isAntiSpam)
-                    deathTrackerService.processAntiSpam(guildId, deaths);
+                    if(isAntiSpam)
+                        deathTrackerService.processAntiSpam(guild, deathsFiltered);
 
-                processEmbeddableData(guildChannel, deaths);
-                executeFilteredDeaths(guildId, deaths);
+                    processEmbeddableData(guildChannel, deathsFiltered);
+                    executeFilteredDeaths(guild, deathsFiltered);
+                }));
             });
             futures.add(future);
-        }
+        });
 
         if(isFirstRun)
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))

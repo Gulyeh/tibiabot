@@ -17,7 +17,10 @@ import discord4j.rest.util.Color;
 import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
-import handlers.*;
+import handlers.EmbeddedHandler;
+import handlers.InteractionHandler;
+import handlers.ThreadHandler;
+import handlers.TimerHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -148,9 +151,13 @@ public final class Drome extends ExecutableEvent implements Activable {
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
         createDromeRole(guildId);
         addToChannelsCache(guildId, channelId, EventTypes.DROME);
-        sendDromeMessage(channel, dromeService.getRotationData());
-        threadHandler.removeAllChannelThreads(channel);
-        createThread(channel, dromeService.getRotationData());
+
+        CompletableFuture.runAsync(() -> {
+            sendDromeMessage(channel, dromeService.getRotationData());
+            threadHandler.removeAllChannelThreads(channel);
+            createThread(channel, dromeService.getRotationData());
+        });
+
         return event.createFollowup("Set default Drome Tracker event channel to <#" + channelId.asString() + ">");
     }
 
