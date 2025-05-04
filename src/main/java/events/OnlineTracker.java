@@ -22,6 +22,7 @@ import services.onlines.model.OnlineModel;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.setOnlineTrackerCommand;
@@ -51,7 +52,8 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
             try {
                 if (!event.getCommandName().equals(setOnlineTrackerCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -61,24 +63,18 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void _activableEvent() {
-        while (true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
                 onlineService.clearCache();
-                if(serverSaveHandler.checkAfterSaverSave())
+                if (serverSaveHandler.checkAfterSaverSave())
                     onlineService.clearCharStorageCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(serverSaveHandler.getTimeAdjustedToServerSave(330000));
-                }
             }
-        }
+        }, 0, serverSaveHandler.getTimeAdjustedToServerSave(330000), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -89,7 +85,7 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
     private void processEmbeddableData(GuildMessageChannel channel, List<OnlineModel> model) {
         deleteMessages(channel);
         addChannelSuffix(channel, model.size());
-        if(model.isEmpty()) {
+        if (model.isEmpty()) {
             embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "",
@@ -104,7 +100,7 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
         Color color = embeddedHandler.getRandomColor();
         List<String> msgs = createDescription(map);
         boolean isFirst = true;
-        for(String msg : msgs) {
+        for (String msg : msgs) {
             embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     isFirst ? model.get(0).getWorld() + " (" + model.size() + ")" : "",
@@ -112,26 +108,36 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
                     "",
                     "",
                     color);
-            if(isFirst) isFirst = false;
+            if (isFirst) isFirst = false;
         }
     }
 
     @Override
     protected void executeEventProcess() {
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
         Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
 
-        channelWorlds.forEach((key, value) ->
-                CompletableFuture.runAsync(() -> {
-                    List<OnlineModel> model = onlineService.getOnlinePlayers(key);
-                    value.forEach(guild -> {
-                        CompletableFuture.runAsync(() -> {
-                            GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.ONLINE_TRACKER);
-                            if (guildChannel == null) return;
-                            processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ?
-                                    new ArrayList<>() : model);
-                        });
-            });
-        }));
+        channelWorlds.forEach((world, guildIds) -> {
+            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> onlineService.getOnlinePlayers(world), executor)
+                    .thenComposeAsync(onlines -> {
+                        List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
+                                CompletableFuture.runAsync(() -> {
+                                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.ONLINE_TRACKER);
+                                    if (guildChannel == null) return;
+                                    processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ?
+                                            new ArrayList<>() : onlines);
+                                }, executor)).toList();
+                        return CompletableFuture.allOf(guildFutures.toArray(new CompletableFuture[0]));
+                    }, executor);
+            allFutures.add(future);
+        });
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
+        }
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
@@ -143,7 +149,7 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
         String world = GuildCacheData.worldCache.get(guildId);
@@ -158,19 +164,19 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
 
         map.forEach((k, v) -> {
             String title;
-            if(k.equals(othersKey)) title = "### Others " + v.size();
+            if (k.equals(othersKey)) title = "### Others " + v.size();
             else title = "### " + formatToDiscordLink(k, v.get(0).getGuild().getGuildLink()) + " " + v.size();
-            if(description.length() + title.length() >= maxDescCharacters) {
+            if (description.length() + title.length() >= maxDescCharacters) {
                 descriptionList.add(description.toString());
                 description.setLength(0);
             }
             description.append(title).append("\n");
 
-            for(OnlineModel online : v) {
+            for (OnlineModel online : v) {
                 String onlineText = online.getVocation().getIcon() + " " +
                         online.getLevel() + " - " + formatToDiscordLink(online.getName(), online.getCharacterLink()) + " ``" +
                         online.getFormattedLoggedTime() + "`` " + online.getLeveled().getIcon();
-                if(description.length() + onlineText.length() >= maxDescCharacters) {
+                if (description.length() + onlineText.length() >= maxDescCharacters) {
                     descriptionList.add(description.toString());
                     description.setLength(0);
                 }

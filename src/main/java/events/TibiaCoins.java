@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.tibiaCoinsCommand;
 import static discord.Connector.client;
@@ -48,7 +49,8 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
             try {
                 if (!event.getCommandName().equals(tibiaCoinsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -63,44 +65,47 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
         return EventName.tibiaCoins;
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void _activableEvent() {
-        while(true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(3600000);
-                }
             }
-        }
+        }, 0, 3600000, TimeUnit.MILLISECONDS);
     }
 
     protected void executeEventProcess() {
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        if (guildIds.isEmpty()) return;
 
         PriceModel prices = tibiaCoinsService.getPrices();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
 
         for (Snowflake guildId : guildIds) {
-            CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.TIBIA_COINS);
                 if (guildChannel == null) return;
                 processEmbeddableData(guildChannel, prices);
-            });
+            }, executor);
+            allFutures.add(future);
+        }
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
-        if(id == null) return event.createFollowup("Could not find channel");
+        if (id == null) return event.createFollowup("Could not find channel");
 
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + id.asString() + ">");
 
         CompletableFuture.runAsync(() -> processEmbeddableData(channel, tibiaCoinsService.getPrices()));
@@ -110,7 +115,7 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
     @SuppressWarnings("unchecked")
     private <T> List<EmbedCreateFields.Field> createEmbedFields(T model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
-        for(Prices data : (List<Prices>)model) {
+        for (Prices data : (List<Prices>) model) {
             fields.add(buildEmbedField(data));
         }
 
@@ -122,7 +127,7 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
         List<Prices> data = model.getPrices();
         boolean isFirstMessage = true;
 
-        for(BattleEyeType eye : BattleEyeType.values()) {
+        for (BattleEyeType eye : BattleEyeType.values()) {
             List<Prices> servers = data.stream()
                     .filter(x -> x.getWorld().getBattleEyeType().equals(eye))
                     .sorted(Comparator.comparing(Prices::getWorld_name))
@@ -140,13 +145,13 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
                     "",
                     embeddedHandler.getRandomColor());
 
-            if(isFirstMessage) isFirstMessage = false;
+            if (isFirstMessage) isFirstMessage = false;
         }
     }
 
     private EmbedCreateFields.Field buildEmbedField(Prices data) {
         return EmbedCreateFields.Field.of(data.getWorld().getBattleEyeType().getIcon() + " " + data.getWorld_name() + " " + data.getWorld().getLocation_type().getIcon() + "\n```(" + data.getWorld().getPvp_type() + ")```",
-                "**" + data.getBuy_average_price() + " / " + data.getSell_average_price() +"**\n`(" + data.getCreated_at() + ")`",
+                "**" + data.getBuy_average_price() + " / " + data.getSell_average_price() + "**\n`(" + data.getCreated_at() + ")`",
                 true);
     }
 }

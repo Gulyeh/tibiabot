@@ -28,7 +28,7 @@ public final class TrackWorld extends EventMethods implements Activable {
         this.worldsService = WorldsService.getInstance();
     }
 
-    public void _activableEvent() {
+    public void activate() {
         log.info("Getting available worlds for {}", getEventName());
 
         try {

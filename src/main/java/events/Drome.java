@@ -30,9 +30,12 @@ import services.drome.models.DromeRotationModel;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static builders.commands.names.CommandsNames.setDromeCommand;
@@ -91,24 +94,17 @@ public final class Drome extends ExecutableEvent implements Activable {
         }).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    @Override
-    public void _activableEvent() {
-        while (true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(!timerHandler.isAfterTimer()) continue;
+                if(!timerHandler.isAfterTimer()) return;
                 timerHandler.adjustTimerByDays(1);
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(timerHandler.getWaitTimeUntilTimer());
-                }
             }
-        }
+        }, 0, timerHandler.getWaitTimeUntilTimer(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -119,9 +115,10 @@ public final class Drome extends ExecutableEvent implements Activable {
         if (dromeService.isRotationFinished()) dromeService.clearCache();
         DromeRotationModel model = dromeService.getRotationData();
         long hoursUntilEnd = LocalDateTime.now().until(model.getEndDate(), ChronoUnit.HOURS);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         for (Snowflake guildId : guildIds) {
-            CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.DROME);
                     if (guildChannel == null) return;
@@ -136,7 +133,15 @@ public final class Drome extends ExecutableEvent implements Activable {
                 } catch (Exception e) {
                     log.warn("Error during drome notification - {}", e.getMessage());
                 }
-            });
+            }, executor);
+            futures.add(future);
+        }
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 

@@ -25,6 +25,7 @@ import utils.TibiaWiki;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.deathsCommand;
@@ -53,7 +54,8 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
             try {
                 if (!event.getCommandName().equals(deathsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -63,22 +65,16 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void _activableEvent() {
-        while (true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
                 deathTrackerService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(300000);
-                }
             }
-        }
+        }, 0, 300000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -92,32 +88,38 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         channelWorlds.forEach((world, guildIds) -> {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                List<DeathData> deaths = deathTrackerService.getDeaths(world);
-                guildIds.forEach(guild -> CompletableFuture.runAsync(() -> {
-                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.DEATH_TRACKER);
-                    if(guildChannel == null) return;
+            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> deathTrackerService.getDeaths(world), executor)
+                    .thenComposeAsync(deaths -> {
+                        List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
+                                CompletableFuture.runAsync(() -> {
+                                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.DEATH_TRACKER);
+                                    if (guildChannel == null) return;
 
-                    int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guild);
-                    boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guild);
+                                    int minimumLevel = GuildCacheData.minimumDeathLevelCache.get(guild);
+                                    boolean isAntiSpam = GuildCacheData.antiSpamDeathCache.contains(guild);
 
-                    List<DeathData> deathsFiltered = deaths.stream()
-                            .filter(x -> x.getKilledAtLevel() >= minimumLevel)
-                            .collect(Collectors.toCollection(ArrayList::new));
+                                    List<DeathData> deathsFiltered = deaths.stream()
+                                            .filter(x -> x.getKilledAtLevel() >= minimumLevel)
+                                            .collect(Collectors.toCollection(ArrayList::new));
 
-                    if(isAntiSpam)
-                        deathTrackerService.processAntiSpam(guild, deathsFiltered);
+                                    if (isAntiSpam)
+                                        deathTrackerService.processAntiSpam(guild, deathsFiltered);
 
-                    processEmbeddableData(guildChannel, deathsFiltered);
-                    executeFilteredDeaths(guild, deathsFiltered);
-                }));
-            });
+                                    processEmbeddableData(guildChannel, deathsFiltered);
+                                    executeFilteredDeaths(guild, deathsFiltered);
+                                }, executor)).toList();
+                        return CompletableFuture.allOf(guildFutures.toArray(new CompletableFuture[0]));
+                    }, executor);
             futures.add(future);
         });
 
-        if(isFirstRun)
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .thenRun(() -> isFirstRun = false);
+        CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenRun(() -> isFirstRun = false);
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
+        }
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
@@ -128,7 +130,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         if (!GuildCacheData.worldCache.containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
         addMinimumDeathLevelCache(getGuildId(event), deathTrackerService.getMinimumDefaultLevel());
@@ -138,7 +140,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
     private void executeFilteredDeaths(Snowflake guildId, List<DeathData> model) {
         GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.FILTERED_DEATH_TRACKER);
-        if(guildChannel == null) return;
+        if (guildChannel == null) return;
 
         DeathFilter filter = deathTrackerFilters.get(guildId);
         if (filter == null) return;
@@ -153,7 +155,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
         Set<DeathData> merged = new HashSet<>(namesFiltered);
         merged.addAll(guildsFiltered);
-        if(merged.isEmpty()) return;
+        if (merged.isEmpty()) return;
 
         List<DeathData> mergedSortedList = new ArrayList<>(merged);
         mergedSortedList.sort(Comparator.comparing(DeathData::getKilledAtDate));
@@ -166,7 +168,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
         for (DeathData death : model) {
             String description = getDescription(death);
-            if(msgs.stream().anyMatch(x -> {
+            if (msgs.stream().anyMatch(x -> {
                 String embedDescription = x.getEmbeds().get(0).getData().description().get();
                 return description.equals(embedDescription);
             })) continue;
@@ -178,7 +180,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
                     description,
                     "",
                     getThumbnail(death),
-                    death.isSpamDeath() ? Color.RED: Color.DARK_GRAY,
+                    death.isSpamDeath() ? Color.RED : Color.DARK_GRAY,
                     getFooter(death));
         }
     }
@@ -193,7 +195,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         StringBuilder builder = new StringBuilder();
         builder.append(getTitle(data)).append("\n\n");
 
-        if(data.getGuild().getName() != null) {
+        if (data.getGuild().getName() != null) {
             builder.append(":headstone: ")
                     .append(data.getGuild().getRank())
                     .append(" of the ")
@@ -219,13 +221,13 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
     private EmbedCreateFields.Footer getFooter(DeathData data) {
         StringBuilder builder = new StringBuilder();
-        if(data.getLostLevels() > 0)
+        if (data.getLostLevels() > 0)
             builder.append(data.getCharacter().getName())
                     .append(" lost ")
                     .append(data.getLostLevels())
                     .append(" level(s) and was downgraded to Level ")
                     .append(data.getCharacter().getLevel());
-        if(data.getLostExperience() > 0) builder.append("\nCharacter lost approx. ")
+        if (data.getLostExperience() > 0) builder.append("\nCharacter lost approx. ")
                 .append(data.getLostExperience())
                 .append(" experience if died with full blessings");
         return EmbedCreateFields.Footer.of(builder.toString(), null);

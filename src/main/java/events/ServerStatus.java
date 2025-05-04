@@ -16,7 +16,6 @@ import events.interfaces.Activable;
 import events.utils.EventName;
 import handlers.EmbeddedHandler;
 import handlers.ServerSaveHandler;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.worlds.WorldsService;
@@ -25,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
 import static discord.ChannelUtils.addChannelSuffix;
@@ -50,7 +50,8 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
             try {
                 if (!event.getCommandName().equals(serverStatusCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -60,22 +61,16 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void _activableEvent() {
-        while(true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
                 serverSaveHandler.checkAfterSaverSave();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(serverSaveHandler.getTimeAdjustedToServerSave(330000));
-                }
             }
-        }
+        }, 0, serverSaveHandler.getTimeAdjustedToServerSave(330000), TimeUnit.MILLISECONDS);
     }
 
     protected void executeEventProcess() {
@@ -83,14 +78,23 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
                 worldsService.getServerSaveWorlds() : worldsService.getWorlds();
 
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        if (guildIds.isEmpty()) return;
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
 
         for (Snowflake guildId : guildIds) {
-            CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.SERVER_STATUS);
                 if (guildChannel == null) return;
                 processEmbeddableData(guildChannel, worlds);
-            });
+            }, executor);
+            allFutures.add(future);
+        }
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
@@ -102,7 +106,7 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
     private List<EmbedCreateFields.Field> createEmbedFields(WorldModel model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
 
-        for(WorldData data : model.getWorlds().getRegular_worlds()) {
+        for (WorldData data : model.getWorlds().getRegular_worlds()) {
             fields.add(buildEmbedField(data));
         }
 
@@ -125,10 +129,10 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
-        if(id == null) return event.createFollowup("Could not find channel");
+        if (id == null) return event.createFollowup("Could not find channel");
 
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + id.asString() + ">");
 
         CompletableFuture.runAsync(() -> processEmbeddableData(channel, worldsService.getWorlds()));

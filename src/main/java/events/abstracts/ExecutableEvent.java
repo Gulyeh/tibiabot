@@ -8,10 +8,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Slf4j
 public abstract class ExecutableEvent extends EventMethods {
     protected abstract void executeEventProcess();
+    protected ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     protected Map<String, List<Snowflake>> getListOfServersForWorld() {
         Map<String, List<Snowflake>> channelWorlds = new HashMap<>();

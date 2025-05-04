@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -84,9 +86,9 @@ public class OnlineService implements Cacheable {
 
     private List<OnlineModel> fetchNotOnlinePreviouslyConcurrent(List<CharacterData> notOnlinePreviously) {
         if(notOnlinePreviously.isEmpty()) return new ArrayList<>();
-        List<OnlineModel> online = new ArrayList<>();
+        List<OnlineModel> online = new CopyOnWriteArrayList<>();
 
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ExecutorService executor = Executors.newWorkStealingPool();
         List<CompletableFuture<Void>> futures = notOnlinePreviously.stream()
                 .map(character -> CompletableFuture.runAsync(() -> {
                     CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(character.getName())
@@ -95,18 +97,14 @@ public class OnlineService implements Cacheable {
                     online.add(new OnlineModel(characterInfo));
                 }, executor))
                 .toList();
-        executor.shutdown();
 
         try {
             CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
             allOf.get(4, TimeUnit.MINUTES);
-        } catch (TimeoutException e) {
-            log.error("Some tasks timed out.", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("Thread was interrupted while waiting for tasks to complete.", e);
-        } catch (ExecutionException e) {
-            log.error("Error occurred while executing tasks.", e);
+        } catch (Exception e) {
+            log.error("Some tasks timed out. - {}", e.getMessage());
+        } finally {
+            executor.shutdown();
         }
 
         return online;

@@ -110,24 +110,20 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
-        List<DeathData> deaths = Collections.synchronizedList(new ArrayList<>());
+        List<DeathData> deaths = new CopyOnWriteArrayList<>();
 
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ExecutorService executor = Executors.newWorkStealingPool();
         List<CompletableFuture<Void>> futures = chars.stream()
                 .map(character -> CompletableFuture.runAsync(() -> processCharacter(character, world, deaths), executor))
                 .toList();
-        executor.shutdown();
 
         try {
             CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
             allOf.get(4, TimeUnit.MINUTES);
-        }  catch (TimeoutException e) {
-            log.error("Some tasks timed out.", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("Thread was interrupted while waiting for tasks to complete.", e);
-        } catch (ExecutionException e) {
-            log.error("Error occurred while executing tasks.", e);
+        }  catch (Exception e) {
+            log.error("Some tasks timed out. - {}", e.getMessage());
+        } finally {
+            executor.shutdown();
         }
 
         deaths.sort(Comparator.comparing(DeathData::getKilledAtDate));

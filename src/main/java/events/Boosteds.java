@@ -23,7 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
@@ -52,7 +55,8 @@ public final class Boosteds extends ExecutableEvent implements Activable {
             try {
                 if (!event.getCommandName().equals(boostedsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
                 return setDefaultChannel(event);
             } catch (Exception e) {
                 log.error(e.getMessage());
@@ -61,39 +65,43 @@ public final class Boosteds extends ExecutableEvent implements Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void _activableEvent() {
-        while (true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(!serverSaveHandler.checkAfterSaverSave()) continue;
+                if (!serverSaveHandler.checkAfterSaverSave()) return;
                 boostedsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(serverSaveHandler.getTimeUntilServerSave());
-                }
             }
-        }
+        }, 0, serverSaveHandler.getTimeUntilServerSave(), TimeUnit.MILLISECONDS);
     }
 
     @Override
     protected void executeEventProcess() {
         BoostedModel creature = boostedsService.getBoostedCreature();
         BoostedModel boss = boostedsService.getBoostedBoss();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
 
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
-            CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.BOOSTEDS);
                 if (guildChannel == null) return;
                 deleteMessages(guildChannel);
                 threadHandler.removeAllChannelThreads(guildChannel);
                 processEmbeddableData(guildChannel, creature);
                 processEmbeddableData(guildChannel, boss);
-            });
+            }, executor);
+            allFutures.add(future);
+        }
+
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
@@ -102,7 +110,7 @@ public final class Boosteds extends ExecutableEvent implements Activable {
         String name = isBoss ? "Boss: " : "Creature: ";
         String hpData = model.getExp() > 0 ? getCreatureBoostData(model) : "";
 
-        if(model.getName() == null || model.getName().isEmpty())
+        if (model.getName() == null || model.getName().isEmpty())
             embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     model.getBoostedTypeText(),

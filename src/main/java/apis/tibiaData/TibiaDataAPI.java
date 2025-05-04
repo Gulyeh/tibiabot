@@ -17,8 +17,19 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class TibiaDataAPI extends WebClient {
+    private static final Map<String, CharacterResponse> characterCaching = new ConcurrentHashMap<>();
+
+    static {
+        Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate(characterCaching::clear, 5, 5, TimeUnit.MINUTES);
+    }
+
     @Override
     protected String getUrl() {
         return "https://api.tibiadata.com/v4/";
@@ -59,9 +70,11 @@ public class TibiaDataAPI extends WebClient {
     }
 
     public CharacterResponse getCharacterData(String charName) {
+        if(characterCaching.containsKey(charName.toLowerCase())) return characterCaching.get(charName.toLowerCase());
         String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
         CharacterResponse model = getModel(response, CharacterResponse.class);
         if(model == null) return new CharacterResponse();
+        characterCaching.put(charName.toLowerCase(), model);
         return model;
     }
 

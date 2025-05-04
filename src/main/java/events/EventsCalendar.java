@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.eventsCommand;
@@ -62,23 +63,17 @@ public final class EventsCalendar extends ExecutableEvent implements Activable {
         return EventName.events;
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void _activableEvent() {
-        while (true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
-                if(!serverSaveHandler.checkAfterSaverSave()) continue;
+                if(!serverSaveHandler.checkAfterSaverSave()) return;
                 eventsService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(serverSaveHandler.getTimeUntilServerSave());
-                }
             }
-        }
+        }, 0, serverSaveHandler.getTimeUntilServerSave(), TimeUnit.MILLISECONDS);
     }
 
     private Mono<Message> handleGlobalEvents(ChatInputInteractionEvent event) throws Exception {
@@ -109,8 +104,18 @@ public final class EventsCalendar extends ExecutableEvent implements Activable {
     @Override
     protected void executeEventProcess() {
         List<EventModel> events = getEvents();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
+
         for (Snowflake guildId : globalEvents) {
-            CompletableFuture.runAsync(() -> createServerEvent(guildId, events));
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> createServerEvent(guildId, events), executor);
+            allFutures.add(future);
+        }
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
@@ -137,7 +142,7 @@ public final class EventsCalendar extends ExecutableEvent implements Activable {
         if(eventList == null) return;
 
         events.forEach(x -> {
-            if(Boolean.TRUE.equals(eventList.stream().anyMatch(y -> y.getName().equals(x.getName()))))
+            if(eventList.stream().anyMatch(y -> y.getName().equals(x.getName())))
                 return;
 
             guild.createScheduledEvent(ScheduledEventCreateSpec.builder()

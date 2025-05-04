@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
@@ -48,7 +49,8 @@ public final class Houses extends ExecutableEvent implements Activable {
             try {
                 if (!event.getCommandName().equals(houseCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -58,22 +60,16 @@ public final class Houses extends ExecutableEvent implements Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void _activableEvent() {
-        while (true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
                 housesService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(1800000);
-                }
             }
-        }
+        }, 0, 1800000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -90,7 +86,7 @@ public final class Houses extends ExecutableEvent implements Activable {
                         !x.getHouse_list().isEmpty())
                 .toList();
 
-        if(list.isEmpty()) {
+        if (list.isEmpty()) {
             embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "",
@@ -115,17 +111,29 @@ public final class Houses extends ExecutableEvent implements Activable {
     @Override
     protected void executeEventProcess() {
         Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
 
         channelWorlds.forEach((world, guildIds) -> {
-            CompletableFuture.runAsync(() -> {
-                List<HousesModel> houses = housesService.getHouses(world);
-                guildIds.forEach(guild -> CompletableFuture.runAsync(() -> {
-                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.HOUSES);
-                    if (guildChannel == null) return;
-                    processEmbeddableData(guildChannel, houses);
-                }));
-            });
+            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> housesService.getHouses(world), executor)
+                    .thenComposeAsync(houses -> {
+                        List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
+                                CompletableFuture.runAsync(() -> {
+                                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.HOUSES);
+                                    if (guildChannel == null) return;
+                                    processEmbeddableData(guildChannel, houses);
+                                }, executor)).toList();
+                        return CompletableFuture.allOf(guildFutures.toArray(new CompletableFuture[0]));
+                    }, executor);
+
+            allFutures.add(future);
         });
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
+        }
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
@@ -137,7 +145,7 @@ public final class Houses extends ExecutableEvent implements Activable {
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
         String world = GuildCacheData.worldCache.get(guildId);
