@@ -66,19 +66,25 @@ public final class MiniWorldEvents extends ExecutableEvent implements Activable 
     }
 
     public void activate() {
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                log.info("Executing thread {}", getEventName());
-                if (serverSaveHandler.checkAfterSaverSave())
-                    miniWorldEventsService.clearCache();
-                else if (timerHandler.isAfterTimer()) {
-                    timerHandler.adjustTimerByDays(1);
-                    executeEventProcess();
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    if (serverSaveHandler.checkAfterSaverSave())
+                        miniWorldEventsService.clearCache();
+                    else if (timerHandler.isAfterTimer()) {
+                        timerHandler.adjustTimerByDays(1);
+                        executeEventProcess();
+                    }
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, serverSaveHandler.getTimeAdjustedToServerSave(180000), TimeUnit.MILLISECONDS);
                 }
-            } catch (Exception e) {
-                log.info(e.getMessage());
             }
-        }, 0, serverSaveHandler.getTimeAdjustedToServerSave(180000), TimeUnit.MILLISECONDS);
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, MiniWorldEventsModel model) {

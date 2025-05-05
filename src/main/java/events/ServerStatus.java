@@ -62,15 +62,21 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
     }
 
     public void activate() {
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                log.info("Executing thread {}", getEventName());
-                serverSaveHandler.checkAfterSaverSave();
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    serverSaveHandler.checkAfterSaverSave();
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, serverSaveHandler.getTimeAdjustedToServerSave(330000), TimeUnit.MILLISECONDS);
+                }
             }
-        }, 0, serverSaveHandler.getTimeAdjustedToServerSave(330000), TimeUnit.MILLISECONDS);
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     protected void executeEventProcess() {

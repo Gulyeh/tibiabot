@@ -64,16 +64,22 @@ public final class EventsCalendar extends ExecutableEvent implements Activable {
     }
 
     public void activate() {
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                log.info("Executing thread {}", getEventName());
-                if(!serverSaveHandler.checkAfterSaverSave()) return;
-                eventsService.clearCache();
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    if(!serverSaveHandler.checkAfterSaverSave()) return;
+                    eventsService.clearCache();
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, serverSaveHandler.getTimeUntilServerSave(), TimeUnit.MILLISECONDS);
+                }
             }
-        }, 0, serverSaveHandler.getTimeUntilServerSave(), TimeUnit.MILLISECONDS);
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     private Mono<Message> handleGlobalEvents(ChatInputInteractionEvent event) throws Exception {

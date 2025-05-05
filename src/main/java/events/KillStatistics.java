@@ -69,17 +69,23 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
 
     @Override
     public void activate() {
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                log.info("Executing thread {}", getEventName());
-                if (!timerHandler.isAfterTimer()) return;
-                timerHandler.adjustTimerByDays(1);
-                killStatisticsService.clearCache();
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    if (!timerHandler.isAfterTimer()) return;
+                    timerHandler.adjustTimerByDays(1);
+                    killStatisticsService.clearCache();
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, timerHandler.getWaitTimeUntilTimer(), TimeUnit.MILLISECONDS);
+                }
             }
-        }, 0, timerHandler.getWaitTimeUntilTimer(), TimeUnit.MILLISECONDS);
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override
