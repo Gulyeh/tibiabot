@@ -76,6 +76,7 @@ public final class TibiaWiki {
             put("sabretooth", "Sabretooth (Creature)");
             put("nomad", "Nomad (Basic)");
             put("adventurers nemesis", "Barrel (Brown)");
+            put("ice", "Ice Explosion Effect");
         }};
 
         if(replaceable.containsKey(name.toLowerCase())) name = replaceable.get(name.toLowerCase());
