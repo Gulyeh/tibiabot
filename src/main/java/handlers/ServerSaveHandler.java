@@ -87,8 +87,8 @@ public class ServerSaveHandler {
 
     private boolean isServerOffline() {
         try {
-            var worlds = worldsService.getWorlds().getWorlds();
-            return Integer.parseInt(worlds.getPlayers_online()) < 1;
+            var worlds = worldsService.getWorlds();
+            return worldsService.getWorlds() != null && Integer.parseInt(worlds.getWorlds().getPlayers_online()) < 1;
         } catch (Exception e) {
             log.warn("[{}] Error checking server status: {}", eventName, e.getMessage());
             return false;

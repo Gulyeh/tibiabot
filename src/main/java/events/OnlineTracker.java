@@ -190,6 +190,7 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
             }
             description.append("\n");
         });
+        descriptionList.add(description.toString());
         return descriptionList;
     }
 

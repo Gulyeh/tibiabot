@@ -88,7 +88,7 @@ public class OnlineService implements Cacheable {
         if(notOnlinePreviously.isEmpty()) return new ArrayList<>();
         List<OnlineModel> online = new CopyOnWriteArrayList<>();
 
-        ExecutorService executor = Executors.newWorkStealingPool();
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         List<CompletableFuture<Void>> futures = notOnlinePreviously.stream()
                 .map(character -> CompletableFuture.runAsync(() -> {
                     CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(character.getName())
