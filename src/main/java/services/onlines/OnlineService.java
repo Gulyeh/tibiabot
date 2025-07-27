@@ -7,13 +7,12 @@ import interfaces.Cacheable;
 import lombok.extern.slf4j.Slf4j;
 import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
-
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
+
+import static cache.worlds.WorldsCache.addNewCharactersToWorld;
 
 @Slf4j
 public class OnlineService implements Cacheable {
@@ -67,6 +66,7 @@ public class OnlineService implements Cacheable {
         online.addAll(fetchNotOnlinePreviouslyConcurrent(notOnlinePreviously));
         onlineCache.put(world, online);
         charInfoCache.put(world, online);
+        addNewCharactersToWorld(world, online);
         return online;
     }
 
@@ -88,23 +88,21 @@ public class OnlineService implements Cacheable {
         if(notOnlinePreviously.isEmpty()) return new ArrayList<>();
         List<OnlineModel> online = new CopyOnWriteArrayList<>();
 
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
-        List<CompletableFuture<Void>> futures = notOnlinePreviously.stream()
-                .map(character -> CompletableFuture.runAsync(() -> {
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+        notOnlinePreviously
+                .forEach(character -> executor.submit(() -> {
                     CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(character.getName())
                             .getCharacter()
                             .getCharacter();
                     online.add(new OnlineModel(characterInfo));
-                }, executor))
-                .toList();
+                }));
 
+        executor.shutdown();
         try {
-            CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            allOf.get(4, TimeUnit.MINUTES);
+            executor.awaitTermination(4, TimeUnit.MINUTES);
         } catch (Exception e) {
+            Thread.currentThread().interrupt();
             log.error("Some tasks timed out. - {}", e.getMessage());
-        } finally {
-            executor.shutdown();
         }
 
         return online;

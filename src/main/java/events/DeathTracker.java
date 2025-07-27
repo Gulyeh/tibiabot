@@ -65,6 +65,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
+    @Override
     public void activate() {
         scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -74,7 +75,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
             } catch (Exception e) {
                 log.info(e.getMessage());
             }
-        }, 0, 300000, TimeUnit.MILLISECONDS);
+        }, 60000, 300000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -90,6 +91,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         channelWorlds.forEach((world, guildIds) -> {
             CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> deathTrackerService.getDeaths(world), executor)
                     .thenComposeAsync(deaths -> {
+                        if(deaths.isEmpty()) return CompletableFuture.completedStage(null);
                         List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
                                 CompletableFuture.runAsync(() -> {
                                     GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.DEATH_TRACKER);

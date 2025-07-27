@@ -16,7 +16,8 @@ public enum EventTypes {
     ONLINE_TRACKER(EventName.onlineTracker),
     FILTERED_DEATH_TRACKER(EventName.filterDeathTracker),
     DROME(EventName.dromeTracker),
-    BOOSTEDS(EventName.boosteds);
+    BOOSTEDS(EventName.boosteds),
+    DELETED_TRACKER(EventName.deletedTracker);
 
     private final String name;
 

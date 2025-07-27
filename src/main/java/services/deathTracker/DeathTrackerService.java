@@ -112,7 +112,7 @@ public class DeathTrackerService implements Cacheable {
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
         List<DeathData> deaths = new CopyOnWriteArrayList<>();
 
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         List<CompletableFuture<Void>> futures = chars.stream()
                 .map(character -> CompletableFuture.runAsync(() -> processCharacter(character, world, deaths), executor))
                 .toList();

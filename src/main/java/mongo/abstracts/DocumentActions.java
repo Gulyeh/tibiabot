@@ -9,19 +9,26 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import discord.Connector;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonReader;
+import org.bson.BsonWriter;
 import org.bson.Document;
+import org.bson.codecs.Codec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.EncoderContext;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import utils.Configurator;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 import static mongo.MongoConnector.mongoDatabase;
-import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
-import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+import static org.bson.codecs.configuration.CodecRegistries.*;
 import static utils.Configurator.config;
 
 @Slf4j
@@ -46,7 +53,7 @@ public abstract class DocumentActions<T> extends Singleton {
         return collection.find(Filters.eq(fieldNameId, id)).first();
     }
 
-    protected abstract Document createDocument(T model);
+    public abstract Document createDocument(T model);
 
     public boolean insertDocuments(Document... document) {
         if(Connector.client == null) return false;

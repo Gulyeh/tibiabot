@@ -15,6 +15,7 @@ public final class Configurator {
         DB_NAME("DB_NAME"),
         DB_COLLECTION_GUILDS("DB_COLLECTION_GUILDS"),
         DB_COLLECTION_CHARACTERS("DB_COLLECTION_CHARACTERS"),
+        DB_COLLECTION_WORLDS_DATA("DB_COLLECTION_WORLD_DATA"),
         CHROMEDRIVER_PATH("CHROMEDRIVER_PATH");
 
         private final String name;

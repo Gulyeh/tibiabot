@@ -114,6 +114,10 @@ public class GuildCacheInitializer {
                     if(channels.getDromeTracker().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getDromeTracker());
                 }
+                case DELETED_TRACKER -> {
+                    if(channels.getDeletedTracker().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getDeletedTracker());
+                }
             };
 
             GuildCacheData.addToChannelsCache(guildId, channelId, eventType);

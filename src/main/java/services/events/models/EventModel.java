@@ -7,7 +7,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-import static utils.Methods.formatToOffsetTime;
+import static utils.Methods.formatUTCToOffsetTime;
+
 
 @Getter
 @Setter
@@ -18,7 +19,7 @@ public class EventModel {
     private LocalDateTime endDate;
 
     public void setStartDate(LocalDate startDate) {
-        this.startDate = formatToOffsetTime(startDate
+        this.startDate = formatUTCToOffsetTime(startDate
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
                 .toString())
@@ -27,7 +28,7 @@ public class EventModel {
     }
 
     public void setEndDate(LocalDate endDate) {
-        this.endDate = formatToOffsetTime(endDate
+        this.endDate = formatUTCToOffsetTime(endDate
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
                 .toString())

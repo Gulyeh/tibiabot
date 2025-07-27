@@ -6,7 +6,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static utils.Methods.formatToOffsetTime;
+import static utils.Methods.formatUTCToOffsetTime;
+
 
 @Getter
 public class DeathResponse {
@@ -16,7 +17,7 @@ public class DeathResponse {
     private List<Killer> killers;
 
     public LocalDateTime getTimeLocal() {
-        return formatToOffsetTime(time);
+        return formatUTCToOffsetTime(time);
     }
 
     public LocalDateTime getTimeUTC() {

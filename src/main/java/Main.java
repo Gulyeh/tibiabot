@@ -1,6 +1,8 @@
 import builders.commands.CommandsBuilder;
 import cache.characters.CharactersCaching;
 import cache.guilds.GuildCaching;
+import cache.interfaces.Cachable;
+import cache.worlds.WorldsCaching;
 import discord.Connector;
 import events.*;
 import events.commands.DeathFilters;
@@ -16,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import mongo.MongoConnector;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
+import services.deletedTracker.DeletedTrackerService;
 import services.drome.DromeService;
 import services.events.EventsService;
 import services.houses.HousesService;
@@ -42,6 +45,7 @@ public class Main {
 
     private static void initializeServices() {
         //Add listeners for events
+        OnlineService onlineService = new OnlineService();
         List.of(
                 new TibiaCoins(new TibiaCoinsService()),
                 new ServerStatus(),
@@ -52,8 +56,9 @@ public class Main {
                 new MiniWorldEvents(new MiniWorldEventsService()),
                 new Boosteds(new BoostedsService()),
                 new DeathTracker(new DeathTrackerService()),
-                new OnlineTracker(new OnlineService()),
-                new Drome(new DromeService())
+                new OnlineTracker(onlineService),
+                new Drome(new DromeService()),
+                new DeletedTracker(new DeletedTrackerService(onlineService))
         ).forEach(x -> {
             Connector.addListener(x);
             log.info("Activating {}", x.getEventName());
@@ -75,10 +80,9 @@ public class Main {
     }
 
     private static void initializeCache() {
-        CountDownLatch latch = new CountDownLatch(2);
-
-        List.of(GuildCaching.getInstance(), CharactersCaching.getInstance())
-                .forEach(x -> x.refreshCache(latch));
+        List<Cachable> list = List.of(GuildCaching.getInstance(), CharactersCaching.getInstance(), WorldsCaching.getInstance());
+        CountDownLatch latch = new CountDownLatch(list.size());
+        list.forEach(x -> x.refreshCache(latch));
 
         try {
             latch.await();

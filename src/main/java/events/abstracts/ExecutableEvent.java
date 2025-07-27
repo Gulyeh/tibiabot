@@ -15,8 +15,8 @@ import java.util.concurrent.ScheduledExecutorService;
 @Slf4j
 public abstract class ExecutableEvent extends EventMethods {
     protected abstract void executeEventProcess();
-    protected ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    protected ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    protected ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().factory());
+    protected ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     protected Map<String, List<Snowflake>> getListOfServersForWorld() {
         Map<String, List<Snowflake>> channelWorlds = new HashMap<>();
