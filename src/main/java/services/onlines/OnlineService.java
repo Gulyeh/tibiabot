@@ -97,7 +97,6 @@ public class OnlineService extends ThreadLocker implements Cacheable {
                             .getCharacter()
                             .getCharacter();
                     online.add(new OnlineModel(characterInfo));
-                    log.info("Executing online service for {} on world {}", character.getName(), characterInfo.getWorld());
                 }, executor));
 
         executor.shutdown();

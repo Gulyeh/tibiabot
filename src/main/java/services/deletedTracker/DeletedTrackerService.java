@@ -76,7 +76,6 @@ public class DeletedTrackerService extends ThreadLocker implements Cacheable {
                                   List<WorldCharacterModel> deletedCharacters,
                                   List<WorldCharacterModel> charactersToRemove) {
         try {
-            log.info("Executing deleted service for {} on world {}", character.getName(), world);
             CharacterResponse characterResponse = tibiaDataAPI.getCharacterData(character.getName());
             if (characterResponse.getInformation() == null) return;
 

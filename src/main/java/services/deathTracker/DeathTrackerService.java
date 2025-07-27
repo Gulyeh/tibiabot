@@ -135,7 +135,6 @@ public class DeathTrackerService extends ThreadLocker implements Cacheable {
 
     private void processCharacter(CharacterData character, String world, List<DeathData> deaths) {
         try {
-            log.info("Executing death service for {} on world {}", character.getName(), world);
             CharacterResponse data = api.getCharacterData(character.getName());
             List<DeathResponse> deathsModel = data.getCharacter().getDeaths();
             if (deathsModel == null || deathsModel.isEmpty()) return;
