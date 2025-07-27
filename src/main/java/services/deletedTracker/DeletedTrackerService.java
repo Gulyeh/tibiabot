@@ -60,7 +60,6 @@ public class DeletedTrackerService implements Cacheable {
                         .orTimeout(10, TimeUnit.SECONDS))
                         .toList();
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-                log.info("batch done " + worldCharacters.size());
                 Thread.sleep(Duration.ofMillis(1000));
             }
         } catch (Exception e) {
