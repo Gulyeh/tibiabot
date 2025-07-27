@@ -1,5 +1,6 @@
 package services.onlines;
 
+import abstracts.ThreadLocker;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -15,7 +17,7 @@ import java.util.concurrent.*;
 import static cache.worlds.WorldsCache.addNewCharactersToWorld;
 
 @Slf4j
-public class OnlineService implements Cacheable {
+public class OnlineService extends ThreadLocker implements Cacheable {
     private final TibiaDataAPI tibiaDataAPI;
     private ConcurrentHashMap<String, List<OnlineModel>> onlineCache;
     private ConcurrentHashMap<String, List<OnlineModel>> charInfoCache;
@@ -86,16 +88,17 @@ public class OnlineService implements Cacheable {
 
     private List<OnlineModel> fetchNotOnlinePreviouslyConcurrent(List<CharacterData> notOnlinePreviously) {
         if(notOnlinePreviously.isEmpty()) return new ArrayList<>();
-        List<OnlineModel> online = new CopyOnWriteArrayList<>();
-
+        List<OnlineModel> online = Collections.synchronizedList(new ArrayList<>());
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+
         notOnlinePreviously
-                .forEach(character -> executor.submit(() -> {
+                .forEach(character -> lockExecuteAsync(() -> {
                     CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(character.getName())
                             .getCharacter()
                             .getCharacter();
                     online.add(new OnlineModel(characterInfo));
-                }));
+                    log.info("Executing online service for {} on world {}", character.getName(), characterInfo.getWorld());
+                }, executor));
 
         executor.shutdown();
         try {

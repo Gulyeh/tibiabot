@@ -1,5 +1,6 @@
 package services.deathTracker;
 
+import abstracts.ThreadLocker;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
@@ -23,7 +24,7 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DeathTrackerService implements Cacheable {
+public class DeathTrackerService extends ThreadLocker implements Cacheable {
     private final ConcurrentHashMap<String, List<CharacterData>> mapCache; // data of previously online characters
     private ConcurrentHashMap<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
     private final ConcurrentHashMap<String, ArrayList<DeathResponse>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
@@ -110,11 +111,11 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
-        List<DeathData> deaths = new CopyOnWriteArrayList<>();
-
+        List<DeathData> deaths = Collections.synchronizedList(new ArrayList<>());
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+
         List<CompletableFuture<Void>> futures = chars.stream()
-                .map(character -> CompletableFuture.runAsync(() -> processCharacter(character, world, deaths), executor))
+                .map(character -> lockExecuteAsync(() -> processCharacter(character, world, deaths), executor))
                 .toList();
 
         try {
@@ -134,6 +135,7 @@ public class DeathTrackerService implements Cacheable {
 
     private void processCharacter(CharacterData character, String world, List<DeathData> deaths) {
         try {
+            log.info("Executing death service for {} on world {}", character.getName(), world);
             CharacterResponse data = api.getCharacterData(character.getName());
             List<DeathResponse> deathsModel = data.getCharacter().getDeaths();
             if (deathsModel == null || deathsModel.isEmpty()) return;

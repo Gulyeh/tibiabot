@@ -1,16 +1,15 @@
 package services.deletedTracker;
 
+import abstracts.ThreadLocker;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
 import apis.tibiaData.model.deathtracker.CharacterResponse;
-import com.google.common.collect.Lists;
 import interfaces.Cacheable;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.WorldCharacterModel;
 import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -19,7 +18,7 @@ import static cache.worlds.WorldsCache.getWorldData;
 import static cache.worlds.WorldsCache.removeCharacterFromWorld;
 
 @Slf4j
-public class DeletedTrackerService implements Cacheable {
+public class DeletedTrackerService extends ThreadLocker implements Cacheable {
 
     private final ConcurrentHashMap<String, List<WorldCharacterModel>> deletedCache;
     private final TibiaDataAPI tibiaDataAPI;
@@ -48,25 +47,18 @@ public class DeletedTrackerService implements Cacheable {
 
         List<WorldCharacterModel> deletedCharacters = Collections.synchronizedList(new ArrayList<>());
         List<WorldCharacterModel> charactersToRemove = Collections.synchronizedList(new ArrayList<>());
-        List<List<WorldCharacterModel>> batches = Lists.partition(worldCharacters.stream().toList(), 20);
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
+        worldCharacters.forEach(character ->
+                        lockExecuteAsync(() ->
+                                processCharacter(world, character, deletedCharacters, charactersToRemove), executor));
+
+        executor.shutdown();
         try {
-            for (List<WorldCharacterModel> batch : batches) {
-                List<CompletableFuture<Void>> futures = batch.stream()
-                        .map(user -> CompletableFuture.runAsync(() -> {
-                            processCharacter(world, user, deletedCharacters, charactersToRemove);
-                        }, executor)
-                        .orTimeout(10, TimeUnit.SECONDS))
-                        .toList();
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-                Thread.sleep(Duration.ofMillis(1000));
-            }
+            executor.awaitTermination(4, TimeUnit.MINUTES);
         } catch (Exception e) {
             Thread.currentThread().interrupt();
             log.error("Some tasks timed out. - {}", e.getMessage());
-        } finally {
-            executor.shutdown();
         }
 
         charactersToRemove.forEach(character -> removeCharacterFromWorld(world, character));
@@ -84,6 +76,7 @@ public class DeletedTrackerService implements Cacheable {
                                   List<WorldCharacterModel> deletedCharacters,
                                   List<WorldCharacterModel> charactersToRemove) {
         try {
+            log.info("Executing deleted service for {} on world {}", character.getName(), world);
             CharacterResponse characterResponse = tibiaDataAPI.getCharacterData(character.getName());
             if (characterResponse.getInformation() == null) return;
 

@@ -79,7 +79,7 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
             } catch (Exception e) {
                 log.info(e.getMessage());
             }
-        }, 180000, 3600000, TimeUnit.MILLISECONDS);
+        }, 120000, 3600000, TimeUnit.MILLISECONDS);
     }
 
     @Override

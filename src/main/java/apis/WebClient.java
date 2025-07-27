@@ -14,14 +14,18 @@ public abstract class WebClient {
 
     public WebClient() {
         Dispatcher dispatcher = new Dispatcher();
-        dispatcher.setMaxRequests(20);
-        dispatcher.setMaxRequestsPerHost(20);
+        dispatcher.setMaxRequests(500);
+        dispatcher.setMaxRequestsPerHost(100);
 
         httpClient = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .dispatcher(dispatcher)
-                .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
+                .connectionPool(new ConnectionPool(20, 300, TimeUnit.SECONDS))
+                .followRedirects(true)
+                .followSslRedirects(true)
+                .retryOnConnectionFailure(true)
                 .build();
     }
 
