@@ -1,10 +1,14 @@
 package handlers;
 
+import apis.tibiaData.model.worlds.WorldData;
+import apis.tibiaData.model.worlds.WorldModel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import services.worlds.WorldsService;
+import services.worlds.enums.Status;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 public class ServerSaveHandler {
@@ -87,8 +91,14 @@ public class ServerSaveHandler {
 
     private boolean isServerOffline() {
         try {
-            var worlds = worldsService.getWorlds();
-            return worldsService.getWorlds() != null && Integer.parseInt(worlds.getWorlds().getPlayers_online()) < 1;
+            WorldModel worlds = worldsService.getWorlds();
+            if(worlds == null) return false;
+
+            List<WorldData> onlines = worlds.getWorlds().getRegular_worlds().stream()
+                    .filter(x -> x.getStatus_type().equals(Status.ONLINE) &&
+                            !x.getName().equals("Zuna") && !x.getName().equals("Zunera")).toList();
+
+            return Integer.parseInt(worlds.getWorlds().getPlayers_online()) < 20 && onlines.isEmpty();
         } catch (Exception e) {
             log.warn("[{}] Error checking server status: {}", eventName, e.getMessage());
             return false;
