@@ -21,7 +21,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import static builders.commands.names.CommandsNames.setDeletedTrackerCommand;
 import static discord.Connector.client;
@@ -43,30 +42,18 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
     @Override
     protected void executeEventProcess() {
         Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         channelWorlds.forEach((world, guildIds) -> {
-            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> deletedTrackerService.checkDeletedCharacters(world), executor)
-                    .thenComposeAsync(deletes -> {
-                        if(deletes.isEmpty()) return CompletableFuture.completedStage(null);
-                        List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
-                                CompletableFuture.runAsync(() -> {
-                                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.DELETED_TRACKER);
-                                    if (guildChannel == null) return;
-                                    processEmbeddableData(guildChannel, deletes);
-                                }, executor)).toList();
-                        return CompletableFuture.allOf(guildFutures.toArray(new CompletableFuture[0]));
-                    }, executor);
-            futures.add(future);
+            List<WorldCharacterModel> deleteds = deletedTrackerService.checkDeletedCharacters(world);
+            if (deleteds.isEmpty()) return;
+            for(Snowflake guild : guildIds) {
+                GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.DELETED_TRACKER);
+                if (guildChannel == null) return;
+                processEmbeddableData(guildChannel, deleteds);
+            }
         });
 
-        CompletableFuture<Void> all = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenRun(() -> isFirstRun = false);
-        try {
-            all.get(4, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
-        }
+        isFirstRun = false;
     }
 
     @Override
@@ -79,7 +66,7 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
             } catch (Exception e) {
                 log.info(e.getMessage());
             }
-        }, 120000, 3600000, TimeUnit.MILLISECONDS);
+        }, 0, 3600000, TimeUnit.MILLISECONDS);
     }
 
     @Override

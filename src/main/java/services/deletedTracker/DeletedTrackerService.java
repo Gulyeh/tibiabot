@@ -10,6 +10,8 @@ import mongo.models.WorldCharacterModel;
 import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -49,16 +51,22 @@ public class DeletedTrackerService extends ThreadLocker implements Cacheable {
         List<WorldCharacterModel> charactersToRemove = Collections.synchronizedList(new ArrayList<>());
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
+        LocalDateTime start = LocalDateTime.now();
+        log.info("Processing deleteds for {} started", world);
+
         worldCharacters.forEach(character ->
                         lockExecuteAsync(() ->
                                 processCharacter(world, character, deletedCharacters, charactersToRemove), executor));
-
         executor.shutdown();
+
         try {
-            executor.awaitTermination(4, TimeUnit.MINUTES);
+            executor.awaitTermination(2, TimeUnit.MINUTES);
         } catch (Exception e) {
             Thread.currentThread().interrupt();
             log.error("Some tasks timed out. - {}", e.getMessage());
+        } finally {
+            LocalDateTime end = LocalDateTime.now();
+            log.info("Processing deleteds for {} finished in {} seconds", world, Duration.between(start, end).toSeconds());
         }
 
         charactersToRemove.forEach(character -> removeCharacterFromWorld(world, character));

@@ -9,7 +9,7 @@ public abstract class ThreadLocker {
     private final Semaphore locker;
 
     public ThreadLocker() {
-        locker = new Semaphore(20);
+        locker = new Semaphore(100);
     }
 
     public CompletableFuture<Void> lockExecuteAsync(Runnable task, ExecutorService executor){
