@@ -106,7 +106,7 @@ public class DeletedTrackerService extends ThreadLocker implements Cacheable {
         if(characterResponse.getCharacter() != null) {
             CharacterInfo characterData = characterResponse.getCharacter().getCharacter();
             if(characterData.getFormer_names() != null)
-                isFormerName = characterData.getFormer_names().contains(characterName);
+                isFormerName = characterData.getFormer_names().contains(characterName) && !characterName.equals(characterData.getName());
             isFormerWorld = !characterData.getWorld().equalsIgnoreCase(world);
         }
 

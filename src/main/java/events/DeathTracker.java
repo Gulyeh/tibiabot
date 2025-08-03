@@ -35,6 +35,7 @@ import static discord.Connector.client;
 import static discord.MessagesUtils.getChannelMessages;
 import static utils.Methods.formatToDiscordLink;
 import static utils.TibiaWiki.formatWikiGifLink;
+import static utils.TibiaWiki.getPlayerIcon;
 
 @Slf4j
 public final class DeathTracker extends ExecutableEvent implements Activable {
@@ -218,7 +219,10 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
 
     private String getThumbnail(DeathData data) {
         Optional<Killer> killer = data.getKilledBy().stream().filter(x -> !x.isPlayer()).findFirst();
-        return killer.map(value -> formatWikiGifLink(value.getName())).orElseGet(TibiaWiki::getPlayerIcon);
+        return killer.map(value -> {
+            String link = formatWikiGifLink(value.getName());
+            return link.isEmpty() ? getPlayerIcon() : link;
+        }).orElseGet(TibiaWiki::getPlayerIcon);
     }
 
     private EmbedCreateFields.Footer getFooter(DeathData data) {
