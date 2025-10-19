@@ -66,7 +66,7 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
             } catch (Exception e) {
                 log.info(e.getMessage());
             }
-        }, 120000, 3600000, TimeUnit.MILLISECONDS);
+        }, 120000, 7200000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -95,6 +95,8 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
         List<Message> msgs = isFirstRun ? getChannelMessages(channel, 30) : new ArrayList<>();
 
         for (WorldCharacterModel deleted : model) {
+            if(deleted.getLevel() < 50) return;
+
             String description = getDescription(deleted);
             if (msgs.stream().anyMatch(x -> {
                 String embedDescription = x.getEmbeds().get(0).getData().description().get();

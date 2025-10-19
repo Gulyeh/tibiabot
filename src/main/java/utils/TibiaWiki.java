@@ -11,7 +11,9 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 
 import static cache.utils.UtilsCache.wikiArticlesLinksMap;
 import static cache.utils.UtilsCache.wikiGifLinksMap;
@@ -94,16 +96,18 @@ public final class TibiaWiki {
     }
 
     private static String extractBestMatch(Elements elements, String name) {
+        LinkedList<String> listOfMonsters = new LinkedList<>();
         String output = "";
         for(Element element : elements) {
             String title = element.attr("data-title").toLowerCase();
             if(title.contains("soul core") || !title.contains(name.toLowerCase())) continue;
-            output = element.attr("href").split("File:")[1];
-            break;
+            listOfMonsters.add(element.attr("href").split("File:")[1]);
         }
 
-        if (output.isEmpty())
-            output = elements.first().attr("href").split("File:")[1].trim();
+        if(!listOfMonsters.isEmpty()) {
+           Optional<String> monster = listOfMonsters.stream().filter(x -> x.equalsIgnoreCase(name)).findFirst();
+           output = monster.orElseGet(() -> listOfMonsters.stream().findFirst().get());
+        }
 
         return output;
     }

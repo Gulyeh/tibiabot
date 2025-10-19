@@ -21,7 +21,7 @@ public class ServerSaveHandler {
     public ServerSaveHandler(String eventName) {
         this.timerHandler = new TimerHandler(LocalDateTime.now()
                 .withHour(10)
-                .withMinute(3)
+                .withMinute(2)
                 .withSecond(0), eventName);
         this.worldsService = WorldsService.getInstance();
         this.eventName = eventName;
