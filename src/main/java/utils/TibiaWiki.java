@@ -105,7 +105,8 @@ public final class TibiaWiki {
         }
 
         if(!listOfMonsters.isEmpty()) {
-           Optional<String> monster = listOfMonsters.stream().filter(x -> x.equalsIgnoreCase(name)).findFirst();
+           Optional<String> monster = listOfMonsters.stream().filter(x ->
+                   x.equalsIgnoreCase(name.replace(" ", "_") + ".gif")).findFirst();
            output = monster.orElseGet(() -> listOfMonsters.stream().findFirst().get());
         }
 
