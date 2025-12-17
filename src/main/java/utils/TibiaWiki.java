@@ -28,7 +28,7 @@ public final class TibiaWiki {
             if(wikiGifLinksMap.containsKey(name)) return wikiGifLinksMap.get(name);
 
             String query = URLEncoder.encode(name + " gif", StandardCharsets.UTF_8);
-            String url = "https://tibia.fandom.com/wiki/Special:Search?scope=internal&query=" + query + "&ns%5B0%5D=6&filter=imageOnly";
+            String url = "https://tibia.fandom.com/wiki/Special:Search?scope=internal&query=" + query + "&ns%5B0%5D=6&filter=";
             Document document = getWikiPageDocument(url);
             Elements results = document.select("a.unified-search__result__link");
 
