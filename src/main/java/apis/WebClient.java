@@ -50,6 +50,16 @@ public abstract class WebClient {
         return responseBody;
     }
 
+    protected byte[] sendRequestWithByteResponse(Request request) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            return response.body().bytes();
+        } catch (IOException e) {
+            log.info(e.getMessage());
+        }
+
+        return null;
+    }
+
     protected String sendRequestViaFlareSolverr(String url) {
         return sendRequestViaFlareSolverr(url, "http://localhost:8191/v1");
     }
@@ -96,6 +106,7 @@ public abstract class WebClient {
 
     protected Request getCustomRequest(String url) {
         return new Request.Builder()
+                .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
                 .url(url)
                 .get()
                 .build();
@@ -114,7 +125,6 @@ public abstract class WebClient {
             Gson g = new Gson();
             return g.fromJson(response, classType);
         } catch (Exception e) {
-            log.info("Could not parse json data - {}", e.getMessage());
             return null;
         }
     }

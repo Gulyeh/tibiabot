@@ -12,6 +12,7 @@ import apis.tibiaData.model.houses.HousesModel;
 import apis.tibiaData.model.killstats.KillingStatsBase;
 import apis.tibiaData.model.killstats.KillingStatsModel;
 import apis.tibiaData.model.worlds.WorldModel;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class TibiaDataAPI extends WebClient {
     private static final Map<String, CharacterResponse> characterCaching = new ConcurrentHashMap<>();
 
@@ -71,8 +73,15 @@ public class TibiaDataAPI extends WebClient {
 
     public CharacterResponse getCharacterData(String charName) {
         if(characterCaching.containsKey(charName.toLowerCase())) return characterCaching.get(charName.toLowerCase());
-        String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
-        CharacterResponse model = getModel(response, CharacterResponse.class);
+        CharacterResponse model = null;
+        int iters = 0;
+        while(model == null && iters < 3) {
+            String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
+            model = getModel(response, CharacterResponse.class);
+            iters++;
+            if(model == null)
+                log.info("Could not obtain {} character data - retry no. {}", charName, iters);
+        }
         if(model == null) return new CharacterResponse();
         characterCaching.put(charName.toLowerCase(), model);
         return model;

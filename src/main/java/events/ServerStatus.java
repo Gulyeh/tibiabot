@@ -130,7 +130,9 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
                         "\nRecord date: " + model.getWorlds().getRecord_date() + "``",
                 "",
                 "",
-                embeddedHandler.getRandomColor());
+                embeddedHandler.getRandomColor(),
+                null,
+                null);
     }
 
     private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {

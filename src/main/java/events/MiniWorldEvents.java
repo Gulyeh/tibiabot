@@ -97,7 +97,9 @@ public final class MiniWorldEvents extends ExecutableEvent implements Activable 
                     "",
                     "",
                     "",
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
             return;
         }
 
@@ -108,7 +110,9 @@ public final class MiniWorldEvents extends ExecutableEvent implements Activable 
                     "Mini world change from\n``" + getFormattedDate(events.getActivationDate()).split(" ")[0] + "``",
                     "",
                     events.getMini_world_change_icon(),
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
         }
     }
 

@@ -177,7 +177,7 @@ public final class Drome extends ExecutableEvent implements Activable {
                 null,
                 "Drome",
                 createDescription(model),
-                "",
+                null,
                 formatWikiGifLink("Drome Cube"),
                 embeddedHandler.getRandomColor(),
                 null,

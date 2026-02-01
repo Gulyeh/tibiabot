@@ -143,7 +143,9 @@ public final class TibiaCoins extends ExecutableEvent implements Activable {
                     desc,
                     "",
                     "",
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
 
             if (isFirstMessage) isFirstMessage = false;
         }

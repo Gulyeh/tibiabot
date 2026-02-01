@@ -98,7 +98,9 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
                     "There are no online players",
                     "",
                     "",
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
             return;
         }
 
@@ -113,7 +115,9 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
                     msg,
                     "",
                     "",
-                    color);
+                    color,
+                    null,
+                    null);
             if (isFirst) isFirst = false;
         }
     }

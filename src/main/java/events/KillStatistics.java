@@ -151,7 +151,9 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
                         model.getAllLastWeekKilled() + " / Last week players killed: " + model.getAllLastWeekPlayersKilled() + "\n\n Killed: (last day) / (last week)",
                 "",
                 "",
-                embeddedHandler.getRandomColor());
+                embeddedHandler.getRandomColor(),
+                null,
+                null);
 
         for (BossType type : BossType.values()) {
             embeddedHandler.sendEmbeddedMessages(channel, createEmbedFields(bosses.stream()
@@ -161,7 +163,9 @@ public final class KillStatistics extends ExecutableEvent implements Activable {
                     "",
                     "",
                     "",
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
         }
     }
 

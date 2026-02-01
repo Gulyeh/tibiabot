@@ -93,7 +93,9 @@ public final class Houses extends ExecutableEvent implements Activable {
                     "There are no biddable houses at the moment",
                     "",
                     "",
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
             return;
         }
 
@@ -104,7 +106,9 @@ public final class Houses extends ExecutableEvent implements Activable {
                     "",
                     "",
                     "",
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
         }
     }
 

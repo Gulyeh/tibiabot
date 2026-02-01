@@ -4,13 +4,14 @@ import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateFields;
 import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.discordjson.json.EmbedData;
-import discord4j.discordjson.json.ImmutableMessageCreateRequest;
-import discord4j.discordjson.json.MessageCreateRequest;
+import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.MessageData;
 import discord4j.rest.util.Color;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,38 +25,62 @@ public class EmbeddedHandler {
         return Color.of(rand.nextFloat(), rand.nextFloat(), rand.nextFloat());
     }
 
-    public List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color) {
-        return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, null, null);
-    }
-
-    public List<MessageData> sendEmbeddedMessages(Channel channel, List<EmbedCreateFields.Field> fields, String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
-        return sendEmbeddedMessages(channel, fields, title, description, imageUrl, thumbnailUrl, color, footer, null);
+    public List<MessageData> sendEmbeddedMessages(Channel channel,
+                                                   List<EmbedCreateFields.Field> fields,
+                                                   String title,
+                                                   String description,
+                                                   @Nullable String imageUrl,
+                                                   @Nullable String thumbnailUrl,
+                                                   Color color,
+                                                   @Nullable EmbedCreateFields.Footer footer,
+                                                   @Nullable ActionRow components) {
+        return sendEmbeddedMessagesBase(channel, fields, title, description, imageUrl, thumbnailUrl, color, footer, components);
     }
 
     public List<MessageData> sendEmbeddedMessages(Channel channel,
+                                                   List<EmbedCreateFields.Field> fields,
+                                                   String title,
+                                                   String description,
+                                                   @Nullable byte[] imageUrl,
+                                                   @Nullable byte[] thumbnailUrl,
+                                                   Color color,
+                                                   @Nullable EmbedCreateFields.Footer footer,
+                                                   @Nullable ActionRow components) {
+        return sendEmbeddedMessagesBase(channel, fields, title, description, imageUrl, thumbnailUrl, color, footer, components);
+    }
+
+    private <T> List<MessageData> sendEmbeddedMessagesBase(Channel channel,
                                                      List<EmbedCreateFields.Field> fields,
                                                      String title,
                                                      String description,
-                                                     String imageUrl,
-                                                     String thumbnailUrl,
+                                                     T imageUrl,
+                                                     T thumbnailUrl,
                                                      Color color,
-                                                     EmbedCreateFields.Footer footer,
-                                                     ActionRow components) {
+                                                     @Nullable EmbedCreateFields.Footer footer,
+                                                     @Nullable ActionRow components) {
         List<MessageData> sentMessages = new ArrayList<>();
 
         try {
-            List<EmbedCreateSpec> messages = createEmbeddedMessages(fields, title, description, imageUrl, thumbnailUrl, color, footer);
+            List<EmbedCreateSpec> messages = imageUrl instanceof byte[] || thumbnailUrl instanceof byte[] ?
+                    createEmbeddedMessages(fields, title, description, imageUrl != null, thumbnailUrl != null, color, footer) :
+                    createEmbeddedMessages(fields, title, description, (String) imageUrl, (String) thumbnailUrl, color, footer);
 
             for (EmbedCreateSpec msg : messages) {
-                EmbedData embedData = msg.asRequest();
+                MessageCreateSpec request;
 
-                MessageCreateRequest request;
-                ImmutableMessageCreateRequest.Builder builder = MessageCreateRequest.builder()
-                        .embed(embedData);
-                if(components != null) builder.addComponent(components.getData());
+                MessageCreateSpec.Builder builder = MessageCreateSpec.builder()
+                        .addEmbed(msg);
+
+                if(imageUrl instanceof byte[])
+                    builder.addFile("image.webp", new ByteArrayInputStream((byte[])imageUrl));
+
+                if(thumbnailUrl instanceof byte[])
+                    builder.addFile("thumbnail.webp",  new ByteArrayInputStream((byte[])thumbnailUrl));
+
+                if(components != null) builder.addComponent(components);
                 request = builder.build();
 
-                MessageData msgData = channel.getRestChannel().createMessage(request).block();
+                MessageData msgData = channel.getRestChannel().createMessage(request.asRequest()).block();
                 if (msgData != null)
                     sentMessages.add(msgData);
             }
@@ -66,8 +91,21 @@ public class EmbeddedHandler {
         return sentMessages;
     }
 
-    public List<EmbedCreateSpec> createEmbeddedMessages(List<EmbedCreateFields.Field> fields, String title, String description,
-                                                           String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
+    public List<EmbedCreateSpec> createEmbeddedMessages(List<EmbedCreateFields.Field> fields,
+                                                        String title, String description,
+                                                        boolean hasImageUrl, boolean hasThumbnailUrl,
+                                                        Color color, EmbedCreateFields.Footer footer) {
+        EmbedCreateSpec template = buildEmbedTemplate(title, description, hasImageUrl, hasThumbnailUrl, color, footer);
+        return new ArrayList<>(splitEmbeddedMessage(fields, template));
+    }
+
+    public List<EmbedCreateSpec> createEmbeddedMessages(List<EmbedCreateFields.Field> fields,
+                                                        String title,
+                                                        String description,
+                                                        @Nullable String imageUrl,
+                                                        @Nullable String thumbnailUrl,
+                                                        Color color,
+                                                        EmbedCreateFields.Footer footer) {
         EmbedCreateSpec template = buildEmbedTemplate(title, description, imageUrl, thumbnailUrl, color, footer);
         return new ArrayList<>(splitEmbeddedMessage(fields, template));
     }
@@ -120,12 +158,29 @@ public class EmbeddedHandler {
         return copy.build();
     }
 
-    private EmbedCreateSpec buildEmbedTemplate(String title, String description, String imageUrl, String thumbnailUrl, Color color, EmbedCreateFields.Footer footer) {
+    private EmbedCreateSpec buildEmbedTemplate(String title, String description,
+                                               boolean hasImageUrl,
+                                               boolean hasThumbnailUrl,
+                                               Color color, EmbedCreateFields.Footer footer) {
         return EmbedCreateSpec.builder()
                 .title(title)
                 .description(description)
-                .image(imageUrl)
-                .thumbnail(thumbnailUrl)
+                .image(hasImageUrl ? "attachment://image.webp" : "")
+                .thumbnail(hasThumbnailUrl ? "attachment://thumbnail.webp" : "")
+                .color(color)
+                .footer(footer)
+                .build();
+    }
+
+    private EmbedCreateSpec buildEmbedTemplate(String title, String description,
+                                               @Nullable String imageUrl,
+                                               @Nullable String thumbnailUrl,
+                                               Color color, EmbedCreateFields.Footer footer) {
+        return EmbedCreateSpec.builder()
+                .title(title)
+                .description(description)
+                .image(imageUrl != null ? imageUrl : "")
+                .thumbnail(thumbnailUrl != null ? thumbnailUrl : "")
                 .color(color)
                 .footer(footer)
                 .build();

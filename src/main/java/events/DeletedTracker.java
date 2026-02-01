@@ -107,9 +107,10 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
                     null,
                     "",
                     description,
-                    "",
+                    null,
                     getPlayerIcon(),
                     Color.RED,
+                    null,
                     null);
         }
     }

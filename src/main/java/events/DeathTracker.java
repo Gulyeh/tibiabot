@@ -15,14 +15,12 @@ import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
 import handlers.EmbeddedHandler;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.DeathFilter;
 import reactor.core.publisher.Mono;
 import services.deathTracker.DeathTrackerService;
 import services.deathTracker.model.DeathData;
 import utils.TibiaWiki;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -181,10 +179,11 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
                     death.isSpamDeath() ? "Death Spam detected!\n" +
                             "Blocked " + death.getCharacter().getName() + "'s deaths for " + deathTrackerService.getAntiSpamWaitHours() + " hour(s)\n" : "",
                     description,
-                    "",
+                    null,
                     getThumbnail(death),
                     death.isSpamDeath() ? Color.RED : Color.DARK_GRAY,
-                    getFooter(death));
+                    getFooter(death),
+                    null);
         }
     }
 
@@ -217,11 +216,11 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
         return builder.toString();
     }
 
-    private String getThumbnail(DeathData data) {
+    private byte[] getThumbnail(DeathData data) {
         Optional<Killer> killer = data.getKilledBy().stream().filter(x -> !x.isPlayer()).findFirst();
         return killer.map(value -> {
-            String link = formatWikiGifLink(value.getName());
-            return link.isEmpty() ? getPlayerIcon() : link;
+            byte[] stream = formatWikiGifLink(value.getName());
+            return stream == null ? getPlayerIcon() : stream;
         }).orElseGet(TibiaWiki::getPlayerIcon);
     }
 

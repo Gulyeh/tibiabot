@@ -55,12 +55,15 @@ public class DeletedTrackerService extends ThreadLocker implements Cacheable {
         log.info("Processing deleteds for {} started", world);
 
         worldCharacters.forEach(character ->
-                        lockExecuteAsync(() ->
-                                processCharacter(world, character, deletedCharacters, charactersToRemove), executor));
+                        lockExecuteAsync(() -> {
+                            log.info("Processing character " + character.getName());
+                            processCharacter(world, character, deletedCharacters, charactersToRemove);
+                            log.info("Processed character " + character.getName());
+        }, executor));
         executor.shutdown();
 
         try {
-            executor.awaitTermination(2, TimeUnit.MINUTES);
+            executor.awaitTermination(20, TimeUnit.MINUTES);
         } catch (Exception e) {
             Thread.currentThread().interrupt();
             log.error("Some tasks timed out. - {}", e.getMessage());

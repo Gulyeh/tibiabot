@@ -123,17 +123,20 @@ public final class Boosteds extends ExecutableEvent implements Activable {
                     "No data could be found",
                     "",
                     "",
-                    embeddedHandler.getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
         else {
             MessageData data = embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     model.getBoostedTypeText(),
                     "### " + getBlankEmoji() + getBlankEmoji() +
                             ":star: " + formatToDiscordLink(model.getName(), model.getBoosted_data_link()),
-                    "",
+                    null,
                     model.getIcon_link(),
                     embeddedHandler.getRandomColor(),
-                    EmbedCreateFields.Footer.of(hpData, "")).get(0);
+                    EmbedCreateFields.Footer.of(hpData, ""),
+                    null).get(0);
 
             threadHandler.createMessageThreadWithMention(channel.getMessageById(Snowflake.of(data.id())).block(),
                     name + model.getName(),

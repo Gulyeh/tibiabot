@@ -2,6 +2,7 @@ package apis.tibiaOfficial.models;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.io.InputStream;
 
 import static utils.TibiaWiki.formatWikiGifLink;
 import static utils.TibiaWiki.formatWikiLink;
@@ -18,7 +19,7 @@ public class BoostedModel {
         exp = value * 2;
     }
 
-    public String getIcon_link() {
+    public byte[] getIcon_link() {
         return formatWikiGifLink(getName());
     }
 

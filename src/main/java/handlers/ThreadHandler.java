@@ -7,7 +7,7 @@ import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.core.spec.MessageEditSpec;
-import discord4j.core.spec.StartThreadSpec;
+import discord4j.core.spec.StartThreadFromMessageSpec;
 import discord4j.core.spec.StartThreadWithoutMessageSpec;
 import discord4j.core.spec.ThreadChannelEditSpec;
 import reactor.core.publisher.Flux;
@@ -19,7 +19,7 @@ import java.util.List;
 
 public class ThreadHandler {
     public void createWithoutMessageThreadWithMention(TextChannel channel, String name, ThreadChannel.AutoArchiveDuration duration) {
-        channel.startThread(StartThreadWithoutMessageSpec.builder()
+        channel.startPublicThreadWithoutMessage(StartThreadWithoutMessageSpec.builder()
                         .name(name)
                         .type(ThreadChannel.Type.GUILD_PUBLIC_THREAD)
                         .autoArchiveDuration(duration)
@@ -34,7 +34,7 @@ public class ThreadHandler {
     }
 
     public void createMessageThreadWithMention(Message msg, String name, ThreadChannel.AutoArchiveDuration duration) {
-        ThreadChannel thread = msg.startThread(StartThreadSpec.builder()
+        ThreadChannel thread = msg.startThread(StartThreadFromMessageSpec.builder()
                 .name(name)
                 .autoArchiveDuration(duration)
                 .build()).block();

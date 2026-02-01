@@ -1,13 +1,9 @@
 package utils;
 
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -17,29 +13,29 @@ import java.util.Optional;
 
 import static cache.utils.UtilsCache.wikiArticlesLinksMap;
 import static cache.utils.UtilsCache.wikiGifLinksMap;
-import static utils.Methods.readInputStream;
 
 public final class TibiaWiki {
     private TibiaWiki() {}
 
-    public static String formatWikiGifLink(String name) {
+    private static final apis.tibiaWiki.TibiaWiki client = new apis.tibiaWiki.TibiaWiki();
+
+    public static byte[] formatWikiGifLink(String name) {
         try {
             name = validateMonsterName(name);
             if(wikiGifLinksMap.containsKey(name)) return wikiGifLinksMap.get(name);
 
             String query = URLEncoder.encode(name + " gif", StandardCharsets.UTF_8);
-            String url = "https://tibia.fandom.com/wiki/Special:Search?scope=internal&query=" + query + "&ns%5B0%5D=6&filter=";
-            Document document = getWikiPageDocument(url);
+            Document document = client.getGif(query);
             Elements results = document.select("a.unified-search__result__link");
 
             String fileName = extractBestMatch(results, name);
-            if (fileName.isEmpty()) return "";
+            if (fileName.isEmpty()) return null;
 
-            String link = "https://tibia.fandom.com/wiki/Special:Redirect/file/" + fileName;
-            wikiGifLinksMap.put(name, link);
-            return link;
+            byte[] gifBytes = client.getGifFile(fileName);
+            wikiGifLinksMap.put(name, gifBytes);
+            return gifBytes;
         } catch (Exception ignore) {
-            return "";
+            return null;
         }
     }
 
@@ -49,8 +45,7 @@ public final class TibiaWiki {
             if(wikiArticlesLinksMap.containsKey(name)) return wikiArticlesLinksMap.get(name);
 
             String query = URLEncoder.encode(name, StandardCharsets.UTF_8);
-            String url = "https://tibia.fandom.com/wiki/Special:Search?scope=internal&navigationSearch=true&query=" + query;
-            Document document = getWikiPageDocument(url);
+            Document document =  client.getWiki(query);
             Elements results = document.select("a.unified-search__result__link");
 
             String title = extractBestMatchTitle(results, name);
@@ -63,7 +58,7 @@ public final class TibiaWiki {
         }
     }
 
-    public static String getPlayerIcon() {
+    public static byte[] getPlayerIcon() {
         return formatWikiGifLink("Red Skull Item");
     }
 
@@ -85,22 +80,12 @@ public final class TibiaWiki {
         return name;
     }
 
-    private static Document getWikiPageDocument(String url) throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) URI.create(url)
-                .toURL()
-                .openConnection();
-        conn.setRequestMethod("GET");
-        conn.disconnect();
-        String content = readInputStream(conn.getInputStream());
-        return Jsoup.parse(content);
-    }
-
     private static String extractBestMatch(Elements elements, String name) {
         LinkedList<String> listOfMonsters = new LinkedList<>();
         String output = "";
         for(Element element : elements) {
             String title = element.attr("data-title").toLowerCase();
-            if(title.contains("soul core") || !title.contains(name.toLowerCase())) continue;
+            if(title.contains("soul core")) continue;
             listOfMonsters.add(element.attr("href").split("File:")[1]);
         }
 
