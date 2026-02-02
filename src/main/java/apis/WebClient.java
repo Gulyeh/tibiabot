@@ -5,20 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
 public abstract class WebClient {
-    // FlareSolverr response models
-    private static class FlareSolverrResponse {
-        Solution solution;
-    }
-
-    private static class Solution {
-        String response;
-    }
-
     private final OkHttpClient httpClient;
 
     public WebClient() {
@@ -60,12 +52,12 @@ public abstract class WebClient {
         return null;
     }
 
-    protected String sendRequestViaFlareSolverr(String url) {
+    protected FlaresolverModel sendRequestViaFlareSolverr(String url) {
         return sendRequestViaFlareSolverr(url, "http://localhost:8191/v1");
     }
 
-    protected String sendRequestViaFlareSolverr(String url, String flareSolverrEndpoint) {
-        String responseBody = "";
+    protected FlaresolverModel sendRequestViaFlareSolverr(String url, String flareSolverrEndpoint) {
+        FlaresolverModel responseBody;
 
         try {
             String payload = String.format(
@@ -87,19 +79,18 @@ public abstract class WebClient {
                 String jsonResponse = response.body().string();
 
                 Gson gson = new Gson();
-                FlareSolverrResponse flareResponse = gson.fromJson(jsonResponse, FlareSolverrResponse.class);
+                responseBody = gson.fromJson(jsonResponse, FlaresolverModel.class);
 
-                if (flareResponse != null && flareResponse.solution != null) {
-                    responseBody = flareResponse.solution.response;
-                } else {
+                if (responseBody != null && responseBody.getSolution() != null) {
+                    return responseBody;
+                } else
                     log.error("FlareSolverr failed to solve challenge");
-                }
             }
         } catch (IOException e) {
             log.error("FlareSolverr request failed - {}", e.getMessage());
         }
 
-        return responseBody;
+        return null;
     }
 
     protected abstract String getUrl();
@@ -107,6 +98,24 @@ public abstract class WebClient {
     protected Request getCustomRequest(String url) {
         return new Request.Builder()
                 .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
+                .url(url)
+                .get()
+                .build();
+    }
+
+    protected Request getCustomRequest(String url, FlaresolverModel.Solution flameSolution) {
+        StringBuilder cookieHeader = new StringBuilder();
+        for (Map<String, Object> map : flameSolution.getCookies()) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                cookieHeader.append(entry.getKey())
+                        .append("=")
+                        .append(entry.getValue())
+                        .append("; ");
+            }
+        }
+        return new Request.Builder()
+                .header("User-Agent", flameSolution.getUserAgent())
+                .header("Cookie", cookieHeader.toString())
                 .url(url)
                 .get()
                 .build();

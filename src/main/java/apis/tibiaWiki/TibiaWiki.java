@@ -1,5 +1,6 @@
 package apis.tibiaWiki;
 
+import apis.FlaresolverModel;
 import apis.WebClient;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -35,16 +36,17 @@ public class TibiaWiki extends WebClient {
     }
 
     public Document getGif(String monsterName) {
-        String response = sendRequestViaFlareSolverr(gifUrl(monsterName));
+        String response = sendRequestViaFlareSolverr(gifUrl(monsterName)).getSolution().getResponse();
         return Jsoup.parse(response);
     }
 
     public Document getWiki(String monsterName) {
-        String response = sendRequestViaFlareSolverr(wikiUrl(monsterName));
+        String response = sendRequestViaFlareSolverr(wikiUrl(monsterName)).getSolution().getResponse();
         return Jsoup.parse(response);
     }
 
     public byte[] getGifFile(String monsterName) {
-        return sendRequestWithByteResponse(getCustomRequest(getGifUrl(monsterName)));
+        FlaresolverModel response = sendRequestViaFlareSolverr(wikiUrl(monsterName));
+        return sendRequestWithByteResponse(getCustomRequest(getGifUrl(monsterName), response.getSolution()));
     }
 }
