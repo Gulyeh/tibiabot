@@ -23,10 +23,10 @@ import static cache.guilds.GuildCacheData.isGuildCached;
 import static discord.Connector.client;
 
 @Slf4j
-public abstract class EventsMethods implements Listener {
+public abstract class EventMethods implements Listener {
     protected final GuildDocumentActions guildDocumentActions;
 
-    public EventsMethods() {
+    public EventMethods() {
         guildDocumentActions = GuildDocumentActions.getInstance();
     }
 
@@ -115,7 +115,7 @@ public abstract class EventsMethods implements Listener {
             log.info("Saved channel");
             return true;
         } catch (Exception e) {
-            log.info("Could not save channel: " + e.getMessage());
+            log.info("Could not save channel: {}", e.getMessage());
             return false;
         }
     }

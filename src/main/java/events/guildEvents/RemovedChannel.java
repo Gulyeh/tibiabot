@@ -8,7 +8,7 @@ import reactor.core.publisher.Mono;
 import static discord.Connector.client;
 
 @Slf4j
-public class RemovedChannel extends DiscordEvent {
+public final class RemovedChannel extends DiscordEvent {
 
     @Override
     public void executeEvent() {

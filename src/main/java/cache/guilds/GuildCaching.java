@@ -6,7 +6,6 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
 import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
-import mongo.MongoConnector;
 import mongo.models.GuildModel;
 
 import java.util.List;
@@ -19,7 +18,7 @@ public final class GuildCaching extends Singleton implements Cachable {
     private final GuildCacheInitializer initializer;
     private final GuildDocumentActions guildDocumentActions;
 
-    public GuildCaching() {
+    private GuildCaching() {
         initializer = new GuildCacheInitializer();
         guildDocumentActions = GuildDocumentActions.getInstance();
     }

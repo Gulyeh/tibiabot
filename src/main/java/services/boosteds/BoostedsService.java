@@ -1,24 +1,18 @@
 package services.boosteds;
 
-import apis.WebClient;
-import apis.tibiaLabs.TibiaLabsAPI;
-import apis.tibiaLabs.model.BoostedModel;
+import apis.tibiaOfficial.TibiaOfficial;
+import apis.tibiaOfficial.models.BoostedModel;
 import interfaces.Cacheable;
 import services.boosteds.enums.Boosteds;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BoostedsService extends WebClient implements Cacheable {
+public class BoostedsService implements Cacheable {
     private final ConcurrentHashMap<Boosteds, BoostedModel> boostedCache = new ConcurrentHashMap<>();
-    private final TibiaLabsAPI api;
+    private final TibiaOfficial api;
 
     public BoostedsService() {
-        api = new TibiaLabsAPI();
-    }
-
-    @Override
-    protected String getUrl() {
-        return "https://api.tibialabs.com/v2/";
+        api = new TibiaOfficial();
     }
 
     public BoostedModel getBoostedCreature() {

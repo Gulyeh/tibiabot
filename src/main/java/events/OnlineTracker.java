@@ -1,19 +1,20 @@
 package events;
 
+import apis.tibiaData.model.worlds.WorldData;
 import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.rest.util.Color;
-import events.abstracts.ServerSaveEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.ServerSaveHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -22,23 +23,30 @@ import services.onlines.model.OnlineModel;
 import services.worlds.WorldsService;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static builders.commands.names.CommandsNames.setOnlineTrackerCommand;
+import static discord.ChannelUtils.addChannelSuffix;
 import static discord.Connector.client;
-import static discord.channels.ChannelUtils.addChannelSuffix;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 import static java.util.UUID.randomUUID;
 import static utils.Methods.formatToDiscordLink;
 
 @Slf4j
-public class OnlineTracker extends ServerSaveEvent implements Channelable, Activable {
+public final class OnlineTracker extends ExecutableEvent implements Activable {
     private final OnlineService onlineService;
+    private final WorldsService worldsService;
+    private final ServerSaveHandler serverSaveHandler;
+    private final EmbeddedHandler embeddedHandler;
     private final String othersKey;
 
     public OnlineTracker(OnlineService onlineService, WorldsService worldsService) {
-        super(worldsService);
+        this.worldsService = worldsService;
         this.onlineService = onlineService;
+        serverSaveHandler = new ServerSaveHandler(getEventName());
+        embeddedHandler = new EmbeddedHandler();
         othersKey = randomUUID().toString();
     }
 
@@ -48,7 +56,8 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
             try {
                 if (!event.getCommandName().equals(setOnlineTrackerCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -58,25 +67,24 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
-        log.info("Activating {}", getEventName());
-        while (true) {
-            try {
-                log.info("Executing thread {}", getEventName());
-                onlineService.clearCache();
-                if(isAfterSaverSave())
-                    onlineService.clearCharStorageCache();
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(getWaitTime(330000));
+    public void activate() {
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    onlineService.clearCache();
+                    if (serverSaveHandler.checkAfterSaverSave())
+                        onlineService.clearCharStorageCache();
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, serverSaveHandler.getTimeAdjustedToServerSave(330000), TimeUnit.MILLISECONDS);
                 }
             }
-        }
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -87,48 +95,67 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
     private void processEmbeddableData(GuildMessageChannel channel, List<OnlineModel> model) {
         deleteMessages(channel);
         addChannelSuffix(channel, model.size());
-        if(model.isEmpty()) {
-            sendEmbeddedMessages(channel,
+        if (model.isEmpty()) {
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "",
                     "There are no online players",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
             return;
         }
 
         LinkedHashMap<String, List<OnlineModel>> map = filterAndOrderData(model);
-        Color color = getRandomColor();
+        Color color = embeddedHandler.getRandomColor();
         List<String> msgs = createDescription(map);
         boolean isFirst = true;
-        for(String msg : msgs) {
-            sendEmbeddedMessages(channel,
+
+        for (String msg : msgs) {
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
-                    isFirst ? model.get(0).getWorld() + " (" + model.size() + ")" : "",
+                    isFirst ? getWorldTitle(model) : "",
                     msg,
                     "",
                     "",
-                    color);
-            if(isFirst) isFirst = false;
+                    color,
+                    null,
+                    null);
+            if (isFirst) isFirst = false;
         }
     }
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
 
-        for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.ONLINE_TRACKER);
-            if(guildChannel == null) continue;
+        channelWorlds.forEach((world, guildIds) -> {
+            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> onlineService.getOnlinePlayers(world), executor)
+                    .thenComposeAsync(onlines -> {
+                        List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
+                                CompletableFuture.runAsync(() -> {
+                                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.ONLINE_TRACKER);
+                                    if (guildChannel == null) return;
+                                    processEmbeddableData(guildChannel, serverSaveHandler.isServerSaveInProgress() ?
+                                            new ArrayList<>() : onlines);
+                                }, executor)).toList();
+                        return CompletableFuture.allOf(guildFutures.toArray(new CompletableFuture[0]));
+                    }, executor);
+            allFutures.add(future);
+        });
 
-            processEmbeddableData(guildChannel, timerEventOccurs ? new ArrayList<>() : onlineService.getOnlinePlayers(guildId));
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId(event);
 
@@ -137,9 +164,11 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processEmbeddableData(channel, onlineService.getOnlinePlayers(guildId));
+
+        String world = GuildCacheData.worldCache.get(guildId);
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, onlineService.getOnlinePlayers(world)));
         return event.createFollowup("Set default Online players event channel to <#" + channelId.asString() + ">");
     }
 
@@ -150,19 +179,19 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
 
         map.forEach((k, v) -> {
             String title;
-            if(k.equals(othersKey)) title = "### Others " + v.size();
+            if (k.equals(othersKey)) title = "### Others " + v.size();
             else title = "### " + formatToDiscordLink(k, v.get(0).getGuild().getGuildLink()) + " " + v.size();
-            if(description.length() + title.length() >= maxDescCharacters) {
+            if (description.length() + title.length() >= maxDescCharacters) {
                 descriptionList.add(description.toString());
                 description.setLength(0);
             }
             description.append(title).append("\n");
 
-            for(OnlineModel online : v) {
+            for (OnlineModel online : v) {
                 String onlineText = online.getVocation().getIcon() + " " +
                         online.getLevel() + " - " + formatToDiscordLink(online.getName(), online.getCharacterLink()) + " ``" +
                         online.getFormattedLoggedTime() + "`` " + online.getLeveled().getIcon();
-                if(description.length() + onlineText.length() >= maxDescCharacters) {
+                if (description.length() + onlineText.length() >= maxDescCharacters) {
                     descriptionList.add(description.toString());
                     description.setLength(0);
                 }
@@ -170,6 +199,7 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
             }
             description.append("\n");
         });
+        descriptionList.add(description.toString());
         return descriptionList;
     }
 
@@ -200,5 +230,21 @@ public class OnlineTracker extends ServerSaveEvent implements Channelable, Activ
         map.put(othersKey, others);
 
         return map;
+    }
+
+    private String getWorldTitle(List<OnlineModel> model) {
+        WorldData world = worldsService.getWorldData(model.getFirst().getWorld());
+        StringBuilder builder = new StringBuilder();
+        builder.append(model.getFirst().getWorld());
+        if(world != null) {
+            builder.append(" ")
+                    .append(world.getBattleEyeType().getIcon())
+                    .append(" | ")
+                    .append(world.getLocation_type().getIcon());
+        }
+        builder.append(" (")
+                .append(model.size())
+                .append(")");
+        return builder.toString();
     }
 }

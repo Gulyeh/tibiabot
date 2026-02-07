@@ -11,30 +11,37 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.ServerSaveEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
-import lombok.SneakyThrows;
+import handlers.EmbeddedHandler;
+import handlers.ServerSaveHandler;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.worlds.WorldsService;
-import services.worlds.enums.Status;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.serverStatusCommand;
+import static discord.ChannelUtils.addChannelSuffix;
 import static discord.Connector.client;
-import static discord.channels.ChannelUtils.addChannelSuffix;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 
 @Slf4j
-public class ServerStatus extends ServerSaveEvent implements Channelable, Activable {
+public final class ServerStatus extends ExecutableEvent implements Activable {
 
-    public ServerStatus(WorldsService worldsService) {
-        super(worldsService);
+    private final ServerSaveHandler serverSaveHandler;
+    private final EmbeddedHandler embeddedHandler;
+    private final WorldsService worldsService;
+
+    public ServerStatus() {
+        serverSaveHandler = new ServerSaveHandler(getEventName());
+        embeddedHandler = new EmbeddedHandler();
+        worldsService = WorldsService.getInstance();
     }
 
     @Override
@@ -43,7 +50,8 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
             try {
                 if (!event.getCommandName().equals(serverStatusCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -53,38 +61,46 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
-        log.info("Activating {}", getEventName());
-
-        while(true) {
-            try {
-                log.info("Executing thread {}", getEventName());
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(getWaitTime(330000));
+    public void activate() {
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    serverSaveHandler.checkAfterSaverSave();
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, serverSaveHandler.getTimeAdjustedToServerSave(330000), TimeUnit.MILLISECONDS);
                 }
             }
-        }
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     protected void executeEventProcess() {
-        WorldModel worlds;
-        if(timerEventOccurs) worlds = worldsService.getServerSaveWorlds();
-        else worlds = worldsService.getWorlds();
+        WorldModel worlds = serverSaveHandler.isServerSaveInProgress() ?
+                worldsService.getServerSaveWorlds() : worldsService.getWorlds();
 
         Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        if (guildIds.isEmpty()) return;
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
 
         for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.SERVER_STATUS);
-            if(guildChannel == null) continue;
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.SERVER_STATUS);
+                if (guildChannel == null) return;
+                processEmbeddableData(guildChannel, worlds);
+            }, executor);
+            allFutures.add(future);
+        }
 
-            processEmbeddableData(guildChannel, worlds);
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
@@ -96,7 +112,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     private List<EmbedCreateFields.Field> createEmbedFields(WorldModel model) {
         List<EmbedCreateFields.Field> fields = new ArrayList<>();
 
-        for(WorldData data : model.getWorlds().getRegular_worlds()) {
+        for (WorldData data : model.getWorlds().getRegular_worlds()) {
             fields.add(buildEmbedField(data));
         }
 
@@ -106,7 +122,7 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
     private void processEmbeddableData(GuildMessageChannel channel, WorldModel model) {
         deleteMessages(channel);
         addChannelSuffix(channel, model.getWorlds().getPlayers_online());
-        sendEmbeddedMessages(channel,
+        embeddedHandler.sendEmbeddedMessages(channel,
                 createEmbedFields(model),
                 "Servers Status",
                 "```Players online: " + model.getWorlds().getPlayers_online() +
@@ -114,24 +130,26 @@ public class ServerStatus extends ServerSaveEvent implements Channelable, Activa
                         "\nRecord date: " + model.getWorlds().getRecord_date() + "``",
                 "",
                 "",
-                getRandomColor());
+                embeddedHandler.getRandomColor(),
+                null,
+                null);
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake id = getChannelId((ChatInputInteractionEvent) event);
-        if(id == null) return event.createFollowup("Could not find channel");
+        if (id == null) return event.createFollowup("Could not find channel");
 
         GuildMessageChannel channel = client.getChannelById(id).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + id.asString() + ">");
 
-        processEmbeddableData(channel, worldsService.getWorlds());
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, worldsService.getWorlds()));
         return event.createFollowup("Set default Server Status event channel to <#" + id.asString() + ">");
     }
 
     private EmbedCreateFields.Field buildEmbedField(WorldData data) {
-        return EmbedCreateFields.Field.of(data.getStatus_type().getIcon() + " " + data.getName() + " " + data.getLocation_type().getIcon(),
+        return EmbedCreateFields.Field.of(data.getStatus_type().getIcon() + " " + data.getName() + " " +
+                        data.getBattleEyeType().getIcon() + " | " + data.getLocation_type().getIcon(),
                 "Players online: " + data.getPlayers_online() + "\nTransfer: " + data.getTransfer_type(),
                 true);
     }

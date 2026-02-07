@@ -1,54 +1,51 @@
 package events;
 
-import apis.tibiaLabs.model.BoostedModel;
+import apis.tibiaOfficial.models.BoostedModel;
 import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
-import discord4j.core.spec.StartThreadSpec;
-import discord4j.core.spec.StartThreadSpecGenerator;
-import discord4j.core.spec.StartThreadWithoutMessageSpec;
-import discord4j.core.spec.ThreadChannelEditSpec;
+import discord4j.core.spec.EmbedCreateFields;
 import discord4j.discordjson.json.MessageData;
-import events.abstracts.ServerSaveEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
-import events.interfaces.Threadable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.ServerSaveHandler;
+import handlers.ThreadHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import services.boosteds.BoostedsService;
-import services.worlds.WorldsService;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.boostedsCommand;
 import static discord.Connector.client;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 import static utils.Emojis.getBlankEmoji;
 import static utils.Methods.formatToDiscordLink;
 
 @Slf4j
-public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
+public final class Boosteds extends ExecutableEvent implements Activable {
     private final BoostedsService boostedsService;
+    private final ServerSaveHandler serverSaveHandler;
+    private final ThreadHandler threadHandler;
+    private final EmbeddedHandler embeddedHandler;
 
-    public Boosteds(BoostedsService boostedsService, WorldsService worldsService) {
-        super(worldsService);
+    public Boosteds(BoostedsService boostedsService) {
+        this.embeddedHandler = new EmbeddedHandler();
         this.boostedsService = boostedsService;
-        timer = LocalDateTime.now()
-                .withHour(10)
-                .withMinute(10)
-                .withSecond(0);
+        threadHandler = new ThreadHandler();
+        serverSaveHandler = new ServerSaveHandler(getEventName());
     }
 
 
@@ -58,7 +55,8 @@ public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
             try {
                 if (!event.getCommandName().equals(boostedsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
                 return setDefaultChannel(event);
             } catch (Exception e) {
                 log.error(e.getMessage());
@@ -67,68 +65,86 @@ public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
-        log.info("Activating {}", getEventName());
-        while (true) {
-            try {
-                log.info("Executing thread {}", getEventName());
-                if(!isAfterSaverSave()) continue;
-                boostedsService.clearCache();
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(getWaitTime());
+    public void activate() {
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    if (!serverSaveHandler.checkAfterSaverSave()) return;
+                    boostedsService.clearCache();
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, serverSaveHandler.getTimeUntilServerSave(), TimeUnit.MILLISECONDS);
                 }
             }
-        }
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override
     protected void executeEventProcess() {
+        BoostedModel creature = boostedsService.getBoostedCreature();
+        BoostedModel boss = boostedsService.getBoostedBoss();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
+
         for (Snowflake guildId : GuildCacheData.channelsCache.keySet()) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.BOOSTEDS);
-            if(guildChannel == null) continue;
-            deleteMessages(guildChannel);
-            removeAllChannelThreads(guildChannel);
-            processEmbeddableData(guildChannel, boostedsService.getBoostedCreature());
-            processEmbeddableData(guildChannel, boostedsService.getBoostedBoss());
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.BOOSTEDS);
+                if (guildChannel == null) return;
+                deleteMessages(guildChannel);
+                threadHandler.removeAllChannelThreads(guildChannel);
+                processEmbeddableData(guildChannel, creature);
+                processEmbeddableData(guildChannel, boss);
+            }, executor);
+            allFutures.add(future);
+        }
+
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
     private void processEmbeddableData(GuildMessageChannel channel, BoostedModel model) {
         boolean isBoss = model.getBoostedTypeText().contains("boss");
         String name = isBoss ? "Boss: " : "Creature: ";
+        String hpData = model.getExp() > 0 ? getCreatureBoostData(model) : "";
 
-        if(model.getName() == null || model.getName().isEmpty())
-            sendEmbeddedMessages(channel,
+        if (model.getName() == null || model.getName().isEmpty())
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     model.getBoostedTypeText(),
                     "No data could be found",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
         else {
-            MessageData data = sendEmbeddedMessages(channel,
+            MessageData data = embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     model.getBoostedTypeText(),
                     "### " + getBlankEmoji() + getBlankEmoji() +
                             ":star: " + formatToDiscordLink(model.getName(), model.getBoosted_data_link()),
-                    "",
+                    null,
                     model.getIcon_link(),
-                    getRandomColor()).get(0);
+                    embeddedHandler.getRandomColor(),
+                    EmbedCreateFields.Footer.of(hpData, ""),
+                    null).get(0);
 
-            createMessageThreadWithMention(channel.getMessageById(Snowflake.of(data.id())).block(),
+            threadHandler.createMessageThreadWithMention(channel.getMessageById(Snowflake.of(data.id())).block(),
                     name + model.getName(),
                     ThreadChannel.AutoArchiveDuration.DURATION2);
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId(event);
 
@@ -140,10 +156,16 @@ public class Boosteds extends ServerSaveEvent implements Threadable, Activable {
         if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        deleteMessages(channel);
-        processEmbeddableData(channel, boostedsService.getBoostedCreature());
-        processEmbeddableData(channel, boostedsService.getBoostedBoss());
+        CompletableFuture.runAsync(() -> {
+            processEmbeddableData(channel, boostedsService.getBoostedCreature());
+            processEmbeddableData(channel, boostedsService.getBoostedBoss());
+        });
+
         return event.createFollowup("Set default Boosteds event channel to <#" + channelId.asString() + ">");
+    }
+
+    private String getCreatureBoostData(BoostedModel model) {
+        return "HP: " + model.getHp() + "\nBase Exp: " + model.getExp() / 2 + "\nBoosted Exp: " + model.getExp();
     }
 
     @Override

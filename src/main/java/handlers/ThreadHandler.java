@@ -1,4 +1,4 @@
-package events.interfaces;
+package handlers;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.Guild;
@@ -7,7 +7,7 @@ import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.entity.channel.ThreadChannel;
 import discord4j.core.spec.MessageEditSpec;
-import discord4j.core.spec.StartThreadSpec;
+import discord4j.core.spec.StartThreadFromMessageSpec;
 import discord4j.core.spec.StartThreadWithoutMessageSpec;
 import discord4j.core.spec.ThreadChannelEditSpec;
 import reactor.core.publisher.Flux;
@@ -17,10 +17,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface Threadable extends Channelable {
-
-    default void createWithoutMessageThreadWithMention(TextChannel channel, String name, ThreadChannel.AutoArchiveDuration duration) {
-        channel.startThread(StartThreadWithoutMessageSpec.builder()
+public class ThreadHandler {
+    public void createWithoutMessageThreadWithMention(TextChannel channel, String name, ThreadChannel.AutoArchiveDuration duration) {
+        channel.startPublicThreadWithoutMessage(StartThreadWithoutMessageSpec.builder()
                         .name(name)
                         .type(ThreadChannel.Type.GUILD_PUBLIC_THREAD)
                         .autoArchiveDuration(duration)
@@ -34,15 +33,15 @@ public interface Threadable extends Channelable {
                 ).subscribe();
     }
 
-    default void createMessageThreadWithMention(Message msg, String name, ThreadChannel.AutoArchiveDuration duration) {
-        ThreadChannel thread = msg.startThread(StartThreadSpec.builder()
+    public void createMessageThreadWithMention(Message msg, String name, ThreadChannel.AutoArchiveDuration duration) {
+        ThreadChannel thread = msg.startThread(StartThreadFromMessageSpec.builder()
                 .name(name)
                 .autoArchiveDuration(duration)
                 .build()).block();
         mentionAllMembers(thread, msg.getGuild().block());
     }
 
-    default void mentionAllMembers(ThreadChannel thread, Guild guild) {
+    public void mentionAllMembers(ThreadChannel thread, Guild guild) {
         Message threadMsg = thread.createMessage("empty").block(Duration.ofSeconds(10));
 
         StringBuilder builder = new StringBuilder();
@@ -72,7 +71,7 @@ public interface Threadable extends Channelable {
         ).then(threadMsg.delete()).subscribe();
     }
 
-    default void removeAllChannelThreads(GuildMessageChannel guildChannel) {
+    public void removeAllChannelThreads(GuildMessageChannel guildChannel) {
         guildChannel.getGuild().block()
                 .getActiveThreads()
                 .retry(3)

@@ -19,7 +19,7 @@ public final class WorldsService extends Singleton {
     private final TibiaDataAPI tibiaDataAPI;
     private final TibiaTradeAPI tibiaTradeAPI;
 
-    public WorldsService() {
+    private WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
         tibiaTradeAPI = new TibiaTradeAPI();
         refreshCache();
@@ -70,6 +70,14 @@ public final class WorldsService extends Singleton {
         }
 
         return worldsData;
+    }
+
+    public WorldData getWorldData(String world) {
+        Optional<WorldData> worldData = worldsData.getWorlds()
+                .getRegular_worlds()
+                .stream().filter(x -> x.getName().equalsIgnoreCase(world))
+                .findFirst();
+        return worldData.orElse(null);
     }
 
     public WorldModel getServerSaveWorlds() {

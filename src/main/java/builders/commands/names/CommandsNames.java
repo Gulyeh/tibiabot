@@ -69,6 +69,9 @@ public final class CommandsNames {
     public final static Command setDromeCommand = new Command("set-drome", "Set Drome channel",
             new CommandOption(CommandOptionNames.DROME, "Channel name", ApplicationCommandOption.Type.CHANNEL));
 
+    public final static Command setDeletedTrackerCommand = new Command("set-deleted-tracker", "Set Deleted Tracker channel",
+            new CommandOption(CommandOptionNames.DELETED_TRACKER, "Channel name", ApplicationCommandOption.Type.CHANNEL));
+
 
     public static List<Command> getCommands() {
         List<Command> cmds = new ArrayList<>();

@@ -7,15 +7,14 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.EmbeddableEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -23,20 +22,24 @@ import services.houses.HousesService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.houseCommand;
 import static discord.Connector.client;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 import static utils.Methods.formatToDiscordLink;
 
 @Slf4j
-public class Houses extends EmbeddableEvent implements Channelable, Activable {
+public final class Houses extends ExecutableEvent implements Activable {
 
     private final HousesService housesService;
+    private final EmbeddedHandler embeddedHandler;
 
     public Houses(HousesService housesService) {
         this.housesService = housesService;
+        this.embeddedHandler = new EmbeddedHandler();
     }
 
 
@@ -46,7 +49,8 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
             try {
                 if (!event.getCommandName().equals(houseCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -56,23 +60,16 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
-        log.info("Activating {}", getEventName());
-        while (true) {
+    public void activate() {
+        scheduler.scheduleAtFixedRate(() -> {
             try {
                 log.info("Executing thread {}", getEventName());
                 housesService.clearCache();
                 executeEventProcess();
             } catch (Exception e) {
                 log.info(e.getMessage());
-            } finally {
-                synchronized (this) {
-                    wait(1800000);
-                }
             }
-        }
+        }, 0, 1800000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -89,43 +86,61 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
                         !x.getHouse_list().isEmpty())
                 .toList();
 
-        if(list.isEmpty()) {
-            sendEmbeddedMessages(channel,
+        if (list.isEmpty()) {
+            embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "",
                     "There are no biddable houses at the moment",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
             return;
         }
 
         for (HousesModel house : list) {
-            sendEmbeddedMessages(channel,
+            embeddedHandler.sendEmbeddedMessages(channel,
                     createEmbedFields(house),
                     house.getTown(),
                     "",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
         }
     }
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
 
-        for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.HOUSES);
-            if(guildChannel == null) continue;
+        channelWorlds.forEach((world, guildIds) -> {
+            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> housesService.getHouses(world), executor)
+                    .thenComposeAsync(houses -> {
+                        List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
+                                CompletableFuture.runAsync(() -> {
+                                    GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.HOUSES);
+                                    if (guildChannel == null) return;
+                                    processEmbeddableData(guildChannel, houses);
+                                }, executor)).toList();
+                        return CompletableFuture.allOf(guildFutures.toArray(new CompletableFuture[0]));
+                    }, executor);
 
-            processEmbeddableData(guildChannel, housesService.getHouses(guildId));
+            allFutures.add(future);
+        });
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
         Snowflake guildId = getGuildId(event);
 
@@ -134,9 +149,11 @@ public class Houses extends EmbeddableEvent implements Channelable, Activable {
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
-        processEmbeddableData(channel, housesService.getHouses(guildId));
+
+        String world = GuildCacheData.worldCache.get(guildId);
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, housesService.getHouses(world)));
         return event.createFollowup("Set default Houses event channel to <#" + channelId.asString() + ">");
     }
 

@@ -1,23 +1,23 @@
 package services.onlines;
 
+import abstracts.ThreadLocker;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
-import cache.guilds.GuildCacheData;
-import discord4j.common.util.Snowflake;
 import interfaces.Cacheable;
+import lombok.extern.slf4j.Slf4j;
 import services.onlines.enums.Leveled;
 import services.onlines.model.OnlineModel;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-public class OnlineService implements Cacheable {
+import static cache.worlds.WorldsCache.addNewCharactersToWorld;
+
+@Slf4j
+public class OnlineService extends ThreadLocker implements Cacheable {
     private final TibiaDataAPI tibiaDataAPI;
     private ConcurrentHashMap<String, List<OnlineModel>> onlineCache;
     private ConcurrentHashMap<String, List<OnlineModel>> charInfoCache;
@@ -37,8 +37,7 @@ public class OnlineService implements Cacheable {
         charInfoCache = new ConcurrentHashMap<>();
     }
 
-    public List<OnlineModel> getOnlinePlayers(Snowflake guildId) {
-        String world = GuildCacheData.worldCache.get(guildId);
+    public List<OnlineModel> getOnlinePlayers(String world) {
         if(onlineCache.get(world) != null) return onlineCache.get(world);
         List<OnlineModel> online = new ArrayList<>();
         List<OnlineModel> onlineCacheData = charInfoCache.get(world) == null ? new ArrayList<>() : charInfoCache.get(world);
@@ -69,6 +68,7 @@ public class OnlineService implements Cacheable {
         online.addAll(fetchNotOnlinePreviouslyConcurrent(notOnlinePreviously));
         onlineCache.put(world, online);
         charInfoCache.put(world, online);
+        addNewCharactersToWorld(world, online);
         return online;
     }
 
@@ -88,25 +88,23 @@ public class OnlineService implements Cacheable {
 
     private List<OnlineModel> fetchNotOnlinePreviouslyConcurrent(List<CharacterData> notOnlinePreviously) {
         if(notOnlinePreviously.isEmpty()) return new ArrayList<>();
-        List<OnlineModel> online = new ArrayList<>();
+        List<OnlineModel> online = Collections.synchronizedList(new ArrayList<>());
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        ExecutorService executor = Executors.newFixedThreadPool(notOnlinePreviously.size());
+        notOnlinePreviously
+                .forEach(character -> lockExecuteAsync(() -> {
+                    CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(character.getName())
+                            .getCharacter()
+                            .getCharacter();
+                    online.add(new OnlineModel(characterInfo));
+                }, executor));
+
+        executor.shutdown();
         try {
-            for (CharacterData data : notOnlinePreviously) {
-                executor.submit(() -> {
-                    try {
-                        CharacterInfo characterInfo = tibiaDataAPI.getCharacterData(data.getName())
-                                .getCharacter()
-                                .getCharacter();
-                        online.add(new OnlineModel(characterInfo));
-                    } catch (Exception ignore) {}
-                });
-            }
-
-            executor.shutdown();
-            executor.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException ignore) {
+            executor.awaitTermination(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
             Thread.currentThread().interrupt();
+            log.error("Some tasks timed out. - {}", e.getMessage());
         }
 
         return online;

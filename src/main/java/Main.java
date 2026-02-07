@@ -1,20 +1,24 @@
 import builders.commands.CommandsBuilder;
 import cache.characters.CharactersCaching;
 import cache.guilds.GuildCaching;
+import cache.interfaces.Cachable;
+import cache.worlds.WorldsCaching;
 import discord.Connector;
 import events.*;
 import events.commands.DeathFilters;
 import events.commands.FilterSpamDeaths;
 import events.commands.MinimumDeathLevel;
 import events.commands.TrackWorld;
+import events.commands.registration.CharacterRegistration;
+import events.commands.registration.CharacterUnregistration;
 import events.guildEvents.RemovedChannel;
 import events.guildEvents.RemovedGuild;
 import events.lootSplitter.LootSplitter;
-import events.commands.registration.CharacterRegistration;
-import events.commands.registration.CharacterUnregistration;
+import lombok.extern.slf4j.Slf4j;
 import mongo.MongoConnector;
 import services.boosteds.BoostedsService;
 import services.deathTracker.DeathTrackerService;
+import services.deletedTracker.DeletedTrackerService;
 import services.drome.DromeService;
 import services.events.EventsService;
 import services.houses.HousesService;
@@ -29,37 +33,40 @@ import java.util.concurrent.CountDownLatch;
 
 import static discord.Connector.client;
 
+@Slf4j
 public class Main {
     public static void main(String[] args) {
         Connector.connect();
         MongoConnector.connect();
+        buildCommands();
         initializeCache();
         initializeServices();
-        buildCommands();
         client.onDisconnect().block();
     }
 
     private static void initializeServices() {
-        WorldsService worldsService = WorldsService.getInstance();
-
+        //Add listeners for events
+        OnlineService onlineService = new OnlineService();
         List.of(
-                new TibiaCoins(new TibiaCoinsService(worldsService)),
-                new ServerStatus(worldsService),
-                new TrackWorld(worldsService),
+                new TibiaCoins(new TibiaCoinsService()),
+                new ServerStatus(),
+                new TrackWorld(),
                 new KillStatistics(new KillStatisticsService()),
                 new Houses(new HousesService()),
-                new EventsCalendar(new EventsService(), worldsService),
-                new MiniWorldEvents(new MiniWorldEventsService(worldsService), worldsService),
-                new Boosteds(new BoostedsService(), worldsService),
+                new EventsCalendar(new EventsService()),
+                new MiniWorldEvents(new MiniWorldEventsService()),
+                new Boosteds(new BoostedsService()),
                 new DeathTracker(new DeathTrackerService()),
-                new OnlineTracker(new OnlineService(), worldsService),
-                new Drome(new DromeService(), worldsService)
+                new OnlineTracker(onlineService, WorldsService.getInstance()),
+                new Drome(new DromeService()),
+                new DeletedTracker(new DeletedTrackerService(onlineService))
         ).forEach(x -> {
             Connector.addListener(x);
+            log.info("Activating {}", x.getEventName());
             x.activate();
         });
 
-        // Add listeners for specific events
+        // Add listeners for commands
         List.of(new MinimumDeathLevel(), new LootSplitter(), new RemovedChannel(), new RemovedGuild(),
                         new CharacterRegistration(), new CharacterUnregistration(), new FilterSpamDeaths(),
                         new DeathFilters())
@@ -74,10 +81,9 @@ public class Main {
     }
 
     private static void initializeCache() {
-        CountDownLatch latch = new CountDownLatch(2);
-
-        List.of(GuildCaching.getInstance(), CharactersCaching.getInstance())
-                .forEach(x -> x.refreshCache(latch));
+        List<Cachable> list = List.of(GuildCaching.getInstance(), CharactersCaching.getInstance(), WorldsCaching.getInstance());
+        CountDownLatch latch = new CountDownLatch(list.size());
+        list.forEach(x -> x.refreshCache(latch));
 
         try {
             latch.await();

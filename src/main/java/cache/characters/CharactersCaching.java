@@ -5,8 +5,6 @@ import cache.interfaces.Cachable;
 import discord4j.common.util.Snowflake;
 import lombok.extern.slf4j.Slf4j;
 import mongo.CharactersDocumentActions;
-import mongo.GuildDocumentActions;
-import mongo.MongoConnector;
 import mongo.models.CharacterModel;
 
 import java.util.List;
@@ -18,7 +16,7 @@ import static cache.characters.CharactersCacheData.addRegisteredCharacter;
 public class CharactersCaching extends Singleton implements Cachable {
     protected final CharactersDocumentActions charactersDocumentActions;
 
-    public CharactersCaching() {
+    private CharactersCaching() {
         charactersDocumentActions = CharactersDocumentActions.getInstance();
     }
 

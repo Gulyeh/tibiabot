@@ -1,5 +1,6 @@
 package abstracts;
 
+import java.lang.reflect.Constructor;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class Singleton {
@@ -9,7 +10,9 @@ public abstract class Singleton {
     protected static <T> T getInstance(Class<T> type) {
         if(instances.get(type) != null) return (T) instances.get(type);
         try {
-            T instance =  type.getDeclaredConstructor().newInstance();
+            Constructor<T> constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            T instance =  constructor.newInstance();
             instances.putIfAbsent(type, instance);
             return instance;
         } catch (Exception e) {

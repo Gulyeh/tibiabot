@@ -3,7 +3,7 @@ package events.commands;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Message;
-import events.abstracts.EventsMethods;
+import events.abstracts.EventMethods;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.GuildModel;
 import reactor.core.publisher.Mono;
@@ -14,7 +14,7 @@ import static discord.Connector.client;
 import static events.utils.EventName.filterSpamDeaths;
 
 @Slf4j
-public class FilterSpamDeaths extends EventsMethods {
+public final class FilterSpamDeaths extends EventMethods {
 
     @Override
     public void executeEvent() {

@@ -6,12 +6,14 @@ import mongo.models.DeathFilter;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static utils.Methods.getKey;
-
 public final class GuildCacheData {
+    private GuildCacheData() {}
+
     public static ConcurrentHashMap<Snowflake, String> worldCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, ConcurrentHashMap<EventTypes, Snowflake>> channelsCache = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Snowflake, Integer> minimumDeathLevelCache = new ConcurrentHashMap<>();
@@ -101,9 +103,13 @@ public final class GuildCacheData {
     }
 
     public static void removeChannel(Snowflake guildId, Snowflake channelId) {
-        EventTypes event = getKey(channelsCache.get(guildId), channelId);
-        if(event == null) return;
-        channelsCache.get(guildId).remove(event);
+        Optional<EventTypes> event = channelsCache.get(guildId).entrySet()
+                .stream()
+                .filter(entry -> channelId.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst();
+        if(event.isEmpty()) return;
+        channelsCache.get(guildId).remove(event.get());
     }
 
     public static void resetCache() {

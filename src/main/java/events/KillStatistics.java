@@ -7,16 +7,15 @@ import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.EmbedCreateFields;
-import events.abstracts.EmbeddableEvent;
-import events.abstracts.TimerEvent;
+import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
-import events.interfaces.Channelable;
 import events.utils.EventName;
+import handlers.EmbeddedHandler;
+import handlers.TimerHandler;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -24,27 +23,30 @@ import services.killStatistics.KillStatisticsService;
 import services.killStatistics.models.BossType;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static builders.commands.names.CommandsNames.killingStatsCommand;
+import static discord.ChannelUtils.addChannelSuffix;
 import static discord.Connector.client;
-import static discord.channels.ChannelUtils.addChannelSuffix;
-import static discord.messages.DeleteMessages.deleteMessages;
+import static discord.MessagesUtils.deleteMessages;
 
 @Slf4j
-public class KillStatistics extends TimerEvent implements Channelable, Activable {
+public final class KillStatistics extends ExecutableEvent implements Activable {
 
     private final KillStatisticsService killStatisticsService;
+    private final TimerHandler timerHandler;
+    private final EmbeddedHandler embeddedHandler;
 
     public KillStatistics(KillStatisticsService killStatisticsService) {
-        super(LocalDateTime.now()
+        timerHandler = new TimerHandler(LocalDateTime.now()
                 .withHour(8)
                 .withMinute(0)
-                .withSecond(0));
+                .withSecond(0), getEventName());
+        embeddedHandler = new EmbeddedHandler();
         this.killStatisticsService = killStatisticsService;
     }
 
@@ -54,7 +56,8 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
             try {
                 if (!event.getCommandName().equals(killingStatsCommand.getCommandName())) return Mono.empty();
                 event.deferReply().withEphemeral(true).subscribe();
-                if (!isUserAdministrator(event)) return event.createFollowup("You do not have permissions to use this command");
+                if (!isUserAdministrator(event))
+                    return event.createFollowup("You do not have permissions to use this command");
 
                 return setDefaultChannel(event);
             } catch (Exception e) {
@@ -64,37 +67,53 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
         }).filter(message -> !message.getAuthor().map(User::isBot).orElse(true)).subscribe();
     }
 
-    @SneakyThrows
-    @SuppressWarnings("InfiniteLoopStatement")
-    public void activatableEvent() {
-        log.info("Activating " + getEventName());
-
-        while(true) {
-            try {
-                log.info("Executing thread " + getEventName());
-                killStatisticsService.clearCache();
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
-            } finally {
-                adjustTimerByDays(1);
-                synchronized (this) {
-                    wait(getWaitTime());
+    @Override
+    public void activate() {
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    if (!timerHandler.isAfterTimer()) return;
+                    timerHandler.adjustTimerByDays(1);
+                    killStatisticsService.clearCache();
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, timerHandler.getWaitTimeUntilTimer(), TimeUnit.MILLISECONDS);
                 }
             }
-        }
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override
     protected void executeEventProcess() {
-        Set<Snowflake> guildIds = GuildCacheData.channelsCache.keySet();
-        if(guildIds.isEmpty()) return;
+        Map<String, List<Snowflake>> channelWorlds = getListOfServersForWorld();
+        List<CompletableFuture<Void>> allFutures = new ArrayList<>();
 
-        for (Snowflake guildId : guildIds) {
-            GuildMessageChannel guildChannel = getGuildChannel(guildId, EventTypes.KILLED_BOSSES);
-            if(guildChannel == null) continue;
+        channelWorlds.forEach((world, guildIds) -> {
+            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> killStatisticsService.getStatistics(world), executor)
+                    .thenComposeAsync(killStats -> {
+                        List<CompletableFuture<Void>> guildFutures = guildIds.stream().map(guild ->
+                                        CompletableFuture.runAsync(() -> {
+                                            GuildMessageChannel guildChannel = getGuildChannel(guild, EventTypes.KILLED_BOSSES);
+                                            if (guildChannel == null) return;
+                                            processEmbeddableData(guildChannel, killStats);
+                                        }, executor)).toList();
 
-            processEmbeddableData(guildChannel, killStatisticsService.getStatistics(guildId));
+                        return CompletableFuture.allOf(guildFutures.toArray(new CompletableFuture[0]));
+                    }, executor);
+
+            allFutures.add(future);
+        });
+
+        CompletableFuture<Void> all = CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0]));
+        try {
+            all.get(4, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("{} Error waiting for tasks to complete - {}", getEventName(), e.getMessage());
         }
     }
 
@@ -103,46 +122,50 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
         return EventName.killStatistics;
     }
 
-    @Override
-    public <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
+    private <T extends ApplicationCommandInteractionEvent> Mono<Message> setDefaultChannel(T event) {
         Snowflake channelId = getChannelId((ChatInputInteractionEvent) event);
-        Snowflake guildId = getGuildId((ChatInputInteractionEvent) event);
+        Snowflake guildId = getGuildId(event);
 
         if (channelId == null || guildId == null) return event.createFollowup("Could not find channel or guild");
         if (!GuildCacheData.worldCache.containsKey(guildId))
             return event.createFollowup("You have to set tracking world first");
 
         GuildMessageChannel channel = client.getChannelById(channelId).ofType(GuildMessageChannel.class).block();
-        if(!saveSetChannel((ChatInputInteractionEvent) event))
+        if (!saveSetChannel((ChatInputInteractionEvent) event))
             return event.createFollowup("Could not set channel <#" + channelId.asString() + ">");
 
-        processEmbeddableData(channel, killStatisticsService.getStatistics(guildId));
+        String world = GuildCacheData.worldCache.get(guildId);
+        CompletableFuture.runAsync(() -> processEmbeddableData(channel, killStatisticsService.getStatistics(world)));
         return event.createFollowup("Set default Killing Statistics channel to <#" + channelId.asString() + ">");
     }
 
-    protected void processEmbeddableData(GuildMessageChannel channel, KillingStatsModel model) {
+    private void processEmbeddableData(GuildMessageChannel channel, KillingStatsModel model) {
         deleteMessages(channel);
         List<KillingStatsData> bosses = model.getEntries();
         addChannelSuffix(channel, model.getAllLastDayKilled());
 
 
-        sendEmbeddedMessages(channel, null,
+        embeddedHandler.sendEmbeddedMessages(channel, null,
                 "Killed Bosses Statistics",
                 "Last day killed: " + model.getAllLastDayKilled() + " / Last day players killed: " + model.getAllLastDayPlayersKilled() + "\nLast week killed: " +
                         model.getAllLastWeekKilled() + " / Last week players killed: " + model.getAllLastWeekPlayersKilled() + "\n\n Killed: (last day) / (last week)",
                 "",
                 "",
-                getRandomColor());
+                embeddedHandler.getRandomColor(),
+                null,
+                null);
 
         for (BossType type : BossType.values()) {
-            sendEmbeddedMessages(channel, createEmbedFields(bosses.stream()
+            embeddedHandler.sendEmbeddedMessages(channel, createEmbedFields(bosses.stream()
                             .filter(x -> x.getBossType().equals(type))
                             .toList()),
                     "--- " + type.getName() + " ---",
                     "",
                     "",
                     "",
-                    getRandomColor());
+                    embeddedHandler.getRandomColor(),
+                    null,
+                    null);
         }
     }
 
@@ -164,7 +187,7 @@ public class KillStatistics extends TimerEvent implements Channelable, Activable
 
         return EmbedCreateFields.Field.of("**" + data.getRace() + "**",
                 respawnPossibility + expectedSpawnTime + "```Killed: " + data.getLast_day_killed() + " / " + data.getLast_week_killed() + "\nPlayers killed: " +
-                    data.getLast_day_players_killed() + " / " + data.getLast_week_players_killed() + "```",
+                        data.getLast_day_players_killed() + " / " + data.getLast_week_players_killed() + "```",
                 true);
     }
 }

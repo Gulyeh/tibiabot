@@ -1,5 +1,6 @@
 package services.deathTracker;
 
+import abstracts.ThreadLocker;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.deathtracker.CharacterInfo;
@@ -19,14 +20,11 @@ import services.deathTracker.model.DeathData;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DeathTrackerService implements Cacheable {
+public class DeathTrackerService extends ThreadLocker implements Cacheable {
     private final ConcurrentHashMap<String, List<CharacterData>> mapCache; // data of previously online characters
     private ConcurrentHashMap<String, List<DeathData>> deathsCache; // takes data in case if other server assigned channel
     private final ConcurrentHashMap<String, ArrayList<DeathResponse>> recentDeathsCache; // stores all character deaths up to [deathRangeAllowance] minutes
@@ -52,8 +50,7 @@ public class DeathTrackerService implements Cacheable {
         deathsCache = new ConcurrentHashMap<>();
     }
 
-    public List<DeathData> getDeaths(Snowflake guildId) {
-        String world = GuildCacheData.worldCache.get(guildId);
+    public List<DeathData> getDeaths(String world) {
         if(deathsCache.containsKey(world)) return deathsCache.get(world);
 
         List<CharacterData> checkableCharacters = new ArrayList<>(api.getCharactersOnWorld(world));
@@ -114,17 +111,20 @@ public class DeathTrackerService implements Cacheable {
     }
 
     private List<DeathData> getCharactersDeathData(List<CharacterData> chars, String world) {
-        List<DeathData> deaths = new ArrayList<>();
+        List<DeathData> deaths = Collections.synchronizedList(new ArrayList<>());
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        ExecutorService executor = Executors.newFixedThreadPool(chars.size());
-        chars.forEach(x -> executor.submit(() -> processCharacter(x, world, deaths)));
+        List<CompletableFuture<Void>> futures = chars.stream()
+                .map(character -> lockExecuteAsync(() -> processCharacter(character, world, deaths), executor))
+                .toList();
 
         try {
+            CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            allOf.get(4, TimeUnit.MINUTES);
+        }  catch (Exception e) {
+            log.error("Some tasks timed out. - {}", e.getMessage());
+        } finally {
             executor.shutdown();
-            if (!executor.awaitTermination(1, TimeUnit.MINUTES))
-                log.info("Some tasks did not finish within the timeout.");
-        } catch (InterruptedException ignore) {
-            Thread.currentThread().interrupt();
         }
 
         deaths.sort(Comparator.comparing(DeathData::getKilledAtDate));

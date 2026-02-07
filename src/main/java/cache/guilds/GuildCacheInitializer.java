@@ -7,8 +7,8 @@ import discord4j.core.object.entity.channel.TextChannel;
 import lombok.extern.slf4j.Slf4j;
 import mongo.GuildDocumentActions;
 import mongo.models.ChannelModel;
-import mongo.models.GuildModel;
 import mongo.models.DeathFilter;
+import mongo.models.GuildModel;
 
 import java.util.List;
 
@@ -113,6 +113,10 @@ public class GuildCacheInitializer {
                 case DROME -> {
                     if(channels.getDromeTracker().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getDromeTracker());
+                }
+                case DELETED_TRACKER -> {
+                    if(channels.getDeletedTracker().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getDeletedTracker());
                 }
             };
 

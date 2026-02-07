@@ -4,7 +4,6 @@ import apis.WebClient;
 import apis.tibiaData.model.charactersOnline.CharacterData;
 import apis.tibiaData.model.charactersOnline.World;
 import apis.tibiaData.model.deathtracker.CharacterResponse;
-import apis.tibiaData.model.deathtracker.GuildData;
 import apis.tibiaData.model.guilds.GuildModel;
 import apis.tibiaData.model.house.HouseBaseInfo;
 import apis.tibiaData.model.house.HouseInfo;
@@ -13,13 +12,26 @@ import apis.tibiaData.model.houses.HousesModel;
 import apis.tibiaData.model.killstats.KillingStatsBase;
 import apis.tibiaData.model.killstats.KillingStatsModel;
 import apis.tibiaData.model.worlds.WorldModel;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class TibiaDataAPI extends WebClient {
+    private static final Map<String, CharacterResponse> characterCaching = new ConcurrentHashMap<>();
+
+    static {
+        Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate(characterCaching::clear, 5, 5, TimeUnit.MINUTES);
+    }
+
     @Override
     protected String getUrl() {
         return "https://api.tibiadata.com/v4/";
@@ -60,9 +72,22 @@ public class TibiaDataAPI extends WebClient {
     }
 
     public CharacterResponse getCharacterData(String charName) {
-        String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
-        CharacterResponse model = getModel(response, CharacterResponse.class);
+        if(characterCaching.containsKey(charName.toLowerCase())) return characterCaching.get(charName.toLowerCase());
+        CharacterResponse model = null;
+        int iters = 0;
+        while(model == null && iters < 3) {
+            String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
+            model = getModel(response, CharacterResponse.class);
+            iters++;
+            if(model == null) {
+                log.info("Could not obtain {} character data - retry no. {}", charName, iters);
+                try {
+                    Thread.sleep(3000);
+                } catch (Exception ignore) {}
+            }
+        }
         if(model == null) return new CharacterResponse();
+        characterCaching.put(charName.toLowerCase(), model);
         return model;
     }
 

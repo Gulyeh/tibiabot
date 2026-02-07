@@ -1,4 +1,4 @@
-package discord.channels;
+package discord;
 
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.discordjson.json.ChannelModifyRequest;

@@ -1,6 +1,5 @@
 package mongo;
 
-import discord4j.common.util.Snowflake;
 import mongo.abstracts.DocumentActions;
 import mongo.models.CharacterModel;
 import org.bson.Document;
