@@ -17,6 +17,7 @@ public class ServerSaveHandler {
     private final String eventName;
     @Getter
     private boolean serverSaveInProgress = false;
+    private Status lastServerStatus = Status.OFFLINE;
 
     public ServerSaveHandler(String eventName) {
         this.timerHandler = new TimerHandler(LocalDateTime.now()
@@ -92,16 +93,15 @@ public class ServerSaveHandler {
     private boolean isServerOffline() {
         try {
             WorldModel worlds = worldsService.getWorlds();
-            if(worlds == null) return false;
-
             List<WorldData> onlines = worlds.getWorlds().getRegular_worlds().stream()
                     .filter(x -> x.getStatus_type().equals(Status.ONLINE) &&
                             !x.getName().equals("Zuna") && !x.getName().equals("Zunera")).toList();
-
-            return Integer.parseInt(worlds.getWorlds().getPlayers_online()) < 20 && onlines.isEmpty();
+            boolean isOffline = Integer.parseInt(worlds.getWorlds().getPlayers_online()) < 50 && onlines.isEmpty();
+            lastServerStatus = isOffline ? Status.OFFLINE : Status.ONLINE;
+            return isOffline;
         } catch (Exception e) {
             log.warn("[{}] Error checking server status: {}", eventName, e.getMessage());
-            return false;
+            return lastServerStatus == Status.OFFLINE;
         }
     }
 }
