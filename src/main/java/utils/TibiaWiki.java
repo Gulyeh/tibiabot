@@ -32,7 +32,8 @@ public final class TibiaWiki {
             if (fileName.isEmpty()) return null;
 
             byte[] gifBytes = client.getGifFile(fileName);
-            wikiGifLinksMap.put(name, gifBytes);
+            if(gifBytes != null)
+                wikiGifLinksMap.put(name, gifBytes);
             return gifBytes;
         } catch (Exception ignore) {
             return null;

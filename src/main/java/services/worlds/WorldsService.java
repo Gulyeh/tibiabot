@@ -72,6 +72,14 @@ public final class WorldsService extends Singleton {
         return worldsData;
     }
 
+    public WorldData getWorldData(String world) {
+        Optional<WorldData> worldData = worldsData.getWorlds()
+                .getRegular_worlds()
+                .stream().filter(x -> x.getName().equalsIgnoreCase(world))
+                .findFirst();
+        return worldData.orElse(null);
+    }
+
     public WorldModel getServerSaveWorlds() {
         WorldModel worlds = tibiaDataAPI.getWorlds();
         worlds.getWorlds().setPlayers_online("0");

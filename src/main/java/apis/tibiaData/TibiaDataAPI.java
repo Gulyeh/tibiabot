@@ -79,8 +79,12 @@ public class TibiaDataAPI extends WebClient {
             String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
             model = getModel(response, CharacterResponse.class);
             iters++;
-            if(model == null)
+            if(model == null) {
                 log.info("Could not obtain {} character data - retry no. {}", charName, iters);
+                try {
+                    Thread.sleep(3000);
+                } catch (Exception ignore) {}
+            }
         }
         if(model == null) return new CharacterResponse();
         characterCaching.put(charName.toLowerCase(), model);

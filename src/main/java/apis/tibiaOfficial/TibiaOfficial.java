@@ -32,7 +32,7 @@ public class TibiaOfficial extends WebClient {
 
     public List<Node> getEvents(int month, int year) {
         try {
-            String response = sendRequestViaFlareSolverr(eventsUrl(month, year)).getSolution().getResponse();
+            String response = sendRequestUsingFlareSolver(eventsUrl(month, year)).getSolution().getResponse();
             Element ele = Jsoup.parse(response).getElementById("eventscheduletable");
             List<Node> nodes = ele.firstElementChild().childNodes().stream().filter(x -> x instanceof Element).toList();
             return nodes.subList(1, nodes.size() - 1);
@@ -42,7 +42,7 @@ public class TibiaOfficial extends WebClient {
     }
 
     public BoostedModel getBoostedCreature() {
-        String response = sendRequestViaFlareSolverr(boostableCreature()).getSolution().getResponse();
+        String response = sendRequestUsingFlareSolver(boostableCreature()).getSolution().getResponse();
         BoostedModel model = getModel(response, "Monster");
 
         String creatureLink = getCreatureLink(response);
@@ -57,7 +57,7 @@ public class TibiaOfficial extends WebClient {
     }
 
     public BoostedModel getBoostedBoss() {
-        String response = sendRequestViaFlareSolverr(boostableBoss()).getSolution().getResponse();
+        String response = sendRequestUsingFlareSolver(boostableBoss()).getSolution().getResponse();
         return getModel(response, "Boss");
     }
 

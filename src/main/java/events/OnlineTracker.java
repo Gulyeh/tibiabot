@@ -1,5 +1,6 @@
 package events;
 
+import apis.tibiaData.model.worlds.WorldData;
 import cache.enums.EventTypes;
 import cache.guilds.GuildCacheData;
 import discord4j.common.util.Snowflake;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
+import services.worlds.WorldsService;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -35,11 +37,13 @@ import static utils.Methods.formatToDiscordLink;
 @Slf4j
 public final class OnlineTracker extends ExecutableEvent implements Activable {
     private final OnlineService onlineService;
+    private final WorldsService worldsService;
     private final ServerSaveHandler serverSaveHandler;
     private final EmbeddedHandler embeddedHandler;
     private final String othersKey;
 
-    public OnlineTracker(OnlineService onlineService) {
+    public OnlineTracker(OnlineService onlineService, WorldsService worldsService) {
+        this.worldsService = worldsService;
         this.onlineService = onlineService;
         serverSaveHandler = new ServerSaveHandler(getEventName());
         embeddedHandler = new EmbeddedHandler();
@@ -108,10 +112,11 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
         Color color = embeddedHandler.getRandomColor();
         List<String> msgs = createDescription(map);
         boolean isFirst = true;
+
         for (String msg : msgs) {
             embeddedHandler.sendEmbeddedMessages(channel,
                     null,
-                    isFirst ? model.get(0).getWorld() + " (" + model.size() + ")" : "",
+                    isFirst ? getWorldTitle(model) : "",
                     msg,
                     "",
                     "",
@@ -225,5 +230,21 @@ public final class OnlineTracker extends ExecutableEvent implements Activable {
         map.put(othersKey, others);
 
         return map;
+    }
+
+    private String getWorldTitle(List<OnlineModel> model) {
+        WorldData world = worldsService.getWorldData(model.getFirst().getWorld());
+        StringBuilder builder = new StringBuilder();
+        builder.append(model.getFirst().getWorld());
+        if(world != null) {
+            builder.append(" ")
+                    .append(world.getBattleEyeType().getIcon())
+                    .append(" | ")
+                    .append(world.getLocation_type().getIcon());
+        }
+        builder.append(" (")
+                .append(model.size())
+                .append(")");
+        return builder.toString();
     }
 }

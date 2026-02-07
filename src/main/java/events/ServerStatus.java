@@ -148,7 +148,8 @@ public final class ServerStatus extends ExecutableEvent implements Activable {
     }
 
     private EmbedCreateFields.Field buildEmbedField(WorldData data) {
-        return EmbedCreateFields.Field.of(data.getStatus_type().getIcon() + " " + data.getName() + " " + data.getLocation_type().getIcon(),
+        return EmbedCreateFields.Field.of(data.getStatus_type().getIcon() + " " + data.getName() + " " +
+                        data.getBattleEyeType().getIcon() + " | " + data.getLocation_type().getIcon(),
                 "Players online: " + data.getPlayers_online() + "\nTransfer: " + data.getTransfer_type(),
                 true);
     }

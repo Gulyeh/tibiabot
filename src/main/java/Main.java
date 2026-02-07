@@ -26,6 +26,7 @@ import services.killStatistics.KillStatisticsService;
 import services.miniWorldEvents.MiniWorldEventsService;
 import services.onlines.OnlineService;
 import services.tibiaCoins.TibiaCoinsService;
+import services.worlds.WorldsService;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -56,7 +57,7 @@ public class Main {
                 new MiniWorldEvents(new MiniWorldEventsService()),
                 new Boosteds(new BoostedsService()),
                 new DeathTracker(new DeathTrackerService()),
-                new OnlineTracker(onlineService),
+                new OnlineTracker(onlineService, WorldsService.getInstance()),
                 new Drome(new DromeService()),
                 new DeletedTracker(new DeletedTrackerService(onlineService))
         ).forEach(x -> {

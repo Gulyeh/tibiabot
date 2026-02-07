@@ -1,4 +1,4 @@
-package apis;
+package apis.proxy.flareSolver.models;
 
 import lombok.Getter;
 
@@ -10,6 +10,7 @@ public class FlaresolverModel {
 
     @Getter
     public static class Solution {
+        String url;
         String response;
         Map<String, Object>[] cookies;
         String userAgent;
