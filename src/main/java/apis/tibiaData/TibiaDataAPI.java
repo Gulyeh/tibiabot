@@ -73,19 +73,14 @@ public class TibiaDataAPI extends WebClient {
 
     public CharacterResponse getCharacterData(String charName) {
         if(characterCaching.containsKey(charName.toLowerCase())) return characterCaching.get(charName.toLowerCase());
-        CharacterResponse model = null;
-        int iters = 0;
-        while(model == null && iters < 3) {
-            String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
-            model = getModel(response, CharacterResponse.class);
-            iters++;
-            if(model == null) {
-                log.info("Could not obtain {} character data - retry no. {}", charName, iters);
-                try {
-                    Thread.sleep(3000);
-                } catch (Exception ignore) {}
-            }
+        CharacterResponse model;
+        String response = sendRequest(getCustomRequest(getUrlCharacter(charName)));
+        if(response.contains("error code: 502")) {
+            CharacterResponse chara = new CharacterResponse();
+            chara.getInformation().getStatus().setMessage("character is no longer available");
+            model = chara;
         }
+        else model = getModel(response, CharacterResponse.class);
         if(model == null) return new CharacterResponse();
         characterCaching.put(charName.toLowerCase(), model);
         return model;

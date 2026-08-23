@@ -5,6 +5,6 @@ import lombok.Getter;
 
 @Getter
 public class CharacterResponse {
-    private CharacterDataResponse character;
-    private InformationResponse information;
+    private final CharacterDataResponse character = new CharacterDataResponse();
+    private final InformationResponse information = new InformationResponse();
 }

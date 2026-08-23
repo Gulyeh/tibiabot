@@ -74,7 +74,7 @@ public final class DeathTracker extends ExecutableEvent implements Activable {
             } catch (Exception e) {
                 log.info(e.getMessage());
             }
-        }, 60000, 300000, TimeUnit.MILLISECONDS);
+        }, 30000, 300000, TimeUnit.MILLISECONDS);
     }
 
     @Override

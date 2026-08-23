@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -20,18 +21,18 @@ public abstract class WebClient {
 
     public WebClient() {
         Dispatcher dispatcher = new Dispatcher();
-        dispatcher.setMaxRequests(150);
+        dispatcher.setMaxRequests(200);
         dispatcher.setMaxRequestsPerHost(150);
         
         httpClient = new OkHttpClient.Builder()
-                .connectTimeout(60, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(8, TimeUnit.SECONDS)
+                .writeTimeout(5, TimeUnit.SECONDS)
                 .dispatcher(dispatcher)
-                .connectionPool(new ConnectionPool(20, 300, TimeUnit.SECONDS))
+                .connectionPool(new ConnectionPool(120, 300, TimeUnit.SECONDS))
                 .followRedirects(true)
                 .followSslRedirects(true)
-                .retryOnConnectionFailure(true)
+                .retryOnConnectionFailure(false)
                 .build();
     }
 
@@ -103,10 +104,26 @@ public abstract class WebClient {
         }
     }
 
+    protected <T> T getModel(String response, Type type)
+    {
+        try {
+            Gson g = new Gson();
+            return g.fromJson(response, type);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     @SneakyThrows
     private void logErrorResponse(Response response) {
         if(response.isSuccessful()) return;
-        log.info("Error Code - {}", response.code());
-        log.info("Error Body - {}", response.body().string());
+        if(response.code() == 429)
+            log.info("Request to {} had Rate Limit", response.request().url());
+        else if(response.code() == 502)
+            log.info("Request to {} was unreachable", response.request().url());
+        else {
+            log.info("Error Code - {}", response.code());
+            log.info("Error Body - {}", response.body().string());
+        }
     }
 }
