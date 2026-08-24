@@ -90,7 +90,7 @@ public final class MiniWorldEvents extends ExecutableEvent implements Activable 
     private void processEmbeddableData(GuildMessageChannel channel, MiniWorldEventsModel model) {
         List<MiniWorldEvent> miniWorldChanges = model.getActive_mini_world_changes();
 
-        if (miniWorldChanges.isEmpty()) {
+        if (miniWorldChanges == null || miniWorldChanges.isEmpty()) {
             embeddedHandler.sendEmbeddedMessages(channel,
                     null,
                     "There are no active mini world changes on this world currently",
