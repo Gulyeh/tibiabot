@@ -12,7 +12,7 @@ public abstract class ThreadLocker {
     private final Semaphore locker;
 
     public ThreadLocker() {
-        locker = new Semaphore(20);
+        locker = new Semaphore(10);
     }
 
     public ThreadLocker(int value) {
