@@ -28,7 +28,7 @@ public class DeletedTrackerService extends ThreadLocker implements Cacheable {
     private final OnlineService onlineService;
 
     public DeletedTrackerService(OnlineService onlineService) {
-        super(100);
+        super(80);
         this.onlineService = onlineService;
         deletedCache = new ConcurrentHashMap<>();
         tibiaDataAPI = new TibiaDataAPI();
