@@ -14,7 +14,7 @@ public final class FlareSolver {
 
     public static FlaresolverModel sendRequestViaFlareSolver(OkHttpClient httpClient, String url) {
         String payload = String.format(
-                "{\"cmd\": \"request.get\",\"url\": \"%s\",\"maxTimeout\": 60000}",
+                "{\"cmd\": \"request.get\",\"url\": \"%s\",\"maxTimeout\": 120000}",
                 url
         );
 

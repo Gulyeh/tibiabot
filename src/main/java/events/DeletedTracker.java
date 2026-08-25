@@ -13,10 +13,13 @@ import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
 import handlers.EmbeddedHandler;
+import handlers.TimerHandler;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.WorldCharacterModel;
 import reactor.core.publisher.Mono;
 import services.deletedTracker.DeletedTrackerService;
+
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +35,13 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
 
     private final DeletedTrackerService deletedTrackerService;
     private final EmbeddedHandler embeddedHandler;
+    private final TimerHandler timerHandler;
     private boolean isFirstRun = true;
 
     public DeletedTracker(DeletedTrackerService deletedTrackerService) {
         this.deletedTrackerService = deletedTrackerService;
         this.embeddedHandler = new EmbeddedHandler();
+        timerHandler = new TimerHandler(LocalDateTime.now().withHour(6).withMinute(0).withSecond(0), getEventName());
     }
 
     @Override
@@ -58,15 +63,23 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
 
     @Override
     public void activate() {
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                log.info("Executing thread {}", getEventName());
-                deletedTrackerService.clearCache();
-                executeEventProcess();
-            } catch (Exception e) {
-                log.info(e.getMessage());
+        Runnable schedulerTask = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log.info("Executing thread {}", getEventName());
+                    if (!timerHandler.isAfterTimer()) return;
+                    deletedTrackerService.clearCache();
+                    timerHandler.adjustTimerByDays(1);
+                    executeEventProcess();
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                } finally {
+                    scheduler.schedule(this, timerHandler.getWaitTimeUntilTimer(), TimeUnit.MILLISECONDS);
+                }
             }
-        }, 120000, 7200000, TimeUnit.MILLISECONDS);
+        };
+        scheduler.schedule(schedulerTask, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override
