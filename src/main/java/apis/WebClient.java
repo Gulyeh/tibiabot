@@ -26,7 +26,7 @@ public abstract class WebClient {
         
         httpClient = new OkHttpClient.Builder()
                 .connectTimeout(5, TimeUnit.SECONDS)
-                .readTimeout(8, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
                 .writeTimeout(5, TimeUnit.SECONDS)
                 .dispatcher(dispatcher)
                 .connectionPool(new ConnectionPool(120, 300, TimeUnit.SECONDS))
