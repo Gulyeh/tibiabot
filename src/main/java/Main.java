@@ -57,6 +57,7 @@ public class Main {
                 new MiniWorldEvents(new MiniWorldEventsService()),
                 new Boosteds(new BoostedsService()),
                 new DeathTracker(new DeathTrackerService()),
+                new WorldCharactersActions(WorldsService.getInstance()),
                 new OnlineTracker(onlineService, WorldsService.getInstance()),
                 new Drome(new DromeService()),
                 new DeletedTracker(new DeletedTrackerService(onlineService))

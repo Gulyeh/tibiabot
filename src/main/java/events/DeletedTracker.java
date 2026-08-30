@@ -13,13 +13,12 @@ import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
 import handlers.EmbeddedHandler;
-import handlers.TimerHandler;
+import handlers.ServerSaveHandler;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.WorldCharacterModel;
 import reactor.core.publisher.Mono;
 import services.deletedTracker.DeletedTrackerService;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,13 +34,13 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
 
     private final DeletedTrackerService deletedTrackerService;
     private final EmbeddedHandler embeddedHandler;
-    private final TimerHandler timerHandler;
+    private final ServerSaveHandler serverSaveHandler;
     private boolean isFirstRun = true;
 
     public DeletedTracker(DeletedTrackerService deletedTrackerService) {
         this.deletedTrackerService = deletedTrackerService;
         this.embeddedHandler = new EmbeddedHandler();
-        timerHandler = new TimerHandler(LocalDateTime.now().withHour(6).withMinute(0).withSecond(0), getEventName());
+        this.serverSaveHandler = new ServerSaveHandler(getEventName());
     }
 
     @Override
@@ -68,14 +67,13 @@ public class DeletedTracker extends ExecutableEvent implements Activable {
             public void run() {
                 try {
                     log.info("Executing thread {}", getEventName());
-                    if (!timerHandler.isAfterTimer()) return;
+                    if(!serverSaveHandler.checkAfterSaverSave()) return;
                     deletedTrackerService.clearCache();
-                    timerHandler.adjustTimerByDays(1);
                     executeEventProcess();
                 } catch (Exception e) {
                     log.info(e.getMessage());
                 } finally {
-                    scheduler.schedule(this, timerHandler.getWaitTimeUntilTimer(), TimeUnit.MILLISECONDS);
+                    scheduler.schedule(this, serverSaveHandler.getTimeUntilServerSave(), TimeUnit.MILLISECONDS);
                 }
             }
         };

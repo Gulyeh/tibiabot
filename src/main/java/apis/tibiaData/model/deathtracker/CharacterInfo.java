@@ -25,6 +25,8 @@ public class CharacterInfo {
     private String comment;
     @Getter
     private List<String> former_names;
+    @Getter
+    private List<String> former_worlds;
 
     public Vocation getVocation() {
         return Vocation.getEnum(vocation);

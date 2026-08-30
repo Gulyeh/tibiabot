@@ -59,6 +59,14 @@ public final class TibiaWiki {
         }
     }
 
+    public static byte[] getWorldChangeIcon() {
+        return client.getImageBytes("https://static.wikia.nocookie.net/tibia/images/4/45/World_Transfer.png/revision/latest?cb=20150705090003&path-prefix=en&format=original");
+    }
+
+    public static byte[] getNameChangeIcon() {
+        return client.getImageBytes("https://static.wikia.nocookie.net/tibia/images/d/d7/Name_Change.png/revision/latest?cb=20150705090002&path-prefix=en&format=original");
+    }
+
     public static byte[] getPlayerIcon() {
         return formatWikiGifLink("Red Skull Item");
     }

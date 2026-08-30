@@ -1,6 +1,9 @@
 package services.worlds;
 
 import abstracts.Singleton;
+import apis.guildStats.GuildStats;
+import apis.guildStats.models.ChangeName;
+import apis.guildStats.models.ChangeWorld;
 import apis.tibiaData.TibiaDataAPI;
 import apis.tibiaData.model.worlds.WorldData;
 import apis.tibiaData.model.worlds.WorldModel;
@@ -10,6 +13,9 @@ import apis.tibiaTrade.model.world.TibiaTradeWorldsModel;
 import lombok.extern.slf4j.Slf4j;
 import services.worlds.enums.Status;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -18,10 +24,12 @@ public final class WorldsService extends Singleton {
     private TibiaTradeWorldsModel worldsCache;
     private final TibiaDataAPI tibiaDataAPI;
     private final TibiaTradeAPI tibiaTradeAPI;
+    private final GuildStats guildStats;
 
     private WorldsService() {
         tibiaDataAPI = new TibiaDataAPI();
         tibiaTradeAPI = new TibiaTradeAPI();
+        guildStats = new GuildStats();
         refreshCache();
     }
 
@@ -88,6 +96,19 @@ public final class WorldsService extends Singleton {
             x.setPlayers_online(0);
         });
         return worlds;
+    }
+
+    public List<ChangeName> getChangedNames(String world) {
+        List<ChangeName> changedList = this.guildStats.getChangedNames(world);
+        String currentDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return changedList.stream().filter(x -> x.getChangeDate().equals(currentDate)).toList();
+    }
+
+    public List<ChangeWorld> getChangedWorld(String world) {
+        List<ChangeWorld> changeWorldList = this.guildStats.getTransferFromWorld(world);
+        changeWorldList.addAll(this.guildStats.getTransferToWorld(world));
+        String currentDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return changeWorldList.stream().filter(x -> x.getChangeDate().equals(currentDate)).toList();
     }
 
     private void setWorldsIds() {

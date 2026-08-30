@@ -72,6 +72,9 @@ public final class CommandsNames {
     public final static Command setDeletedTrackerCommand = new Command("set-deleted-tracker", "Set Deleted Tracker channel",
             new CommandOption(CommandOptionNames.DELETED_TRACKER, "Channel name", ApplicationCommandOption.Type.CHANNEL));
 
+    public final static Command setWorldActionsCommand = new Command("set-world-actions", "Set World Actions channel",
+            new CommandOption(CommandOptionNames.WORLD_ACTIONS, "Channel name", ApplicationCommandOption.Type.CHANNEL));
+
 
     public static List<Command> getCommands() {
         List<Command> cmds = new ArrayList<>();

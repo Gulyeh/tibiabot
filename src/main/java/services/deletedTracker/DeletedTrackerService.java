@@ -7,6 +7,8 @@ import apis.tibiaData.model.deathtracker.CharacterResponse;
 import interfaces.Cacheable;
 import lombok.extern.slf4j.Slf4j;
 import mongo.models.WorldCharacterModel;
+import observers.notifier.Channels;
+import observers.notifier.Notifier;
 import services.onlines.OnlineService;
 import services.onlines.model.OnlineModel;
 
@@ -75,6 +77,7 @@ public class DeletedTrackerService extends ThreadLocker implements Cacheable {
             LocalDateTime end = LocalDateTime.now();
             log.info("Processing deleteds for {} finished in {}s ({}/{} processed, {} failed)",
                     world, Duration.between(start, end).toSeconds(), processed.get(), total, failed.get());
+            Notifier.notify(Channels.FORMERS);
         }
 
         charactersToRemove.forEach(character -> removeCharacterFromWorld(world, character));

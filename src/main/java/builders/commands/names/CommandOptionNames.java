@@ -21,4 +21,5 @@ public final class CommandOptionNames {
     public static final String FILTER_DEATHS = "filterdeaths";
     public static final String DROME = "drome";
     public static final String DELETED_TRACKER = "deletedtracker";
+    public static final String WORLD_ACTIONS = "worldactions";
 }

@@ -15,7 +15,6 @@ import events.abstracts.ExecutableEvent;
 import events.interfaces.Activable;
 import events.utils.EventName;
 import handlers.EmbeddedHandler;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import services.houses.HousesService;

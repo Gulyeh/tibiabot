@@ -49,4 +49,9 @@ public class TibiaWiki extends WebClient {
         FlaresolverModel response = sendRequestUsingFlareSolver(getGifUrl(monsterName));
         return sendRequestWithByteResponse(getCustomRequest(response.getSolution()));
     }
+
+    public byte[] getImageBytes(String url) {
+        FlaresolverModel response = sendRequestUsingFlareSolver(url);
+        return sendRequestWithByteResponse(getCustomRequest(response.getSolution()));
+    }
 }

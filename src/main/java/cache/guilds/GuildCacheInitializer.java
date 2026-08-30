@@ -118,6 +118,10 @@ public class GuildCacheInitializer {
                     if(channels.getDeletedTracker().isEmpty()) yield null;
                     yield Snowflake.of(model.getChannels().getDeletedTracker());
                 }
+                case WORLD_ACTIONS -> {
+                    if(channels.getWorldActions().isEmpty()) yield null;
+                    yield Snowflake.of(model.getChannels().getWorldActions());
+                }
             };
 
             GuildCacheData.addToChannelsCache(guildId, channelId, eventType);
