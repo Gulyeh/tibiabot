@@ -32,7 +32,7 @@ import static utils.Methods.formatToDiscordLink;
 import static utils.TibiaWiki.*;
 
 @Slf4j
-public class WorldCharactersActions extends ExecutableEvent implements Activable {
+public final class WorldCharactersActions extends ExecutableEvent implements Activable {
 
     private final WorldsService worldsService;
     private final EmbeddedHandler embeddedHandler;
@@ -41,7 +41,6 @@ public class WorldCharactersActions extends ExecutableEvent implements Activable
     public WorldCharactersActions(WorldsService worldsService) {
         this.embeddedHandler = new EmbeddedHandler();
         this.worldsService = worldsService;
-        executeEventProcess();
     }
 
     @Override
@@ -65,7 +64,7 @@ public class WorldCharactersActions extends ExecutableEvent implements Activable
 
     @Override
     public void activate() {
-        Notifier.subscribe(Channels.FORMERS, this::executeEventProcess);
+        Notifier.subscribe(Channels.FORMERS, () -> executor.execute(this::executeEventProcess));
     }
 
     @Override
@@ -132,7 +131,7 @@ public class WorldCharactersActions extends ExecutableEvent implements Activable
 
         changedWorlds.forEach(x -> {
             String currentName = x.getVocation().getIcon() + " " + formatToDiscordLink(x.getName(), x.getCharacterLink()) + " " + x.getVocation().getIcon();
-            String desc = currentName + " changed its world from** " + x.getPreviousWorld() + "** to **" + x.getCurrentWorld() + "** at level " + x.getTransferAtLevel();
+            String desc = "**"+ currentName + "** changed its world from **" + x.getPreviousWorld() + "** to **" + x.getCurrentWorld() + "** at level " + x.getTransferAtLevel();
 
             if (msgs.stream().anyMatch(msg -> {
                 String embedDescription = msg.getEmbeds().get(0).getData().description().get();
